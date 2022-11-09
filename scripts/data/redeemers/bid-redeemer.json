@@ -1,0 +1,13 @@
+{
+  "constructor": 5,
+  "fields": [
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "int": 20000000
+        }
+      ]
+    }
+  ]
+}

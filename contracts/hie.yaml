@@ -1,0 +1,4 @@
+cradle:
+  cabal:
+    - path: "./swap-contract/src"
+      component: "swap-contract:lib:swap-contract"
