@@ -5,23 +5,31 @@ export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
 cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
-#
+# staked smart contract address
 script_path="../../contracts/swap-contract/swap-contract.plutus"
-script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
+stake_path="../../contracts/stake-contract/stake-contract.plutus"
+script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
+
 #
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
+
 # buyer
 buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
 buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/buyer-wallet/payment.vkey)
+
 # collat
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
+
 #
 asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
 
-cd ../py
-min_utxo=$(./get_worst_case.sh ../data/auctionable/auctionable-datum.json 1)
-cd ../swappable
+min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+
 
 buyer_address_out="${buyer_address} + ${min_utxo} + ${asset}"
 seller_address_out="${seller_address} + 10000000"

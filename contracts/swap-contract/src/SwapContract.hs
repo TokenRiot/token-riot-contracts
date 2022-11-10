@@ -142,7 +142,7 @@ mkValidator datum redeemer context =
                 _ -> traceIfFalse "Swappable:Transform:Undefined Datum Error" False
         
         -- | A trader may update their UTxO. Hold value constant, minus the increase, and change the datum.
-        (Update ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+        (Update ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in
           case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue Error" False
             Just outboundDatum ->
@@ -412,9 +412,10 @@ mkValidator datum redeemer context =
         Nothing    -> traceError "No Input to Validate." -- This error should never be hit.
         Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
     
+    -- if time locked, update sale and only extend lock else update sale and timelock
     checkIfTimeCanChange :: SwappableData -> SwappableData -> Bool
-    checkIfTimeCanChange sd sd' = (       isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateWithTimeCheck sd sd' ) || 
-                                  ( not $ isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateCheck         sd sd' )
+    checkIfTimeCanChange sd sd' = (       isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateWithTimeCheck sd sd' ) || -- is not time locked
+                                  ( not $ isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateCheck         sd sd' )    -- is time locked
       where
         lockTimeInterval :: PlutusV2.Interval PlutusV2.POSIXTime
         lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
