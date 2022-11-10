@@ -109,7 +109,6 @@ successfulAuction :: AuctionData -> SwappableData -> Bool
 successfulAuction a b = ( aSellerPkh a /= sPkh   b ) &&
                         ( aLockStart a == sStart b ) &&
                         ( aLockEnd   a == sEnd   b )
-
 -------------------------------------------------------------------------------
 -- | Offer Data Object
 -------------------------------------------------------------------------------
@@ -122,7 +121,6 @@ data OfferData = OfferData
   -- ^ payment amount
   }
 PlutusTx.unstableMakeIsData ''OfferData
-
 -------------------------------------------------------------------------------
 -- | Pay To Data Offer
 -------------------------------------------------------------------------------

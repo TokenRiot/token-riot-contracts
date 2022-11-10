@@ -135,7 +135,7 @@ mkValidator datum redeemer context =
                   ; let b = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in
                   ; let c = traceIfFalse "Datum Is Changing Error"   $ sd == sd'                                            -- datum cant change
                   ; let d = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- wallet can unlock it
-                  ;         traceIfFalse "Swappable:Remove Error"    $ all (==(True :: Bool)) [a,b,c,d]
+                  ;         traceIfFalse "Swappable:Transform Error" $ all (==(True :: Bool)) [a,b,c,d]
                   }
 
                 -- other datums fail

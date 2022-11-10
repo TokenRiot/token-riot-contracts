@@ -5,6 +5,9 @@ export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
 cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
+echo -e "\n \033[0;31m THIS SHOULD NEVER WORK! \033[0m \n";
+exit
+
 # get params
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 
