@@ -70,7 +70,7 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,   0 )
 data CustomRedeemerType = Remove                      |
                           FlatRate PayToData          |
                           Offer OfferData PayToData   |
-                          SwapUTxO                    |
+                          SwapUTxO PayToData          |
                           Update PayToData            |
                           Bid BidData                 |
                           Complete                    |
@@ -195,8 +195,8 @@ mkValidator datum redeemer context =
                 _ -> traceIfFalse "Swappable:OrderBook:Undefined Datum Error" False
 
         -- | Swap ownership on two utxos with a multisig.
-        SwapUTxO ->
-          case getOutboundDatumByValue contTxOutputs validatingValue of
+        (SwapUTxO ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+          case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:SwapUTxo:getOutboundDatumByValue Error" False
             Just outboundDatum ->
               case outboundDatum of
