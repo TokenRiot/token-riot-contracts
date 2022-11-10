@@ -127,6 +127,7 @@ mkValidator datum redeemer context =
             Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum Error" False
             Just outboundDatum ->
               case outboundDatum of
+                -- only can transform into the swap state
                 (Swappable sd') -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
                   ; let txValidityRange  = ContextsV2.txInfoValidRange info
@@ -316,8 +317,8 @@ mkValidator datum redeemer context =
           }
         
         -- | Update that allows going back to the auctioning data or the swappable data.
-        (Update _) ->
-          case getOutboundDatumByValue contTxOutputs validatingValue of
+        (Update ptd) ->  let incomingValue = validatingValue + adaValue (pInc ptd) in 
+          case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Auctioning:Update:GetOutboundDatum Error" False
             Just outboundDatum ->
               case outboundDatum of

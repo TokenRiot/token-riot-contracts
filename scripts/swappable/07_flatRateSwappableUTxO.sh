@@ -36,15 +36,27 @@ buyer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-echo $seller_min_utxo
-echo $buyer_min_utxo
+difference=$((${buyer_min_utxo} - ${seller_min_utxo}))
 
-# sc_address_out="${script_address} + ${min_utxo} + ${asset}"
-# seller_address_out="${seller_address} + 10000000"
-# echo "Flatrate OUTPUT: "${sc_address_out}
-# echo "Flatrate OUTPUT: "${seller_address_out}
+if [ "$difference" -lt "0" ]; then
+    min_utxo=${seller_min_utxo}
+    # update the increase ada in the redeemer
+    variable=0; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
+    mv ../data/redeemers/flatrate-redeemer-new.json ../data/redeemers/flatrate-redeemer.json
+else
+    echo "Increase Min ADA by" ${difference}
+    min_utxo=${buyer_min_utxo}
+    # update the increase ada in the redeemer
+    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
+    mv ../data/redeemers/flatrate-redeemer-new.json ../data/redeemers/flatrate-redeemer.json
+fi
+
+script_address_out="${script_address} + ${min_utxo} + ${asset}"
+seller_address_out="${seller_address} + 10000000"
+echo "Script OUTPUT: "${script_address_out}
+echo "Flatrate OUTPUT: "${seller_address_out}
 #
-exit
+# exit
 #
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 ${cli} query utxo \
@@ -108,7 +120,7 @@ FEE=$(${cli} transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/flatrate-redeemer.json \
     --tx-out="${seller_address_out}" \
-    --tx-out="${sc_address_out}" \
+    --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${buyer_pkh} \
