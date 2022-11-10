@@ -70,7 +70,7 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,   0 )
 data CustomRedeemerType = Remove                      |
                           FlatRate PayToData          |
                           Offer OfferData PayToData   |
-                          SwapUTxO                    |
+                          SwapUTxO PayToData          |
                           Update PayToData            |
                           Bid BidData                 |
                           Complete                    |
@@ -127,6 +127,7 @@ mkValidator datum redeemer context =
             Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum Error" False
             Just outboundDatum ->
               case outboundDatum of
+                -- only can transform into the swap state
                 (Swappable sd') -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
                   ; let txValidityRange  = ContextsV2.txInfoValidRange info
@@ -134,7 +135,7 @@ mkValidator datum redeemer context =
                   ; let b = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in
                   ; let c = traceIfFalse "Datum Is Changing Error"   $ sd == sd'                                            -- datum cant change
                   ; let d = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- wallet can unlock it
-                  ;         traceIfFalse "Swappable:Remove Error"    $ all (==(True :: Bool)) [a,b,c,d]
+                  ;         traceIfFalse "Swappable:Transform Error" $ all (==(True :: Bool)) [a,b,c,d]
                   }
 
                 -- other datums fail
@@ -194,8 +195,8 @@ mkValidator datum redeemer context =
                 _ -> traceIfFalse "Swappable:OrderBook:Undefined Datum Error" False
 
         -- | Swap ownership on two utxos with a multisig.
-        SwapUTxO ->
-          case getOutboundDatumByValue contTxOutputs validatingValue of
+        (SwapUTxO ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+          case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:SwapUTxo:getOutboundDatumByValue Error" False
             Just outboundDatum ->
               case outboundDatum of
@@ -316,8 +317,8 @@ mkValidator datum redeemer context =
           }
         
         -- | Update that allows going back to the auctioning data or the swappable data.
-        (Update _) ->
-          case getOutboundDatumByValue contTxOutputs validatingValue of
+        (Update ptd) ->  let incomingValue = validatingValue + adaValue (pInc ptd) in 
+          case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Auctioning:Update:GetOutboundDatum Error" False
             Just outboundDatum ->
               case outboundDatum of

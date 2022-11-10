@@ -7,16 +7,11 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # stake address
 stake_address=$(cat ../../contracts/stake-contract/stake.addr)
-echo $stake_address
-
-cardano-cli query stake-snapshot --testnet-magic ${testnet_magic} --stake-pool-id 257f8e6911f9ed6031d4520bd473ce9a488dc76f4f1b967b35c120b1 | jq
+echo stake_address: $stake_address
 
 # collat
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
-
-# bad rewarder
-# buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
 
 # seller
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)

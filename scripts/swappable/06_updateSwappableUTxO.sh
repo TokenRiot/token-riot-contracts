@@ -41,6 +41,7 @@ if [ "$difference" -lt "0" ]; then
     variable=0; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
     mv ../data/redeemers/update-redeemer-new.json ../data/redeemers/update-redeemer.json
 else
+    echo "Increase Min ADA by" ${difference}
     min_utxo=${updated_min_utxo}
     # update the increase ada in the redeemer
     variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
@@ -102,7 +103,6 @@ slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
 
-
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
@@ -119,7 +119,7 @@ FEE=$(${cli} transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/update-redeemer.json \
     --tx-out="${script_address_out}" \
-    --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json  \
+    --tx-out-inline-datum-file ../data/swappable/updated-swappable-datum.json  \
     --required-signer-hash ${seller_pkh} \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})

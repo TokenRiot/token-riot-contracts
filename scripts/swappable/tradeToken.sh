@@ -8,7 +8,7 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/seller-wallet/payment.addr)
-receiver_address=$(cat ../wallets/reference-wallet/payment.addr)
+receiver_address=$(cat ../wallets/buyer-wallet/payment.addr)
 # receiver_address="addr_test1qrxm0qpeek38dflguvrpp87hhewthd0mda44tnd45rjxqdt2s7gj5l4pam3pdeckkp7jwx8dsxelvq3ypv2ggzet9wcsxrp7pu"
 
 # Define Asset to be printed here
@@ -17,7 +17,7 @@ return_asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697
 
 min_utxo=2000000
 
-token_to_be_traded="${receiver_address} + 250000000"
+token_to_be_traded="${receiver_address} + 2500000000"
 token_to_be_changed="${sender_address} + ${min_utxo} + ${return_asset}"
 
 echo -e "\nTrading A Token:\n" ${token_to_be_traded}
