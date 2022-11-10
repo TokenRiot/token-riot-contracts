@@ -1,3 +1,3 @@
 # Token Riot Contract Scripts
 
-All scripts are designed for preview.
+All scripts for interacting with the token riot smart contracts.
