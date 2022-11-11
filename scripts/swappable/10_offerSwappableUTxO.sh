@@ -41,13 +41,13 @@ difference=$((${buyer_min_utxo} - ${seller_min_utxo}))
 if [ "$difference" -lt "0" ]; then
     min_utxo=${seller_min_utxo}
     # update the increase ada in the redeemer
-    variable=0; jq --argjson variable "$variable" '.fields[1].fields[2].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
+    variable=0; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
     mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
 else
     echo "Increase Min ADA by" ${difference}
     min_utxo=${buyer_min_utxo}
     # update the increase ada in the redeemer
-    variable=${difference}; jq --argjson variable "$variable" '.fields[1].fields[2].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
+    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
     mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
 fi
 

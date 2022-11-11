@@ -53,6 +53,8 @@ rm destake.cert
 rm deleg.cert
 
 # build out the stake-contract
+cabal clean
+cabal update
 cabal build -w ghc-8.10.7 -O2
 cabal run stake-contract
 

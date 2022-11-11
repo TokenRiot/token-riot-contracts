@@ -33,7 +33,6 @@ module SwappableDataType
   , successfulAuction
   , proveOwnership
   , SwappableData (..)
-  , OfferData (..)
   , PayToData (..)
   ) where
 import qualified PlutusTx
@@ -109,18 +108,6 @@ successfulAuction :: AuctionData -> SwappableData -> Bool
 successfulAuction a b = ( aSellerPkh a /= sPkh   b ) &&
                         ( aLockStart a == sStart b ) &&
                         ( aLockEnd   a == sEnd   b )
--------------------------------------------------------------------------------
--- | Offer Data Object
--------------------------------------------------------------------------------
-data OfferData = OfferData
-  { oPid :: PlutusV2.CurrencySymbol
-  -- ^ payment policy id
-  , oTkn :: PlutusV2.TokenName
-  -- ^ payment token
-  , oAmt :: Integer
-  -- ^ payment amount
-  }
-PlutusTx.unstableMakeIsData ''OfferData
 -------------------------------------------------------------------------------
 -- | Pay To Data Offer
 -------------------------------------------------------------------------------

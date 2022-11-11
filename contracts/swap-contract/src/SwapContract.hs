@@ -69,7 +69,7 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,   0 )
 -------------------------------------------------------------------------------
 data CustomRedeemerType = Remove                      |
                           FlatRate PayToData          |
-                          Offer OfferData PayToData   |
+                          Offer PayToData   |
                           SwapUTxO PayToData          |
                           Update PayToData            |
                           Bid BidData                 |
@@ -77,7 +77,7 @@ data CustomRedeemerType = Remove                      |
                           OrderBook                   |
                           Transform                   |
                           FRRemove PayToData          |
-                          ORemove OfferData PayToData |
+                          ORemove PayToData |
                           Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
@@ -247,37 +247,33 @@ mkValidator datum redeemer context =
           }
 
         -- | Offer to change walletship of utxo for some amount of a single token + extras.
-        (Offer od ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+        (Offer ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
           case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:Offer:getOutboundDatumByValue Error" False
             Just outboundDatum ->
               case outboundDatum of
                 (Swappable sd') -> do
-                  { let walletAddr = createAddress (sPkh sd) (sSc sd)
-                  ; let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                                         -- seller must sign it
-                  ; let b = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)                                       -- buyer must sign it
-                  ; let c = traceIfFalse "Payment Not Made Error"    $ isAddrHoldingAtLeastToken txOutputs walletAddr (oPid od) (oTkn od) (oAmt od) -- wallet must be paid
-                  ; let d = traceIfFalse "Datum Equality Error"      $ ownershipSwapCheck sd sd' && proveOwnership ptd sd'                          -- wallet change but remain locked
-                  ; let e = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                           -- single tx going in, single going out
-                  ;         traceIfFalse "Swappable:Offer Error"     $ all (==(True :: Bool)) [a,b,c,d,e]
+                  { let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                -- seller must sign it
+                  ; let b = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)              -- buyer must sign it
+                  ; let c = traceIfFalse "Datum Equality Error"      $ ownershipSwapCheck sd sd' && proveOwnership ptd sd' -- wallet change but remain locked
+                  ; let d = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1  -- single tx going in, single going out
+                  ;         traceIfFalse "Swappable:Offer Error"     $ all (==(True :: Bool)) [a,b,c,d]
                   }
 
                 -- other datums fail
                 _ -> traceIfFalse "Swappable:Offer:Undefined Datum Error" False
         
         -- | Offer but remove it to a the buyer's wallet
-        (ORemove od ptd) -> do
-          { let sellerAddr       = createAddress (sPkh sd)   (sSc sd)
-          ; let buyerAddr        = createAddress (ptPkh ptd) (ptSc ptd)
+        (ORemove ptd) -> do
+          { let buyerAddr        = createAddress (ptPkh ptd) (ptSc ptd)
           ; let lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-          ; let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                                         -- seller must sign it
-          ; let b = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)                                       -- buyer must sign it
-          ; let c = traceIfFalse "Payment Not Made Error"    $ isAddrHoldingAtLeastToken txOutputs sellerAddr (oPid od) (oTkn od) (oAmt od) -- wallet must be paid
-          ; let d = traceIfFalse "Token Not Paid Error"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue                 -- buyer must be paid
-          ; let e = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0                           -- single tx going in, single going out
-          ; let f = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval lockTimeInterval txValidityRange                         -- wallet can unlock it
-          ;         traceIfFalse "Swappable:ORemove Error"   $ all (==(True :: Bool)) [a,b,c,d,e,f]
+          ; let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                         -- seller must sign it
+          ; let b = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)                       -- buyer must sign it
+          ; let c = traceIfFalse "Token Not Paid Error"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue -- buyer must be paid
+          ; let d = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0           -- single tx going in, single going out
+          ; let e = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval lockTimeInterval txValidityRange         -- wallet can unlock it
+          ;         traceIfFalse "Swappable:ORemove Error"   $ all (==(True :: Bool)) [a,b,c,d,e]
           }
 
         -- | Other redeemers fail.
