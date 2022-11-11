@@ -353,20 +353,20 @@
         "priceSteps": 7.21e-5
     },
     "extraPraosEntropy": null,
-    "maxBlockBodySize": 65536,
+    "maxBlockBodySize": 90112,
     "maxBlockExecutionUnits": {
-        "memory": 50000000,
+        "memory": 62000000,
         "steps": 40000000000
     },
     "maxBlockHeaderSize": 1100,
-    "maxCollateralInputs": 5,
+    "maxCollateralInputs": 3,
     "maxTxExecutionUnits": {
-        "memory": 11250000,
+        "memory": 14000000,
         "steps": 10000000000
     },
     "maxTxSize": 16384,
     "maxValueSize": 5000,
-    "minPoolCost": 10,
+    "minPoolCost": 340000000,
     "minUTxOValue": null,
     "monetaryExpansion": 3.0e-3,
     "poolPledgeInfluence": 0.3,
@@ -377,10 +377,10 @@
     },
     "stakeAddressDeposit": 2000000,
     "stakePoolDeposit": 500000000,
-    "stakePoolTargetNum": 4500,
-    "treasuryCut": 1.0e-3,
-    "txFeeFixed": 1000,
-    "txFeePerByte": 1,
+    "stakePoolTargetNum": 500,
+    "treasuryCut": 0.2,
+    "txFeeFixed": 155381,
+    "txFeePerByte": 44,
     "utxoCostPerByte": 4310,
     "utxoCostPerWord": null
 }

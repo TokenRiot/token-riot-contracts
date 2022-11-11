@@ -1,22 +1,12 @@
 {
-    "1fad436cd077a77edc9517e687267e3177ad1d4d4a284d9dde4ae84f2d94de29#0": {
+    "c10dda437c1bbc6bbb3718134e25fdb3dc2bc1a9573540082615ef923c68a517#1": {
         "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
         "datum": null,
         "datumhash": null,
         "inlineDatum": null,
         "referenceScript": null,
         "value": {
-            "lovelace": 10000000
-        }
-    },
-    "eb1c17e5923f8fa8413f84dd3c7735ecdac13f89a0f596438b372793a2e6f522#1": {
-        "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
-        "datum": null,
-        "datumhash": null,
-        "inlineDatum": null,
-        "referenceScript": null,
-        "value": {
-            "lovelace": 96993597775
+            "lovelace": 19222460656
         }
     }
 }

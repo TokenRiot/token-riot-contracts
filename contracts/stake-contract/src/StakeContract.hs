@@ -47,7 +47,7 @@ import           UsefulFuncs
 -}
 -- the only allowed pool
 poolId :: PlutusV2.PubKeyHash
-poolId = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [37, 127, 142, 105, 17, 249, 237, 96, 49, 212, 82, 11, 212, 115, 206, 154, 72, 141, 199, 111, 79, 27, 150, 123, 53, 193, 32, 177] }
+poolId = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [96, 128, 185, 199, 107, 75, 25, 194, 29, 23, 180, 9, 26, 162, 5, 65, 124, 184, 10, 84, 73, 246, 56, 194, 126, 236, 9, 70] }
 
 -- the only allowed payout address
 payoutPkh :: PlutusV2.PubKeyHash

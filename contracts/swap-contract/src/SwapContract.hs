@@ -176,7 +176,7 @@ mkValidator datum redeemer context =
           ;         traceIfFalse "Swappable:Remove Error"    $ all (==(True :: Bool)) [a,b,c,d]
           }
         
-        -- | Swap ownership on two utxos like an order book.
+        -- | Swap ownership on two utxos like an order book. (No Partial Filling)
         OrderBook ->
           case getOutboundDatumByValue contTxOutputs validatingValue of
             Nothing            -> traceIfFalse "Swappable:OrderBook:getOutboundDatumByValue Error" False
