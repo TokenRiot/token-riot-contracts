@@ -8,8 +8,8 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/seller-wallet/payment.addr)
-receiver_address=$(cat ../wallets/buyer-wallet/payment.addr)
-# receiver_address="addr_test1qrxm0qpeek38dflguvrpp87hhewthd0mda44tnd45rjxqdt2s7gj5l4pam3pdeckkp7jwx8dsxelvq3ypv2ggzet9wcsxrp7pu"
+# receiver_address=$(cat ../wallets/buyer-wallet/payment.addr)
+receiver_address="addr_test1vzk5dawxdt97nm4re5jk0ap2kcpkx5a334syrj5lqkr4q2sk3xc3j"
 
 # Define Asset to be printed here
 asset=""
@@ -17,7 +17,7 @@ return_asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697
 
 min_utxo=2000000
 
-token_to_be_traded="${receiver_address} + 250000000"
+token_to_be_traded="${receiver_address} + 2500000000"
 token_to_be_changed="${receiver_address} + ${min_utxo} + ${return_asset}"
 
 echo -e "\nTrading A Token:\n" ${token_to_be_traded}
@@ -47,10 +47,10 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${sender_address} \
     --tx-in ${HEXTXIN} \
+    --tx-out="${token_to_be_changed}" \
     --tx-out="${token_to_be_traded}" \
     --testnet-magic ${testnet_magic})
 
-    # --tx-out="${token_to_be_changed}" \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}

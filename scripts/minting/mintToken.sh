@@ -15,6 +15,8 @@ mint_path="policy/policy.script"
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
+out_address="addr_test1vzk5dawxdt97nm4re5jk0ap2kcpkx5a334syrj5lqkr4q2sk3xc3j"
+
 # pid and tkn
 policy_id=$(cat policy/policy.id)
 token_name=$(echo -n "ThisIsOneStarterTokenForTesting1" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
@@ -29,7 +31,7 @@ utxo_value=$(${cli} transaction calculate-min-required-utxo \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out="${seller_address} ${min_asset}" | tr -dc '0-9')
 
-seller_address_out="${seller_address} + ${utxo_value} + ${mint_asset}"
+seller_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
 echo "Mint OUTPUT: "${seller_address_out}
 #
 # exit
