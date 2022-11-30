@@ -177,6 +177,7 @@ mkValidator datum redeemer context =
           }
         
         -- | Swap ownership on two utxos like an order book. (No Partial Filling)
+        -- TODO
         OrderBook ->
           case getOutboundDatumByValue contTxOutputs validatingValue of
             Nothing            -> traceIfFalse "Swappable:OrderBook:getOutboundDatumByValue Error" False
@@ -195,6 +196,7 @@ mkValidator datum redeemer context =
                 _ -> traceIfFalse "Swappable:OrderBook:Undefined Datum Error" False
 
         -- | Swap ownership on two utxos with a multisig.
+        -- TODO
         (SwapUTxO ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
           case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:SwapUTxo:getOutboundDatumByValue Error" False
