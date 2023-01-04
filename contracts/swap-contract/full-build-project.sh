@@ -1,5 +1,5 @@
-cabal clean
-cabal update
+# cabal clean
+# cabal update
 cabal build -w ghc-8.10.7 -O2
 cabal run swap-contract
 

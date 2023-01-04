@@ -46,9 +46,10 @@ library
   hs-source-dirs:       src
 
   exposed-modules:      SwapContract
+                        HelperFunctions
                         SwappableDataType
                         AuctionDataType
-                        HelperFunctions
+                        OfferDataType
 
   build-depends:        bytestring
                       , cardano-api

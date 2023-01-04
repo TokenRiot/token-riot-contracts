@@ -59,7 +59,7 @@ import           UsefulFuncs
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
-data CustomDatumType =  Swappable SwappableData  |
+data CustomDatumType =  Swappable SwappableData |
                         Auctioning AuctionData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,   0 )
                                               , ( 'Auctioning,  1 )
@@ -67,17 +67,17 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,   0 )
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove                      |
-                          FlatRate PayToData          |
-                          Offer PayToData   |
-                          SwapUTxO PayToData          |
-                          Update PayToData            |
-                          Bid BidData                 |
-                          Complete                    |
-                          OrderBook                   |
-                          Transform                   |
-                          FRRemove PayToData          |
-                          ORemove PayToData |
+data CustomRedeemerType = Remove             |
+                          FlatRate PayToData |
+                          Offer    PayToData |
+                          SwapUTxO PayToData |
+                          Update   PayToData |
+                          Bid BidData        |
+                          Complete           |
+                          OrderBook          |
+                          Transform          |
+                          FRRemove PayToData |
+                          ORemove  PayToData |
                           Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
@@ -280,8 +280,10 @@ mkValidator datum redeemer context =
 
         -- | Other redeemers fail.
         _ -> traceIfFalse "Swappable:Undefined Redeemer Error" False
-
-    {- |Auctioning AuctionData
+    {- | Offering OfferData
+      Allows many users to store their offers inside the contract for some offer trade to occur.
+    -}
+    {- | Auctioning AuctionData
       
       Allows a UTxO to be auctioned for some amount of time. Successful auctions are
       placed back into the swappable state as the auction state is a time lock. Similarly 
