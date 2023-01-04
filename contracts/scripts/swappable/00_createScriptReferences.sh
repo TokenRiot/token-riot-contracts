@@ -9,8 +9,8 @@ testnet_magic=$(cat ../data/testnet.magic)
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 
 # contract path
-swap_script_path="../../contracts/swap-contract/swap-contract.plutus"
-stake_script_path="../../contracts/stake-contract/stake-contract.plutus"
+swap_script_path="../../swap-contract/swap-contract.plutus"
+stake_script_path="../../stake-contract/stake-contract.plutus"
 
 # Addresses
 reference_address=$(cat ../wallets/reference-wallet/payment.addr)
@@ -19,7 +19,7 @@ swap_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-reference-script-file ${swap_script_path} \
-    --tx-out="${reference_address} 1000000" | tr -dc '0-9')
+    --tx-out="${reference_address} + 1000000" | tr -dc '0-9')
 
 swap_value=$((${swap_min_utxo}))
 swap_script_reference_utxo="${reference_address} + ${swap_value}"
@@ -28,7 +28,7 @@ stake_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-reference-script-file ${stake_script_path} \
-    --tx-out="${reference_address} 1000000" | tr -dc '0-9')
+    --tx-out="${reference_address} + 1000000" | tr -dc '0-9')
 
 stake_value=$((${stake_min_utxo}))
 stake_script_reference_utxo="${reference_address} + ${stake_value}"

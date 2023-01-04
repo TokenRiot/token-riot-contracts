@@ -9,8 +9,8 @@ testnet_magic=$(cat ../data/testnet.magic)
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 
 # scripts
-script_path="../../contracts/swap-contract/swap-contract.plutus"
-stake_path="../../contracts/stake-contract/stake-contract.plutus"
+script_path="../../swap-contract/swap-contract.plutus"
+stake_path="../../stake-contract/stake-contract.plutus"
 staker_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 
@@ -47,7 +47,7 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${payee_address} \
     --tx-in ${payee_tx_in} \
-    --certificate ../../contracts/stake-contract/stake.cert \
+    --certificate ../../stake-contract/stake.cert \
     --testnet-magic ${testnet_magic})
 
 IFS=':' read -ra VALUE <<< "${FEE}"

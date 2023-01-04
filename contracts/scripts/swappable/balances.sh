@@ -6,8 +6,8 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 #
-SCRIPT_PATH="../../contracts/swap-contract/swap-contract.plutus"
-STAKE_PATH="../../contracts/stake-contract/stake-contract.plutus"
+SCRIPT_PATH="../../swap-contract/swap-contract.plutus"
+STAKE_PATH="../../stake-contract/stake-contract.plutus"
 SCRIPT_ADDRESS=$(${cli} address build --payment-script-file ${SCRIPT_PATH} --stake-script-file ${STAKE_PATH} --testnet-magic ${testnet_magic})
 #
 SELLER_ADDRESS=$(cat ../wallets/seller-wallet/payment.addr)

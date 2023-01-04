@@ -6,7 +6,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 #
-script_path="../../contracts/swap-contract/swap-contract.plutus"
+script_path="../../swap-contract/swap-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
 #
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)

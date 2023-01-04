@@ -9,15 +9,15 @@ testnet_magic=$(cat ../data/testnet.magic)
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 
 # staked smart contract address
-script_path="../../contracts/swap-contract/swap-contract.plutus"
-stake_path="../../contracts/stake-contract/stake-contract.plutus"
+script_path="../../swap-contract/swap-contract.plutus"
+stake_path="../../stake-contract/stake-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 # seller info
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 
 # asset to trade
-asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
+asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \

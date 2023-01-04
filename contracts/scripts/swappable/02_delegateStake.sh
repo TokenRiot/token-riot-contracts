@@ -56,7 +56,7 @@ FEE=$(${cli} transaction build \
     --change-address ${payee_address} \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${payee_tx_in} \
-    --certificate ../../contracts/stake-contract/deleg.cert \
+    --certificate ../../stake-contract/deleg.cert \
     --certificate-tx-in-reference="${script_ref_utxo}#1" \
     --certificate-plutus-script-v2 \
     --certificate-reference-tx-in-redeemer-file ../data/redeemers/register-redeemer.json \

@@ -6,8 +6,8 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # staked smart contract address
-script_path="../../contracts/swap-contract/swap-contract.plutus"
-stake_path="../../contracts/stake-contract/stake-contract.plutus"
+script_path="../../swap-contract/swap-contract.plutus"
+stake_path="../../stake-contract/stake-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 #
