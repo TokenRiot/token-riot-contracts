@@ -70,17 +70,17 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove              |
-                          FlatRate  PayToData |
-                          Offer     PayToData |
-                          SwapUTxO  PayToData |
-                          Update    PayToData |
-                          Bid       BidData   |
-                          Complete            |
-                          OrderBook           |
-                          Transform           |
-                          FRRemove  PayToData |
-                          ORemove   PayToData |
+data CustomRedeemerType = Remove               |
+                          FlatRate  PayToData  |
+                          Offer     PayToData  |
+                          SwapUTxO  PayToData  |
+                          Update    ADAIncData |
+                          Bid       BidData    |
+                          Complete             |
+                          OrderBook            |
+                          Transform            |
+                          FRRemove  PayToData  |
+                          ORemove   PayToData  |
                           Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
@@ -124,7 +124,7 @@ mkValidator datum redeemer context =
     -}
     (Swappable sd) ->
       case redeemer of
-        -- | A trader may transform their UTxO. Hold the datum constant and change the value.
+        -- | A trader may transform their UTxO, holding the datum constant and changing the value.
         Transform -> 
           case getOutboundDatum contTxOutputs of
             Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
@@ -144,18 +144,18 @@ mkValidator datum redeemer context =
                 -- other datums fail
                 _ -> traceIfFalse "Swappable:Transform:Undefined Datum" False
         
-        -- | A trader may update their UTxO. Hold value constant, minus the increase, and change the datum.
-        (Update ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in
+        -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the datum.
+        (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
           case getOutboundDatumByValue contTxOutputs incomingValue of
-            Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue Error" False
+            Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue" False
             Just outboundDatum ->
               case outboundDatum of
                 -- swap update
                 (Swappable sd') -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)               -- wallet must sign it
-                  ; let b = traceIfFalse "Incorrect Datum Error"     $ checkIfTimeCanChange sd sd'                        -- wallet + stake can't change
-                  ; let c = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
-                  ;         traceIfFalse "Swappable:Update Error"    $ all (==(True :: Bool)) [a,b,c]
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (sPkh sd)               -- wallet must sign it
+                  ; let b = traceIfFalse "Incorrect Datum"     $ checkIfTimeCanChange sd sd'                        -- wallet + stake can't change
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
                   }
 
                 -- auction switch
@@ -165,7 +165,9 @@ mkValidator datum redeemer context =
                   -- ; let c = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
                   -- ;         traceIfFalse "Swappable:Update Error"    $ all (==(True :: Bool)) [a,b,c]
                   -- }
-        
+
+                -- offer can be updated
+                _ -> False
         -- | A trader may remove their UTxO if not currently being timelocked.
         Remove -> do
           { let walletPkh        = sPkh sd
@@ -416,10 +418,10 @@ mkValidator datum redeemer context =
         Nothing    -> traceError "No Input to Validate." -- This error should never be hit.
         Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
     
-    -- if time locked, update sale and only extend lock else update sale and timelock
+    -- if time locked, only update sale else update sale and timelock.
     checkIfTimeCanChange :: SwappableData -> SwappableData -> Bool
-    checkIfTimeCanChange sd sd' = (       isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateWithTimeCheck sd sd' ) || -- is not time locked
-                                  ( not $ isTxOutsideInterval lockTimeInterval txValidityRange && priceUpdateCheck         sd sd' )    -- is time locked
+    checkIfTimeCanChange sd sd' = (       (isTxOutsideInterval lockTimeInterval txValidityRange == True) && (priceUpdateWithTimeCheck sd sd' == True) ) || -- is not time locked
+                                  ( (not $ isTxOutsideInterval lockTimeInterval txValidityRange == True) && (priceUpdateCheck         sd sd' == True) )    -- is time locked
       where
         lockTimeInterval :: PlutusV2.Interval PlutusV2.POSIXTime
         lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)

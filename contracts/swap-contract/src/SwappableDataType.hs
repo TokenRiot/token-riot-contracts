@@ -34,6 +34,7 @@ module SwappableDataType
   , proveOwnership
   , SwappableData (..)
   , PayToData (..)
+  , ADAIncData (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -57,12 +58,12 @@ data SwappableData = SwappableData
   -- ^ flatrate payment token name
   , sAmt   :: Integer
   -- ^ flaterate payment token amount
+  , sSlip  :: Integer
+  -- ^ slippage for order book swaps
   , sStart :: Integer
   -- ^ starting time
   , sEnd   :: Integer
   -- ^ ending time
-  , sSlip  :: Integer
-  -- ^ slippage for order book swaps
   }
 PlutusTx.unstableMakeIsData ''SwappableData
 
@@ -73,9 +74,9 @@ instance Eq SwappableData where
            ( sPid   a == sPid   b ) &&
            ( sTkn   a == sTkn   b ) &&
            ( sAmt   a == sAmt   b ) &&
+           ( sSlip  a == sSlip  b ) &&
            ( sStart a == sStart b ) &&
-           ( sEnd   a == sEnd   b ) &&
-           ( sSlip  a == sSlip  b )
+           ( sEnd   a == sEnd   b )
 
 -- a is old; b is new
 ownershipSwapCheck :: SwappableData -> SwappableData -> Bool
@@ -83,7 +84,7 @@ ownershipSwapCheck a b = ( sPkh   a /= sPkh   b ) &&
                          ( sStart a == sStart b ) &&
                          ( sEnd   a == sEnd   b )
 
--- update price and update lock fully
+-- update price and time
 priceUpdateWithTimeCheck :: SwappableData -> SwappableData -> Bool
 priceUpdateWithTimeCheck a b =  ( sPkh   a == sPkh   b ) &&
                                 ( sSc    a == sSc    b ) &&
@@ -91,12 +92,12 @@ priceUpdateWithTimeCheck a b =  ( sPkh   a == sPkh   b ) &&
                                 ( sStart b <= sEnd   b ) && -- must be less than or equal to end
                                 ( sEnd   a <= sEnd   b )    -- can only increase or remain constant
 
--- update price or lengthen the lock time only
+-- update price only
 priceUpdateCheck :: SwappableData -> SwappableData -> Bool
 priceUpdateCheck a b = ( sPkh   a == sPkh   b ) &&
                        ( sSc    a == sSc    b ) &&
                        ( sStart a == sStart b ) && -- can only remain constant
-                       ( sEnd   a <= sEnd   b )    -- can only remain constant or increase
+                       ( sEnd   a == sEnd   b )    -- can only remain constant
 
 switchStates :: AuctionData -> SwappableData -> Bool
 switchStates a b = ( aSellerPkh a == sPkh   b ) &&
@@ -124,3 +125,11 @@ PlutusTx.unstableMakeIsData ''PayToData
 proveOwnership :: PayToData -> SwappableData -> Bool
 proveOwnership a b = ( ptPkh a == sPkh b ) && 
                      ( ptSc  a == sSc  b )
+-------------------------------------------------------------------------------
+-- | ADA Increase Data Object
+-------------------------------------------------------------------------------
+data ADAIncData = ADAIncData
+  { adaInc  :: Integer
+  -- ^ The increase in the required minimum lovelace .
+  }
+PlutusTx.unstableMakeIsData ''ADAIncData

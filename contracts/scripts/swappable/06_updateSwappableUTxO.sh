@@ -19,7 +19,7 @@ seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
 #
-asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
+asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
 current_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -38,13 +38,13 @@ difference=$((${updated_min_utxo} - ${current_min_utxo}))
 if [ "$difference" -lt "0" ]; then
     min_utxo=${current_min_utxo}
     # update the increase ada in the redeemer
-    variable=0; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
+    variable=0; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
     mv ../data/redeemers/update-redeemer-new.json ../data/redeemers/update-redeemer.json
 else
     echo "Increase Min ADA by" ${difference}
     min_utxo=${updated_min_utxo}
     # update the increase ada in the redeemer
-    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
+    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/redeemers/update-redeemer.json > ../data/redeemers/update-redeemer-new.json
     mv ../data/redeemers/update-redeemer-new.json ../data/redeemers/update-redeemer.json
 fi
 
@@ -53,12 +53,12 @@ echo "Update OUTPUT: "${script_address_out}
 #
 # exit
 #
+# seller utxos
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
     --address ${seller_address} \
     --out-file ../tmp/seller_utxo.json
-
 TXNS=$(jq length ../tmp/seller_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${seller_address} \033[0m \n";
@@ -68,12 +68,12 @@ alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/seller_utxo.json)
 seller_tx_in=${TXIN::-8}
 
+# script utxos
 echo -e "\033[0;36m Gathering Script UTxO Information  \033[0m"
 ${cli} query utxo \
     --address ${script_address} \
     --testnet-magic ${testnet_magic} \
     --out-file ../tmp/script_utxo.json
-# transaction variables
 TXNS=$(jq length ../tmp/script_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${script_address} \033[0m \n";
@@ -97,8 +97,10 @@ if [ "${TXNS}" -eq "0" ]; then
 fi
 collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
+# ref info
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
 
+# slot info
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
@@ -129,7 +131,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \

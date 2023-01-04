@@ -29,7 +29,6 @@ module OfferDataType
   ( OfferData (..)
   ) where
 import qualified PlutusTx
-import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api as PlutusV2
 {- |
   Author   : The Ancient Kraken
