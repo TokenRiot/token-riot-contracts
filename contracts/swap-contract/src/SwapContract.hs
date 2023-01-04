@@ -43,19 +43,10 @@ import           Plutus.Script.Utils.V2.Scripts as Utils
 import           SwappableDataType
 import           AuctionDataType
 import           OfferDataType
-import           HelperFunctions
 import           UsefulFuncs
 {- |
   Author   : The Ancient Kraken
   Copyright: 2022
-  
-  cardano-cli 1.35.3 - linux-x86_64 - ghc-8.10
-  git rev 950c4e222086fed5ca53564e642434ce9307b0b9
-
-  cabal-install version 3.6.2.0
-  compiled using version 3.6.2.0 of the Cabal library
-
-  The Glorious Glasgow Haskell Compilation System, version 8.10.7
 -}
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
@@ -71,8 +62,8 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
 data CustomRedeemerType = Remove               |
-                          FlatRate  PayToData  |
-                          Offer     PayToData  |
+                          FlatRate  PayToData ADAIncData |
+                          Offer     PayToData ADAIncData  |
                           SwapUTxO  PayToData  |
                           Update    ADAIncData |
                           Bid       BidData    |
@@ -220,19 +211,19 @@ mkValidator datum redeemer context =
           --       _ -> traceIfFalse "Swappable:SwapUTxo:Undefined Datum Error" False
 
         -- | Flat rate walletship swap of utxo for an predefined amount of a single token.
-        (FlatRate ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+        (FlatRate ptd aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
           case getOutboundDatumByValue contTxOutputs incomingValue of
-            Nothing            -> traceIfFalse "Swappable:FlatRate:getOutboundDatumByValue Error" False
+            Nothing            -> traceIfFalse "Swappable:FlatRate:getOutboundDatumByValue" False
             Just outboundDatum ->
               case outboundDatum of
                 (Swappable sd') -> do
                   { let walletAddr = createAddress (sPkh sd) (sSc sd)
-                  ; let a = traceIfFalse "Payment Not Made Error"    $ isAddrHoldingExactlyToken txOutputs walletAddr (sPid sd) (sTkn sd) (sAmt sd) -- wallet must be paid
-                  ; let b = traceIfFalse "Ownership Change Error"    $ ownershipSwapCheck sd sd' && proveOwnership ptd sd'                          -- wallet change but remain locked
-                  ; let c = traceIfFalse "Empty Payment Value Error" $ (sAmt sd) /= 0                                                               -- wallet must define price
-                  ; let d = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                           -- single tx going in, single going out
-                  ; let e = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)                                       -- buyer must sign
-                  ;         traceIfFalse "Swappable:FlatRate Error"  $ all (==(True :: Bool)) [a,b,c,d,e]
+                  ; let a = traceIfFalse "Payment Not Made"    $ isAddrHoldingExactlyToken txOutputs walletAddr (sPid sd) (sTkn sd) (sAmt sd) -- wallet must be paid
+                  ; let b = traceIfFalse "Ownership Change"    $ ownershipSwapCheck sd sd' && proveOwnership ptd sd'                          -- wallet change but remain locked
+                  ; let c = traceIfFalse "Empty Payment Value" $ (sAmt sd) /= 0                                                               -- wallet must define price
+                  ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                           -- single tx going in, single going out
+                  ; let e = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)                                       -- buyer must sign
+                  ;         traceIfFalse "Swappable:FlatRate"  $ all (==(True :: Bool)) [a,b,c,d,e]
                   }
 
                 -- other datums fail
@@ -254,7 +245,7 @@ mkValidator datum redeemer context =
           }
 
         -- | Offer to change walletship of utxo for some amount of a single token + extras.
-        (Offer ptd) -> let incomingValue = validatingValue + adaValue (pInc ptd) in 
+        (Offer ptd aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
           case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:Offer:getOutboundDatumByValue Error" False
             Just outboundDatum ->
@@ -433,7 +424,7 @@ mkValidator datum redeemer context =
     checkIfInputIsHolding inDatum =
       case getOtherInputValue txInputs inDatum of
         Nothing         -> traceIfFalse "cant find input value" False
-        Just otherValue -> traceIfFalse "value equality error" $ isValueInRange (sAmt inDatum) (sSlip inDatum) (target otherValue)
+        Just otherValue -> traceIfFalse "value equality error" $ isIntegerInRange (sAmt inDatum) (sSlip inDatum) (target otherValue)
       where
         target :: PlutusV2.Value -> Integer
         target otherValue = Value.valueOf otherValue (sPid inDatum) (sTkn inDatum)

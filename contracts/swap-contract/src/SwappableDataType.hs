@@ -117,8 +117,6 @@ data PayToData = PayToData
   -- ^ pay to this public key hash
   , ptSc  :: PlutusV2.PubKeyHash
   -- ^ pay to this stake key
-  , pInc  :: Integer
-  -- ^ the potential lovelace 
   }
 PlutusTx.unstableMakeIsData ''PayToData
 

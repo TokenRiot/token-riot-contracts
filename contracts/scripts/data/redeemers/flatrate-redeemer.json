@@ -9,9 +9,14 @@
         },
         {
           "bytes": ""
-        },
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
         {
-          "int": 17240
+          "int": 0
         }
       ]
     }

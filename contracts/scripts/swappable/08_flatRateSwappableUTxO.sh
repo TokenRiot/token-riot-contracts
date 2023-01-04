@@ -22,39 +22,45 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 #
-asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
+selling_asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+buying_asset="12345 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739"
+
+payment_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out="${seller_address} + 5000000 + ${buying_asset}" | tr -dc '0-9')
 
 seller_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
-    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+    --tx-out="${script_address} + 5000000 + ${selling_asset}" | tr -dc '0-9')
 
 buyer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
-    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+    --tx-out="${script_address} + 5000000 + ${selling_asset}" | tr -dc '0-9')
 
 difference=$((${buyer_min_utxo} - ${seller_min_utxo}))
 
 if [ "$difference" -lt "0" ]; then
     min_utxo=${seller_min_utxo}
     # update the increase ada in the redeemer
-    variable=0; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
+    variable=0; jq --argjson variable "$variable" '.fields[1].fields[0].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
     mv ../data/redeemers/flatrate-redeemer-new.json ../data/redeemers/flatrate-redeemer.json
 else
     echo "Increase Min ADA by" ${difference}
     min_utxo=${buyer_min_utxo}
     # update the increase ada in the redeemer
-    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[2].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
+    variable=${difference}; jq --argjson variable "$variable" '.fields[1].fields[0].int=$variable' ../data/redeemers/flatrate-redeemer.json > ../data/redeemers/flatrate-redeemer-new.json
     mv ../data/redeemers/flatrate-redeemer-new.json ../data/redeemers/flatrate-redeemer.json
 fi
 
-script_address_out="${script_address} + ${min_utxo} + ${asset}"
-seller_address_out="${seller_address} + 10000000"
+script_address_out="${script_address} + ${min_utxo} + ${selling_asset}"
+seller_address_out="${seller_address} + ${payment_min_utxo} + ${buying_asset}"
 echo "Script OUTPUT: "${script_address_out}
-echo "Flatrate OUTPUT: "${seller_address_out}
+echo "Payment OUTPUT: "${seller_address_out}
 #
 # exit
 #
@@ -131,7 +137,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \

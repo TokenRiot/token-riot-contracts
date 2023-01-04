@@ -15,23 +15,23 @@ mint_path="policy/policy.script"
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
-# out_address="addr_test1vzk5dawxdt97nm4re5jk0ap2kcpkx5a334syrj5lqkr4q2sk3xc3j"
+out_address="addr_test1vrdhhl7yrfpufkwrzdpw8l29wsy6adqrq249ypvd7d6fzwc6x00av"
 
 # pid and tkn
 policy_id=$(cat policy/policy.id)
-token_name=$(echo -n "ThisIsOneStarterTokenForTesting1" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+token_name=$(echo -n "ThisIsOneStarterTokenForTesting9" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
 
 # assets
-mint_asset="1 ${policy_id}.${token_name}"
-min_asset="2000000 + ${mint_asset}"
+mint_asset="12345 ${policy_id}.${token_name}"
 
 # mint utxo
 utxo_value=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
-    --tx-out="${seller_address} + ${min_asset}" | tr -dc '0-9')
+    --tx-out="${seller_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
 
 seller_address_out="${seller_address} + ${utxo_value} + ${mint_asset}"
+seller_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
 echo "Mint OUTPUT: "${seller_address_out}
 #
 # exit

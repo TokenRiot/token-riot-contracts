@@ -46,7 +46,6 @@ library
   hs-source-dirs:       src
 
   exposed-modules:      SwapContract
-                        HelperFunctions
                         SwappableDataType
                         AuctionDataType
                         OfferDataType
