@@ -36,7 +36,6 @@ import           Cardano.Api.Shelley            ( PlutusScript (..), PlutusScrip
 import qualified Data.ByteString.Lazy           as LBS
 import qualified Data.ByteString.Short          as SBS
 import qualified Plutus.V1.Ledger.Scripts       as Scripts
--- import qualified Plutus.V1.Ledger.Value         as Value
 import qualified Plutus.V2.Ledger.Api           as PlutusV2
 import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
 import           Plutus.Script.Utils.V2.Scripts as Utils
@@ -51,7 +50,7 @@ import           UsefulFuncs
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
 data CustomDatumType =  Swappable  PayToData PaymentData TimeData |
-                        Auctioning AuctionData   |
+                        Auctioning AuctionData                    |
                         Offering   PayToData MakeOfferData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
@@ -60,17 +59,17 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove               |
-                          FlatRate  PayToData ADAIncData |
+data CustomRedeemerType = Remove                             |
+                          FlatRate  PayToData ADAIncData     |
                           Offer     ADAIncData MakeOfferData |
-                          SwapUTxO  PayToData  |
-                          Update    ADAIncData |
-                          Bid       BidData    |
-                          Complete             |
-                          OrderBook            |
-                          Transform            |
-                          FRRemove  PayToData  |
-                          ORemove   PayToData  |
+                          SwapUTxO  PayToData                |
+                          Update    ADAIncData               |
+                          Bid       BidData                  |
+                          Complete                           |
+                          OrderBook                          |
+                          Transform                          |
+                          FRRemove  PayToData                |
+                          ORemove   MakeOfferData            |
                           Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
@@ -149,16 +148,12 @@ mkValidator datum redeemer context =
                   ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
                   }
 
-                -- auction switch
-                (Auctioning _) -> False -- do
-                  -- { let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)               -- wallet must sign it
-                  -- ; let b = traceIfFalse "Datum Not Changing Error"  $ switchStates ad sd                                 -- wallet + stake can't change
-                  -- ; let c = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
-                  -- ;         traceIfFalse "Swappable:Update Error"    $ all (==(True :: Bool)) [a,b,c]
-                  -- }
+                -- A trader may update their utxo into an auction.
+                -- TODO
+                (Auctioning _) -> False
 
                 -- offer can be updated
-                _ -> False
+                _ -> traceIfFalse "Swappable:Update:Undefined Datum" False
         
         -- | A trader may remove their UTxO if not currently being timelocked.
         Remove -> do
@@ -173,43 +168,13 @@ mkValidator datum redeemer context =
           ;         traceIfFalse "Swappable:Remove"    $ all (==(True :: Bool)) [a,b,c,d]
           }
         
-        -- -- | Swap ownership on two utxos like an order book. (No Partial Filling)
-        -- -- TODO
-        -- OrderBook -> False
-        --   -- case getOutboundDatumByValue contTxOutputs validatingValue of
-        --   --   Nothing            -> traceIfFalse "Swappable:OrderBook:getOutboundDatumByValue Error" False
-        --   --   Just outboundDatum ->
-        --   --     case outboundDatum of
-        --   --       (Swappable sd') -> do
-        --   --         { let a = traceIfFalse "Ownership Change Error"    $ ownershipSwapCheck sd sd'                                    -- ensure time lock and owner change
-        --   --         ; let b = traceIfFalse "Cant Find Other Owner"     $ checkCombineDatum sd sd'                                     -- ensure other input datum pkh is on this output datum
-        --   --         ; let c = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2           -- single tx going in, single going out
-        --   --         ; let d = traceIfFalse "Wrong Amount of Redeemers" $ isNRedeemers (toList $ ContextsV2.txInfoRedeemers info) == 2 -- two redeemers in offchain tx
-        --   --         ; let e = traceIfFalse "Value Not Swappable"       $ (sAmt sd /= 0 && sSlip sd /= 0) && checkIfInputIsHolding sd  -- slip is non zero and the other input has the token
-        --   --         ;         traceIfFalse "Swappable:OrderBook Error" $ all (==(True :: Bool)) [a,b,c,d,e]
-        --   --         }
+        -- | Order Book Dex Endpoint
+        -- TODO
+        OrderBook -> False
 
-        --   --       -- other datums fail
-        --   --       _ -> traceIfFalse "Swappable:OrderBook:Undefined Datum Error" False
-
-        -- -- | Swap ownership on two utxos with a multisig.
-        -- -- TODO
-        -- (SwapUTxO _) -> False --let incomingValue = validatingValue + adaValue (pInc ptd) in 
-        --   -- case getOutboundDatumByValue contTxOutputs incomingValue of
-        --   --   Nothing            -> traceIfFalse "Swappable:SwapUTxo:getOutboundDatumByValue Error" False
-        --   --   Just outboundDatum ->
-        --   --     case outboundDatum of
-        --   --       (Swappable sd') -> do
-        --   --         { let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                         -- wallet must sign it
-        --   --         ; let b = traceIfFalse "Ownership Change Error"    $ ownershipSwapCheck sd sd'                                    -- wallet change but remain locked
-        --   --         ; let c = traceIfFalse "Cant Find Other Owner"     $ checkCombineDatum sd sd'                                     -- wallet change but remain locked
-        --   --         ; let d = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2           -- single tx going in, single going out
-        --   --         ; let e = traceIfFalse "Wrong Amount of Redeemers" $ isNRedeemers (toList $ ContextsV2.txInfoRedeemers info) == 2 -- two redeemers in offchain tx
-        --   --         ;         traceIfFalse "Swappable:SwapUTxo Error"  $ all (==(True :: Bool)) [a,b,c,d,e]
-        --   --         }
-
-        --   --       -- other datums fail
-        --   --       _ -> traceIfFalse "Swappable:SwapUTxo:Undefined Datum Error" False
+        -- | Swap ownership on two utxos with a multisig.
+        -- TODO
+        (SwapUTxO _) -> False
 
         -- | Flat rate swap of utxo for an predefined amount of a single token.
         (FlatRate ptd' aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
@@ -228,7 +193,7 @@ mkValidator datum redeemer context =
                   }
 
                 -- other datums fail
-                _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum Error" False
+                _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
         
         -- | Flat rate purchase into buyer wallet of utxo for an predefined amount of a single token.
         (FRRemove ptd') -> do
@@ -264,28 +229,40 @@ mkValidator datum redeemer context =
                           }
 
                         -- other datums fail
-                        _ -> traceIfFalse "Swappable:Offer:Undefined Datum Error" False
+                        _ -> traceIfFalse "Swappable:Offer:Undefined Datum" False
                   
                 -- anything else fails
-                _ -> False
+                _ -> traceIfFalse "Swappable:Offering:Undefined Datum" False
         
-        -- -- | Offer but remove it to a the buyer's wallet
-        -- (ORemove ptd) -> do
-        --   { let buyerAddr        = createAddress (ptPkh ptd) (ptSc ptd)
-        --   ; let lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
-        --   ; let txValidityRange  = ContextsV2.txInfoValidRange info
-        --   ; let a = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (sPkh sd)                         -- seller must sign it
-        --   ; let b = traceIfFalse "Incorrect Tx Signer Error" $ ContextsV2.txSignedBy info (ptPkh ptd)                       -- buyer must sign it
-        --   ; let c = traceIfFalse "Token Not Paid Error"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue -- buyer must be paid
-        --   ; let d = traceIfFalse "Too Many In/Out Error"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0           -- single tx going in, single going out
-        --   ; let e = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval lockTimeInterval txValidityRange         -- wallet can unlock it
-        --   ;         traceIfFalse "Swappable:ORemove Error"   $ all (==(True :: Bool)) [a,b,c,d,e]
-        --   }
+        -- | Offer but remove it to a the buyer's wallet
+        (ORemove mod) -> let txId = createTxOutRef (moTx mod) (moIdx mod)
+          in case getDatumByTxId txId of
+            Nothing            -> traceIfFalse "Swappable:Offer:GetDatumByTxId" False
+            Just otherDatum ->
+              case otherDatum of
+                (Offering ptd' _) -> do
+                  { let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
+                  ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)                       -- seller must sign it
+                  ; let b = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue -- buyer must be paid
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 0           -- two tx going in, no continue
+                  ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange         -- seller can unlock it
+                  ;         traceIfFalse "Swappable:ORemove"   $ all (==(True :: Bool)) [a,b,c,d]
+                  }
+                
+                -- anything else fails
+                _ -> traceIfFalse "Swappable:Offering:Undefined Datum" False
 
         -- | Other redeemers fail.
-        _ -> traceIfFalse "Swappable:Undefined Redeemer Error" False
+        _ -> traceIfFalse "Swappable:Undefined Redeemer" False
+    
     {- | Offering OfferData
-      Allows many users to store their offers inside the contract for some offer trade to occur.
+
+      Allows many users to store their offers inside the contract for some offer trade to occur. An offerer may remove their current offers or
+      transform their offer into a new offer. To ensure that a specific offer goes to a specific utxo, the TxID needs to attached of the utxo
+      an offerer is making an offer.
+
     -}
     (Offering ptd mod) ->
       case redeemer of
@@ -298,6 +275,7 @@ mkValidator datum redeemer context =
           ; let c = traceIfFalse "Too Many In/Out Error"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
           ;         traceIfFalse "Auctioning:Remove Error"    $ all (==(True :: Bool)) [a,b,c]
           }
+        
         -- | Transform the make offer tx ref info
         Transform -> 
           case getOutboundDatum contTxOutputs of
@@ -314,6 +292,8 @@ mkValidator datum redeemer context =
                 
                 -- other endpoints fail
                 _ -> False
+        
+        -- | Complete an offer with a specific swappable utxo.
         Complete ->  let txId = createTxOutRef (moTx mod) (moIdx mod)
           in case getDatumByTxId txId of
             Nothing            -> traceIfFalse "Offering:Complete:GetDatumByTxId" False
@@ -321,8 +301,7 @@ mkValidator datum redeemer context =
               case otherDatum of
                 (Swappable ptd' _ _) -> do
                   { let sellerPkh  = ptPkh ptd'
-                  ; let sellerSc   = ptSc ptd'
-                  ; let sellerAddr = createAddress sellerPkh sellerSc
+                  ; let sellerAddr = createAddress sellerPkh (ptSc ptd')
                   ; let a = traceIfFalse "Wrong Customer Signer" $ ContextsV2.txSignedBy info sellerPkh                           -- The seller must sign it 
                   ; let b = traceIfFalse "Offer Not Returned"    $ isAddrGettingPaidExactly txOutputs sellerAddr validatingValue -- token must go back to printer
                   ; let c = traceIfFalse "Single Script UTxO"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1             -- single script input
@@ -331,8 +310,10 @@ mkValidator datum redeemer context =
                 
                 -- anything else fails
                 _ -> False
-        -- other Offering endpoints fail
+        
+        -- | Other Offering endpoints fail
         _ -> False
+
     {- | Auctioning AuctionData
       
       Allows a UTxO to be auctioned for some amount of time. Successful auctions are
@@ -348,98 +329,10 @@ mkValidator datum redeemer context =
       
       echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
       # 1659817771786
-    -}
-    (Auctioning _) -> False --let currentBid = Value.singleton (aPid ad) (aTkn ad) (aPrice ad) in -- currentbid value
-      -- case redeemer of
-      --   -- | Remove the UTxO from the contract before the auction starts or after a failed auction.
-      --   Remove -> do
-      --     { let walletPkh  = aSellerPkh ad
-      --     ; let walletAddr = createAddress walletPkh (aSellerSc ad)
-      --     ; let lockTimeInterval = lockBetweenTimeInterval (aLockStart ad) (aLockEnd ad)
-      --     ; let auctionTimeInterval = lockBetweenTimeInterval (aStartTime ad) (aEndTime ad)
-      --     ; let txValidityRange  = ContextsV2.txInfoValidRange info
-      --     ; let a = traceIfFalse "Incorrect Tx Signer Error"  $ (aPrice ad) <= (aMinimum ad) && ContextsV2.txSignedBy info walletPkh -- no bids and wallet must sign it
-      --     ; let b = traceIfFalse "Value Not Returning Error"  $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue        -- wallet must get the utxo
-      --     ; let c = traceIfFalse "Time Lock Is Live Error"    $ isTxOutsideInterval lockTimeInterval txValidityRange                 -- wallet can unlock it
-      --     ; let d = traceIfFalse "Auction Lock Is Live Error" $ isTxOutsideInterval auctionTimeInterval txValidityRange              -- a wallet can unlock it
-      --     ; let e = traceIfFalse "Too Many In/Out Error"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0                   -- single input no cont output
-      --     ;         traceIfFalse "Auctioning:Remove Error"    $ all (==(True :: Bool)) [a,b,c,d,e]
-      --     }
-        
-      --   -- | Update that allows going back to the auctioning data or the swappable data.
-      --   (Update ptd) ->  let incomingValue = validatingValue + adaValue (pInc ptd) in 
-      --     case getOutboundDatumByValue contTxOutputs incomingValue of
-      --       Nothing            -> traceIfFalse "Auctioning:Update:GetOutboundDatum Error" False
-      --       Just outboundDatum ->
-      --         case outboundDatum of
-      --           -- go back to the swap state
-      --           (Swappable sd) -> do
-      --             { let walletPkh  = aSellerPkh ad
-      --             ; let auctionTimeInterval = lockBetweenTimeInterval (aStartTime ad) (aEndTime ad)
-      --             ; let txValidityRange  = ContextsV2.txInfoValidRange info
-      --             ; let a = traceIfFalse "Incorrect Tx Signer Error"  $ (aPrice ad) <= (aMinimum ad) && ContextsV2.txSignedBy info walletPkh -- no bids and wallet must sign it
-      --             ; let b = traceIfFalse "Auction Lock Is Live Error" $ isTxOutsideInterval auctionTimeInterval txValidityRange              -- a wallet can unlock it
-      --             ; let c = traceIfFalse "Datum Equality Error"       $ switchStates ad sd                                                   -- this retains walletship of the utxo
-      --             ; let d = traceIfFalse "Too Many In/Out Error"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                   -- single input no cont output
-      --             ;         traceIfFalse "Auctioning:Update:Swappable Error" $ all (==(True :: Bool)) [a,b,c,d]
-      --             }
-                
-      --           -- update current auction
-      --           (Auctioning ad') -> do
-      --             { let walletPkh  = aSellerPkh ad
-      --             ; let auctionTimeInterval = lockBetweenTimeInterval (aStartTime ad) (aEndTime ad)
-      --             ; let txValidityRange  = ContextsV2.txInfoValidRange info
-      --             ; let a = traceIfFalse "Incorrect Tx Signer Error"  $ (aPrice ad) <= (aMinimum ad) && ContextsV2.txSignedBy info walletPkh -- no bids and wallet must sign it
-      --             ; let b = traceIfFalse "Auction Lock Is Live Error" $ isTxOutsideInterval auctionTimeInterval txValidityRange              -- a wallet can unlock it
-      --             ; let c = traceIfFalse "Datum Update Error"         $ resetAuction ad ad'                                                  -- This allows updating auction data
-      --             ;         traceIfFalse "Auctioning:Update:Auctioning Error" $ all (==(True :: Bool)) [a,b,c]
-      --             }
 
-      --   -- | Make a Bid on an ongoing auction.
-      --   (Bid bd) -> let nextBid = Value.singleton (aPid ad) (aTkn ad) (bAmt bd) in  -- current next bid value
-      --     case getOutboundDatumByValue contTxOutputs (validatingValue - currentBid + nextBid) of
-      --       Nothing            -> traceIfFalse "Auction:Bid:GetOutboundDatum Error" False
-      --       Just outboundDatum ->
-      --         case outboundDatum of
-      --           -- go back to the auction state
-      --           (Auctioning ad') -> do
-      --             { let bidderAddr = createAddress (aBidderPkh ad) (aSellerSc ad)
-      --             ; let auctionTimeInterval = lockBetweenTimeInterval (aStartTime ad) (aEndTime ad)
-      --             ; let txValidityRange  = ContextsV2.txInfoValidRange info
-      --             ; let a = traceIfFalse "The Auction Is Not Live" $ isTxInsideInterval auctionTimeInterval txValidityRange                                 -- must be inside the auction range
-      --             ; let b = traceIfFalse "Old Bid Not Returning"   $ (aPrice ad <= aMinimum ad) || isAddrGettingPaidExactly txOutputs bidderAddr currentBid -- pass if no bid else send back old bid
-      --             ; let c = traceIfFalse "Bid Must Increase Price" $ bAmt bd == aPrice ad'                                                                  -- must equal the value inside the new datum
-      --             ; let d = traceIfFalse "Datum Update Error"      $ auctionBidCheck ad ad'                                                                 -- this applies the bid equality
-      --             ;         traceIfFalse "Auctioning:Bid:Auctioning Error" $ all (==True) [a,b,c,d]
-      --             }
-      --           -- other datums fail
-      --           _ -> traceIfFalse "Auctioning:Bid:Undefined Datum Error" False
-        
-      --   -- | Complete a finished auction.
-      --   Complete ->
-      --     case getOutboundDatumByValue contTxOutputs (validatingValue - currentBid) of
-      --       Nothing            -> traceIfFalse "Auctioning:Complete:GetOutboundDatum Error" False
-      --       Just outboundDatum ->
-      --         case outboundDatum of
-      --           -- go back to the swap state
-      --           (Swappable sd) -> do
-      --             { let walletPkh  = aSellerPkh ad
-      --             ; let walletAddr = createAddress walletPkh (aSellerSc ad)
-      --             ; let auctionTimeInterval = lockBetweenTimeInterval (aStartTime ad) (aEndTime ad)
-      --             ; let txValidityRange  = ContextsV2.txInfoValidRange info
-      --             ; let a = traceIfFalse "Incorrect Tx Signer Error" $ (aPrice ad) > (aMinimum ad)                              -- someone had to bid
-      --             ; let b = traceIfFalse "Time Lock Is Live Error"   $ isTxOutsideInterval auctionTimeInterval txValidityRange  -- not time locked
-      --             ; let c = traceIfFalse "Datum Equality Error"      $ successfulAuction ad sd                                  -- datum changes correctly
-      --             ; let d = traceIfFalse "Correct wallet Error"      $ aBidderPkh ad == sPkh sd                                 -- correct walletship change
-      --             ; let e = traceIfFalse "Bid Not Returning"         $ isAddrGettingPaidExactly txOutputs walletAddr currentBid -- wallet gets paid
-      --             ;         traceIfFalse "Auctioning:Complete:Swappable Error" $ all (==(True :: Bool)) [a,b,c,d,e]
-      --             }
-                
-      --           -- other datums fail
-      --           _ -> traceIfFalse "Auctioning:Complete:Undefined Datum Error" False
-        
-      --   -- | Other redeemers fail.
-      --   _ -> traceIfFalse "Auctioning:Undefined Redeemer Error" False
+      TODO
+    -}
+    (Auctioning _) -> False
   --
   where
     info :: PlutusV2.TxInfo
@@ -473,74 +366,6 @@ mkValidator datum redeemer context =
           { PlutusV2.txOutRefId  = PlutusV2.TxId { PlutusV2.getTxId = txHash }
           , PlutusV2.txOutRefIdx = index
           }
-
-    -- if time locked, only update sale else update sale and timelock.
-    checkIfTimeCanChange :: SwappableData -> SwappableData -> Bool
-    checkIfTimeCanChange sd sd' = (       (isTxOutsideInterval lockTimeInterval txValidityRange == True) && (priceUpdateWithTimeCheck sd sd' == True) ) || -- is not time locked
-                                  ( (not $ isTxOutsideInterval lockTimeInterval txValidityRange == True) && (priceUpdateCheck         sd sd' == True) )    -- is time locked
-      where
-        lockTimeInterval :: PlutusV2.Interval PlutusV2.POSIXTime
-        lockTimeInterval = lockBetweenTimeInterval (sStart sd) (sEnd sd)
-
-        txValidityRange :: PlutusV2.POSIXTimeRange
-        txValidityRange = ContextsV2.txInfoValidRange info
-
-    -- checkIfInputIsHolding :: SwappableData -> Bool
-    -- checkIfInputIsHolding inDatum =
-    --   case getOtherInputValue txInputs inDatum of
-    --     Nothing         -> traceIfFalse "cant find input value" False
-    --     Just otherValue -> traceIfFalse "value equality error" $ isIntegerInRange (sAmt inDatum) (sSlip inDatum) (target otherValue)
-    --   where
-    --     target :: PlutusV2.Value -> Integer
-    --     target otherValue = Value.valueOf otherValue (sPid inDatum) (sTkn inDatum)
-
-    -- getOtherInputValue :: [PlutusV2.TxInInfo] -> SwappableData -> Maybe PlutusV2.Value
-    -- getOtherInputValue utxos sData = loopInputs utxos
-    --   where
-    --     loopInputs :: [PlutusV2.TxInInfo] -> Maybe PlutusV2.Value
-    --     loopInputs []     = Nothing
-    --     loopInputs (x:xs) =
-    --       case PlutusV2.txOutDatum $ PlutusV2.txInInfoResolved x of
-    --         PlutusV2.NoOutputDatum       -> loopInputs xs
-    --         (PlutusV2.OutputDatumHash _) -> loopInputs xs
-    --         -- inline datum only
-    --         (PlutusV2.OutputDatum (PlutusV2.Datum d)) ->
-    --           case PlutusTx.fromBuiltinData d of
-    --             Nothing     -> loopInputs xs
-    --             Just inline -> let dataObj = PlutusTx.unsafeFromBuiltinData @CustomDatumType inline in
-    --               case dataObj of
-    --                 (Swappable sData') ->
-    --                   if sPkh sData /= sPkh sData'
-    --                     then Just $ PlutusV2.txOutValue $ PlutusV2.txInInfoResolved x
-    --                     else loopInputs xs
-    --                 _  -> loopInputs xs
-
-    -- checkCombineDatum :: SwappableData -> SwappableData -> Bool
-    -- checkCombineDatum inDatum outDatum =
-    --   case getOtherInputDatum txInputs inDatum of
-    --     Nothing         -> traceIfFalse "cant find input datum" False
-    --     Just otherDatum -> traceIfFalse "pkh equality error" $ sPkh outDatum == sPkh otherDatum
-        
-    -- getOtherInputDatum :: [PlutusV2.TxInInfo] -> SwappableData -> Maybe SwappableData
-    -- getOtherInputDatum utxos sData = loopInputs utxos
-    --   where
-    --     loopInputs :: [PlutusV2.TxInInfo] -> Maybe SwappableData
-    --     loopInputs []     = Nothing
-    --     loopInputs (x:xs) =
-    --       case PlutusV2.txOutDatum $ PlutusV2.txInInfoResolved x of
-    --         PlutusV2.NoOutputDatum       -> loopInputs xs
-    --         (PlutusV2.OutputDatumHash _) -> loopInputs xs
-    --         -- inline datum only
-    --         (PlutusV2.OutputDatum (PlutusV2.Datum d)) ->
-    --           case PlutusTx.fromBuiltinData d of
-    --             Nothing     -> loopInputs xs
-    --             Just inline -> let dataObj = PlutusTx.unsafeFromBuiltinData @CustomDatumType inline in
-    --               case dataObj of
-    --                 (Swappable sData') ->
-    --                   if sPkh sData /= sPkh sData'
-    --                     then Just sData'
-    --                     else loopInputs xs
-    --                 _  -> loopInputs xs
 
     getOutboundDatumByValue :: [PlutusV2.TxOut] -> PlutusV2.Value -> Maybe CustomDatumType
     getOutboundDatumByValue []     _   = Nothing
