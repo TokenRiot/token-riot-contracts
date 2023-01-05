@@ -9,7 +9,12 @@
         },
         {
           "bytes": ""
-        },
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
         {
           "bytes": ""
         },
@@ -18,10 +23,12 @@
         },
         {
           "int": 0
-        },
-        {
-          "int": 0
-        },
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
         {
           "int": 0
         },

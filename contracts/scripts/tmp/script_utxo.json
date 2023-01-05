@@ -1,6 +1,6 @@
 {
-    "9042940fbf4fe55230a82e1a9895d4409088aebf6bfa1f77b03c6f1f3eee1d76#0": {
-        "address": "addr_test1xzk0uuapx5wkjv4qmajgmazcqz2m06ay9cweu8edmw24llxcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqtc3zqv",
+    "bbdce1d468baa6ea27112ebb4d468af79bc9bb7a2acb3e8e9c669267cd4cf635#0": {
+        "address": "addr_test1xpkcltru5fgs8wuvmzun7dlekmw2563k0al0nkllcyp4wa7cns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqze2z5h",
         "datum": null,
         "inlineDatum": {
             "constructor": 0,
@@ -13,7 +13,12 @@
                         },
                         {
                             "bytes": ""
-                        },
+                        }
+                    ]
+                },
+                {
+                    "constructor": 0,
+                    "fields": [
                         {
                             "bytes": "f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea"
                         },
@@ -22,10 +27,12 @@
                         },
                         {
                             "int": 12345
-                        },
-                        {
-                            "int": 0
-                        },
+                        }
+                    ]
+                },
+                {
+                    "constructor": 0,
+                    "fields": [
                         {
                             "int": 0
                         },
@@ -36,13 +43,13 @@
                 }
             ]
         },
-        "inlineDatumhash": "bd36432cddff3c5a70a36a085eaeb8860edf20e7dbe7921c1a0f367fc0587b9d",
+        "inlineDatumhash": "9b6405bcb41f8f3817e15a7a345613b7e9d39a34d506bb5235ba4b83bf698be3",
         "referenceScript": null,
         "value": {
             "29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee": {
                 "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730": 1
             },
-            "lovelace": 1771410
+            "lovelace": 1801580
         }
     }
 }

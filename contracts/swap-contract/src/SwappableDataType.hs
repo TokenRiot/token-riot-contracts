@@ -34,7 +34,11 @@ module SwappableDataType
   , proveOwnership
   , SwappableData (..)
   , PayToData (..)
+  , PaymentData (..)
+  , TimeData (..)
+  , checkValidTimeLock
   , ADAIncData (..)
+  , MakeOfferData (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -110,7 +114,39 @@ successfulAuction a b = ( aSellerPkh a /= sPkh   b ) &&
                         ( aLockStart a == sStart b ) &&
                         ( aLockEnd   a == sEnd   b )
 -------------------------------------------------------------------------------
--- | Pay To Data Offer
+-- | Time Data Object
+-------------------------------------------------------------------------------
+data TimeData = TimeData
+  { tStart :: Integer
+  -- ^ starting time
+  , tEnd   :: Integer
+  -- ^ ending time
+  }
+PlutusTx.unstableMakeIsData ''TimeData
+-- old == new
+instance Eq TimeData where
+  {-# INLINABLE (==) #-}
+  a == b = ( tStart a == tStart b ) &&
+           ( tEnd   a == tEnd   b )
+-- a is old; b is new
+checkValidTimeLock :: TimeData -> TimeData -> Bool
+checkValidTimeLock a b =  ( tStart a <= tStart b ) && -- can only increase or remain constant
+                          ( tStart b <= tEnd   b ) && -- must be less than or equal to end
+                          ( tEnd   a <= tEnd   b )    -- can only increase or remain constant
+-------------------------------------------------------------------------------
+-- | Payment Data
+-------------------------------------------------------------------------------
+data PaymentData = PaymentData
+  { pPid   :: PlutusV2.CurrencySymbol
+  -- ^ flatrate payment policy id
+  , pTkn   :: PlutusV2.TokenName
+  -- ^ flatrate payment token name
+  , pAmt   :: Integer
+  -- ^ flaterate payment token amount
+  }
+PlutusTx.unstableMakeIsData ''PaymentData
+-------------------------------------------------------------------------------
+-- | Pay To Data
 -------------------------------------------------------------------------------
 data PayToData = PayToData
   { ptPkh :: PlutusV2.PubKeyHash
@@ -119,6 +155,11 @@ data PayToData = PayToData
   -- ^ pay to this stake key
   }
 PlutusTx.unstableMakeIsData ''PayToData
+
+instance Eq PayToData where
+  {-# INLINABLE (==) #-}
+  a == b = ( ptPkh a == ptPkh b ) &&
+           ( ptSc  a == ptSc  b )
 
 proveOwnership :: PayToData -> SwappableData -> Bool
 proveOwnership a b = ( ptPkh a == sPkh b ) && 
@@ -131,3 +172,13 @@ data ADAIncData = ADAIncData
   -- ^ The increase in the required minimum lovelace .
   }
 PlutusTx.unstableMakeIsData ''ADAIncData
+-------------------------------------------------------------------------------
+-- | Make Offer Data Object
+-------------------------------------------------------------------------------
+data MakeOfferData = MakeOfferData
+  { moTx    :: PlutusV2.BuiltinByteString
+  -- ^ The tx hash of the other utxo being swapped.
+  , moIdx   :: Integer
+  -- ^ The index of the tx hash.
+  }
+PlutusTx.unstableMakeIsData ''MakeOfferData

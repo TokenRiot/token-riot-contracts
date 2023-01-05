@@ -1,12 +1,12 @@
 {
-    "9042940fbf4fe55230a82e1a9895d4409088aebf6bfa1f77b03c6f1f3eee1d76#1": {
+    "bbdce1d468baa6ea27112ebb4d468af79bc9bb7a2acb3e8e9c669267cd4cf635#1": {
         "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
         "datum": null,
         "datumhash": null,
         "inlineDatum": null,
         "referenceScript": null,
         "value": {
-            "lovelace": 28431369323
+            "lovelace": 28429242143
         }
     }
 }

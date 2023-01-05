@@ -48,7 +48,6 @@ library
   exposed-modules:      SwapContract
                         SwappableDataType
                         AuctionDataType
-                        OfferDataType
 
   build-depends:        bytestring
                       , cardano-api
