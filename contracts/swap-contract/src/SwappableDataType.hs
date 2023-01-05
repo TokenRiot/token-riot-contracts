@@ -32,6 +32,7 @@ module SwappableDataType
   , checkValidTimeLock
   , ADAIncData (..)
   , MakeOfferData (..)
+  , SpecificToken (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -59,12 +60,14 @@ instance Eq PayToData where
 -- | Payment Data
 -------------------------------------------------------------------------------
 data PaymentData = PaymentData
-  { pPid   :: PlutusV2.CurrencySymbol
+  { pPid :: PlutusV2.CurrencySymbol
   -- ^ flatrate payment policy id
-  , pTkn   :: PlutusV2.TokenName
+  , pTkn :: PlutusV2.TokenName
   -- ^ flatrate payment token name
-  , pAmt   :: Integer
+  , pAmt :: Integer
   -- ^ flaterate payment token amount
+  , pAny :: Integer
+  -- ^ A flag that allows any token to from a pid to be used.
   }
 PlutusTx.unstableMakeIsData ''PaymentData
 -------------------------------------------------------------------------------
@@ -106,3 +109,8 @@ data MakeOfferData = MakeOfferData
   -- ^ The index of the tx hash.
   }
 PlutusTx.unstableMakeIsData ''MakeOfferData
+-------------------------------------------------------------------------------
+-- | Specific Token Data Object
+-------------------------------------------------------------------------------
+data SpecificToken = SpecificToken { sTkn :: PlutusV2.TokenName }
+PlutusTx.unstableMakeIsData ''SpecificToken

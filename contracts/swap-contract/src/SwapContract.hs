@@ -59,17 +59,17 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove                             |
-                          FlatRate  PayToData ADAIncData     |
-                          Offer     ADAIncData MakeOfferData |
-                          SwapUTxO  PayToData                |
-                          Update    ADAIncData               |
-                          Bid       BidData                  |
-                          Complete                           |
-                          OrderBook                          |
-                          Transform                          |
-                          FRRemove  PayToData                |
-                          ORemove   MakeOfferData            |
+data CustomRedeemerType = Remove                                       |
+                          FlatRate  PayToData ADAIncData SpecificToken |
+                          Offer     ADAIncData MakeOfferData           |
+                          SwapUTxO  PayToData                          |
+                          Update    ADAIncData                         |
+                          Bid       BidData                            |
+                          Complete                                     |
+                          OrderBook                                    |
+                          Transform                                    |
+                          FRRemove  PayToData SpecificToken            |
+                          ORemove   MakeOfferData                      |
                           Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
@@ -93,7 +93,7 @@ mkValidator datum redeemer context =
   case datum of
     {- | Swappable SwappableData
 
-      Different ways to swap utxo walletship.
+      Different ways to swap UTxO walletship.
 
       Redeemers will determine the type of swap being used. Unless the UTxO is being
       explicity removed, the UTxO is assumed to be continuing inside the contract.
@@ -148,7 +148,7 @@ mkValidator datum redeemer context =
                   ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
                   }
 
-                -- A trader may update their utxo into an auction.
+                -- A trader may update their UTxO into an auction.
                 -- TODO
                 (Auctioning _) -> False
 
@@ -162,7 +162,7 @@ mkValidator datum redeemer context =
           ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
           ; let txValidityRange  = ContextsV2.txInfoValidRange info
           ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- seller must sign it
-          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- seller must get the utxo
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- seller must get the UTxO
           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single tx going in, no continue
           ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange          -- seller can unlock it
           ;         traceIfFalse "Swappable:Remove"    $ all (==(True :: Bool)) [a,b,c,d]
@@ -176,15 +176,16 @@ mkValidator datum redeemer context =
         -- TODO
         (SwapUTxO _) -> False
 
-        -- | Flat rate swap of utxo for an predefined amount of a single token.
-        (FlatRate ptd' aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
+        -- | Flat rate swap of UTxO for an predefined amount of a single token.
+        (FlatRate ptd' aid st) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
           case getOutboundDatumByValue contTxOutputs incomingValue of
             Nothing            -> traceIfFalse "Swappable:FlatRate:getOutboundDatumByValue" False
             Just outboundDatum ->
               case outboundDatum of
                 (Swappable ptd'' _ td') -> do
                   { let sellerAddr = createAddress (ptPkh ptd) (ptSc ptd)
-                  ; let a = traceIfFalse "Payment Not Made"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) (pTkn pd) (pAmt pd) -- seller must be paid
+                  ; let sTKN = if (pAny pd == 0) then (pTkn pd) else (sTkn st)
+                  ; let a = traceIfFalse "Payment Not Made"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) sTKN (pAmt pd) -- seller must be paid
                   ; let b = traceIfFalse "Ownership Change"    $ (ptd /= ptd'') && (ptd' == ptd'') && (td == td')                             -- seller change but remain locked
                   ; let c = traceIfFalse "Empty Payment Value" $ (pAmt pd) /= 0                                                               -- seller must define price
                   ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                           -- single tx going in, single going out
@@ -195,22 +196,23 @@ mkValidator datum redeemer context =
                 -- other datums fail
                 _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
         
-        -- | Flat rate purchase into buyer wallet of utxo for an predefined amount of a single token.
-        (FRRemove ptd') -> do
+        -- | Flat rate purchase into buyer wallet of UTxO for an predefined amount of a single token.
+        (FRRemove ptd' st) -> do
           { let sellerAddr       = createAddress (ptPkh ptd)  (ptSc ptd)
           ; let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
           ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd')                                       -- buyer must sign
-          ; let b = traceIfFalse "Payment Not Paid"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) (pTkn pd) (pAmt pd) -- seller must be paid
+          ; let sTKN = if (pAny pd == 0) then (pTkn pd) else (sTkn st)
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd')                                      -- buyer must sign
+          ; let b = traceIfFalse "Payment Not Paid"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) sTKN (pAmt pd) -- seller must be paid
           ; let c = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue                 -- buyer must be paid
           ; let d = traceIfFalse "Empty Payment Value" $ (pAmt pd) /= 0                                                               -- seller must define price
           ; let e = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0                           -- single tx going in, no continue
-          ; let f = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange                         -- seller can unlock utxo
+          ; let f = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange                         -- seller can unlock UTxO
           ;         traceIfFalse "Swappable:FRRemove"  $ all (==(True :: Bool)) [a,b,c,d,e,f]
           }
 
-        -- | Offer to change walletship of utxo for some amount of a single token + extras.
+        -- | Offer to change walletship of UTxO for some amount of a single token + extras.
         (Offer aid mod) -> let txId = createTxOutRef (moTx mod) (moIdx mod)
           in case getDatumByTxId txId of
             Nothing            -> traceIfFalse "Swappable:Offer:GetDatumByTxId" False
@@ -260,8 +262,11 @@ mkValidator datum redeemer context =
     {- | Offering OfferData
 
       Allows many users to store their offers inside the contract for some offer trade to occur. An offerer may remove their current offers or
-      transform their offer into a new offer. To ensure that a specific offer goes to a specific utxo, the TxID needs to attached of the utxo
+      transform their offer into a new offer. To ensure that a specific offer goes to a specific UTxO, the TxID needs to attached of the UTxO
       an offerer is making an offer.
+
+      The TxId in the Offering datum is the TxId of the UTxO that an offer is being made on. If the TxId changes then the offerer will need to
+      transform their offer to account for TxId change.
 
     -}
     (Offering ptd mod) ->
@@ -271,7 +276,7 @@ mkValidator datum redeemer context =
           { let walletPkh  = ptPkh ptd
           ; let walletAddr = createAddress walletPkh (ptSc ptd)
           ; let a = traceIfFalse "Incorrect Tx Signer Error"  $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
-          ; let b = traceIfFalse "Value Not Returning Error"  $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the utxo
+          ; let b = traceIfFalse "Value Not Returning Error"  $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the UTxO
           ; let c = traceIfFalse "Too Many In/Out Error"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
           ;         traceIfFalse "Auctioning:Remove Error"    $ all (==(True :: Bool)) [a,b,c]
           }
@@ -293,7 +298,7 @@ mkValidator datum redeemer context =
                 -- other endpoints fail
                 _ -> False
         
-        -- | Complete an offer with a specific swappable utxo.
+        -- | Complete an offer with a specific swappable UTxO.
         Complete ->  let txId = createTxOutRef (moTx mod) (moIdx mod)
           in case getDatumByTxId txId of
             Nothing            -> traceIfFalse "Offering:Complete:GetDatumByTxId" False
@@ -302,9 +307,9 @@ mkValidator datum redeemer context =
                 (Swappable ptd' _ _) -> do
                   { let sellerPkh  = ptPkh ptd'
                   ; let sellerAddr = createAddress sellerPkh (ptSc ptd')
-                  ; let a = traceIfFalse "Wrong Customer Signer" $ ContextsV2.txSignedBy info sellerPkh                           -- The seller must sign it 
+                  ; let a = traceIfFalse "Wrong Customer Signer" $ ContextsV2.txSignedBy info sellerPkh                          -- The seller must sign it 
                   ; let b = traceIfFalse "Offer Not Returned"    $ isAddrGettingPaidExactly txOutputs sellerAddr validatingValue -- token must go back to printer
-                  ; let c = traceIfFalse "Single Script UTxO"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1             -- single script input
+                  ; let c = traceIfFalse "Single Script UTxO"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1            -- single script input
                   ;         traceIfFalse "Offering:Complete"     $ all (==(True :: Bool)) [a,b,c]
                   }
                 
@@ -355,9 +360,7 @@ mkValidator datum redeemer context =
         Nothing    -> traceError "No Input to Validate." -- This error should never be hit.
         Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
     
-    -------------------------------------------------------------------------------
-    -- | Create a TxOutRef from the tx hash and index.
-    -------------------------------------------------------------------------------
+    -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
     createTxOutRef txHash index = txId
       where
