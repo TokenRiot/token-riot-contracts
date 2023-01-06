@@ -98,7 +98,7 @@ mkValidator datum redeemer context =
       Redeemers will determine the type of swap being used. Unless the UTxO is being
       explicity removed, the UTxO is assumed to be continuing inside the contract.
 
-      User's are allowed to update and remove their utxos at will.
+      User's are allowed to update and remove their utxos at will if not time locked.
 
       To Lock some UTxO for some pre-defined interval of time. The datum expects
       input integers that are greater than or equal to zero.
@@ -119,7 +119,7 @@ mkValidator datum redeemer context =
             Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
             Just outboundDatum ->
               case outboundDatum of
-                -- only can transform into the swap state
+                -- transform a swappable utxo
                 (Swappable ptd' _ td') -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
                   ; let txValidityRange  = ContextsV2.txInfoValidRange info
@@ -131,6 +131,16 @@ mkValidator datum redeemer context =
                   ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d,e]
                   }
 
+                -- transform utxo into an offer
+                (Offering ptd' _) -> do
+                  { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
+                  ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
+                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
+                  }
                 -- other datums fail
                 _ -> traceIfFalse "Swappable:Transform:Undefined Datum" False
         
@@ -182,6 +192,7 @@ mkValidator datum redeemer context =
             Nothing            -> traceIfFalse "Swappable:FlatRate:getOutboundDatumByValue" False
             Just outboundDatum ->
               case outboundDatum of
+                -- swappable only
                 (Swappable ptd'' _ td') -> do
                   { let sellerAddr = createAddress (ptPkh ptd) (ptSc ptd)
                   ; let thisTkn    = getTokenName pd st
@@ -218,11 +229,13 @@ mkValidator datum redeemer context =
             Nothing         -> traceIfFalse "Swappable:Offer:GetDatumByTxId" False
             Just otherDatum ->
               case otherDatum of
+                -- offering only
                 (Offering ptd' _) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
                   case getOutboundDatumByValue contTxOutputs incomingValue of
                     Nothing            -> traceIfFalse "Swappable:Offer:getOutboundDatumByValue" False
                     Just outboundDatum ->
                       case outboundDatum of
+                        -- cont into swappable only
                         (Swappable ptd'' _ td') -> do
                           { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
                           ; let b = traceIfFalse "Datum Equality"      $ (ptd /= ptd'') && (ptd' == ptd'') && (td == td')   -- seller change but remain locked
@@ -242,6 +255,7 @@ mkValidator datum redeemer context =
             Nothing         -> traceIfFalse "Swappable:OfferRemove:GetDatumByTxId" False
             Just otherDatum ->
               case otherDatum of
+                -- offering only
                 (Offering ptd' _) -> do
                   { let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
                   ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
@@ -261,12 +275,14 @@ mkValidator datum redeemer context =
     
     {- | Offering OfferData
 
-      Allows many users to store their offers inside the contract for some offer trade to occur. An offerer may remove their current offers or
-      transform their offer into a new offer. To ensure that a specific offer goes to a specific UTxO, the TxID needs to attached of the UTxO
-      an offerer is making an offer.
+      Allows many users to store their offers inside the contract for some offer 
+      trade to occur. An offerer may remove their current offers or transform their
+      offer into a new offer. To ensure that a specific offer goes to a specific 
+      UTxO, the TxID needs to attached of the UTxO an offerer is making an offer.
 
-      The TxId in the Offering datum is the TxId of the UTxO that an offer is being made on. If the TxId changes then the offerer will need to
-      transform their offer to account for TxId change.
+      The TxId in the Offering datum is the TxId of the UTxO that an offer is 
+      being made on. If the TxId changes then the offerer will need to transform
+      their offer to account for TxId change.
 
     -}
     (Offering ptd mod) ->
@@ -287,12 +303,21 @@ mkValidator datum redeemer context =
             Nothing            -> traceIfFalse "Offering:Transform:GetOutboundDatum" False
             Just outboundDatum ->
               case outboundDatum of
-                -- swap update
+                -- offering only
                 (Offering ptd' _) -> do
                   { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
                   ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
                   ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c]
+                  }
+                
+                -- offer into a swappable
+                (Swappable ptd' _ td') -> do
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
+                  ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
+                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d,e]
                   }
                 
                 -- other endpoints fail
@@ -304,6 +329,7 @@ mkValidator datum redeemer context =
             Nothing         -> traceIfFalse "Offering:Complete:GetDatumByTxId" False
             Just otherDatum ->
               case otherDatum of
+                -- swappable only
                 (Swappable ptd' _ _) -> do
                   { let sellerPkh  = ptPkh ptd'
                   ; let sellerAddr = createAddress sellerPkh (ptSc ptd')
@@ -343,7 +369,6 @@ mkValidator datum redeemer context =
     info :: PlutusV2.TxInfo
     info = ContextsV2.scriptContextTxInfo  context
 
-    -- inputs outputs
     txOutputs :: [PlutusV2.TxOut]
     txOutputs = ContextsV2.txInfoOutputs info
 
@@ -353,11 +378,10 @@ mkValidator datum redeemer context =
     contTxOutputs :: [PlutusV2.TxOut]
     contTxOutputs = ContextsV2.getContinuingOutputs context
 
-    -- what is currently being spent
     validatingValue :: PlutusV2.Value
     validatingValue =
       case ContextsV2.findOwnInput context of
-        Nothing    -> traceError "No Input to Validate." -- This error should never be hit.
+        Nothing    -> traceError "No Input to Validate."
         Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
     
     getTokenName :: PaymentData -> SpecificToken -> PlutusV2.TokenName

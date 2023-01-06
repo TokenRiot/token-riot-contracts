@@ -30,6 +30,7 @@ module SwappableDataType
   , PaymentData (..)
   , TimeData (..)
   , checkValidTimeLock
+  , checkValidTimeData
   , ADAIncData (..)
   , MakeOfferData (..)
   , SpecificToken (..)
@@ -91,6 +92,10 @@ checkValidTimeLock :: TimeData -> TimeData -> Bool
 checkValidTimeLock a b =  ( tStart a <= tStart b ) && -- can only increase or remain constant
                           ( tStart b <= tEnd   b ) && -- must be less than or equal to end
                           ( tEnd   a <= tEnd   b )    -- can only increase or remain constant
+
+-- check a time data
+checkValidTimeData :: TimeData -> Bool
+checkValidTimeData a = ( tStart a <= tEnd a )
 -------------------------------------------------------------------------------
 -- | ADA Increase Data Object
 -------------------------------------------------------------------------------
