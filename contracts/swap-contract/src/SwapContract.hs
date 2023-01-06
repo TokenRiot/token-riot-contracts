@@ -436,7 +436,34 @@ mkValidator datum redeemer context =
                 _ -> traceIfFalse "Auctioning:Update:Undefined Datum" False
 
         -- | Offer the auction for some selected bid
-        (Offer _ _) -> False
+        (Offer aid mod) -> let txId = createTxOutRef (moTx mod) (moIdx mod)
+          in case getDatumByTxId txId of
+            Nothing         -> traceIfFalse "Auctioning:Offer:GetDatumByTxId" False
+            Just otherDatum ->
+              case otherDatum of
+                -- offering only
+                (Bidding ptd' _) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
+                  case getOutboundDatumByValue contTxOutputs incomingValue of
+                    Nothing            -> traceIfFalse "Auctioning:Offer:getOutboundDatumByValue" False
+                    Just outboundDatum ->
+                      case outboundDatum of
+                        -- cont into swappable only
+                        (Swappable ptd'' pd' td') -> do
+                          { let auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
+                          ; let txValidityRange     = ContextsV2.txInfoValidRange info
+                          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)                  -- seller must sign it
+                          ; let b = traceIfFalse "Datum Equality"      $ (ptd /= ptd'') && (ptd' == ptd'') && (gtd == td')       -- seller change but remain locked
+                          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1      -- two tx going in, single going out
+                          ; let d = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                                   -- payment data must be default
+                          ; let e = traceIfFalse "Auction Is Live"     $ isTxOutsideInterval auctionTimeInterval txValidityRange -- a wallet can unlock it
+                          ;         traceIfFalse "Auctioning:Offer"    $ all (==(True :: Bool)) [a,b,c,d,e]
+                          }
+
+                        -- other datums fail
+                        _ -> traceIfFalse "Auctioning:Offer:Undefined Datum" False
+                
+                -- anything else fails
+                _ -> traceIfFalse "Auctioning:Offering:Undefined Datum" False
 
         -- Other redeemers fail
         _ -> traceIfFalse "Auctioning:Undefined Redeemer" False
