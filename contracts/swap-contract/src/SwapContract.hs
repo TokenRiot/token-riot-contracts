@@ -317,7 +317,7 @@ mkValidator datum redeemer context =
                   ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
-                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d,e]
+                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
                   }
                 
                 -- other endpoints fail

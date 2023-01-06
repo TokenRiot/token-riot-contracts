@@ -1,6 +1,6 @@
 {
-    "7baea32c6c4a893c736e65fa03f19962e08fd4d996218288e126e71d128c9e13#0": {
-        "address": "addr_test1xzg5qlvj2vvv6ypr9zgf6y4ksx5wyp3g0wdnqmtln74777xcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqe7wy0q",
+    "a8f204700ffd502eb8a063acf7c829275b2c38e58d772f461f51bacea6b2660e#0": {
+        "address": "addr_test1xr46kfwy7yxp6s30jm9eqgclj93hr9wu3w6r8fjdmmngaywcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqatkjew",
         "datum": null,
         "inlineDatum": {
             "constructor": 0,
@@ -53,45 +53,6 @@
                 "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730": 1
             },
             "lovelace": 1805890
-        }
-    },
-    "a6bd580eacd51762f59a3a6539b3f65e33a38019f5736e6d071ddd891eac0eaf#0": {
-        "address": "addr_test1xzg5qlvj2vvv6ypr9zgf6y4ksx5wyp3g0wdnqmtln74777xcns7gfqfjmlcm0mp27f89jwahzs2xrw0vadw56z8rxdrqe7wy0q",
-        "datum": null,
-        "inlineDatum": {
-            "constructor": 2,
-            "fields": [
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "bytes": "db7bffc41a43c4d9c31342e3fd457409aeb40302aa52058df374913b"
-                        },
-                        {
-                            "bytes": ""
-                        }
-                    ]
-                },
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "bytes": "7baea32c6c4a893c736e65fa03f19962e08fd4d996218288e126e71d128c9e13"
-                        },
-                        {
-                            "int": 0
-                        }
-                    ]
-                }
-            ]
-        },
-        "inlineDatumhash": "296c9c205a988ffe2adc4c2f0c54162f7be0fe9767f835c535ddf4158b08f508",
-        "referenceScript": null,
-        "value": {
-            "f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea": {
-                "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739": 12345
-            },
-            "lovelace": 1646420
         }
     }
 }

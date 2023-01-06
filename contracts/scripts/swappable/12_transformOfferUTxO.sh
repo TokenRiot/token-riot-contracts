@@ -92,12 +92,12 @@ FEE=$(${cli} transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/transform-redeemer.json \
     --tx-out="${script_address_out}" \
-    --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json  \
+    --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json  \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${buyer_pkh} \
     --testnet-magic ${testnet_magic})
 
-    # --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json  \
+    # --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json  \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
