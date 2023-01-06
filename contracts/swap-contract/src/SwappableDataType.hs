@@ -28,12 +28,15 @@
 module SwappableDataType
   ( PayToData (..)
   , PaymentData (..)
+  , defaultPayment
   , TimeData (..)
   , checkValidTimeLock
   , checkValidTimeData
   , ADAIncData (..)
   , MakeOfferData (..)
   , SpecificToken (..)
+  , getTokenName
+  , OfferFlagData (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -71,6 +74,21 @@ data PaymentData = PaymentData
   -- ^ A flag that allows any token to from a pid to be used.
   }
 PlutusTx.unstableMakeIsData ''PaymentData
+
+instance Eq PaymentData where
+  {-# INLINABLE (==) #-}
+  a == b = ( pPid a == pPid b ) &&
+           ( pTkn a == pTkn b ) &&
+           ( pAmt a == pAmt b ) &&
+           ( pAny a == pAny b )
+
+defaultPayment :: PaymentData
+defaultPayment = PaymentData
+  { pPid = PlutusV2.CurrencySymbol { PlutusV2.unCurrencySymbol = emptyByteString }
+  , pTkn = PlutusV2.TokenName { PlutusV2.unTokenName = emptyByteString }
+  , pAmt = 0
+  , pAny = 0
+  }
 -------------------------------------------------------------------------------
 -- | Time Data Object
 -------------------------------------------------------------------------------
@@ -122,3 +140,17 @@ data SpecificToken = SpecificToken
   -- ^^ The specific token name being used in the flatrate swap.
   }
 PlutusTx.unstableMakeIsData ''SpecificToken
+
+getTokenName :: PaymentData -> SpecificToken -> PlutusV2.TokenName
+getTokenName pay tkn =
+  if pAny pay == 0
+    then pTkn pay
+    else sTkn tkn
+-------------------------------------------------------------------------------
+-- | Offer Flag Data Object
+-------------------------------------------------------------------------------
+data OfferFlagData = OfferFlagData
+  { oFlag :: Integer
+  -- ^ The flag to indicate if the trade should remain in the contract
+  }
+PlutusTx.unstableMakeIsData ''OfferFlagData

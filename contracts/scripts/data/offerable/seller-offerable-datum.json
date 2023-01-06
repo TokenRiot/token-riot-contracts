@@ -22,6 +22,14 @@
           "int": 0
         }
       ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "int": 0
+        }
+      ]
     }
   ]
 }

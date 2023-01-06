@@ -49,9 +49,9 @@ import           UsefulFuncs
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
-data CustomDatumType =  Swappable  PayToData PaymentData TimeData |
-                        Auctioning AuctionData                    |
-                        Offering   PayToData MakeOfferData
+data CustomDatumType =  Swappable  PayToData PaymentData TimeData        |
+                        Auctioning AuctionData                           |
+                        Offering   PayToData MakeOfferData OfferFlagData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
                                               , ( 'Offering,   2 )
@@ -132,7 +132,7 @@ mkValidator datum redeemer context =
                   }
 
                 -- transform utxo into an offer
-                (Offering ptd' _) -> do
+                (Offering ptd' _ _) -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
                   ; let txValidityRange  = ContextsV2.txInfoValidRange info
                   ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
@@ -230,22 +230,23 @@ mkValidator datum redeemer context =
             Just otherDatum ->
               case otherDatum of
                 -- offering only
-                (Offering ptd' _) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
+                (Offering ptd' _ ofd) -> let incomingValue = validatingValue + adaValue (adaInc aid) in 
                   case getOutboundDatumByValue contTxOutputs incomingValue of
                     Nothing            -> traceIfFalse "Swappable:Offer:getOutboundDatumByValue" False
                     Just outboundDatum ->
                       case outboundDatum of
                         -- cont into swappable only
-                        (Swappable ptd'' _ td') -> do
+                        (Swappable ptd'' pd' td') -> do
                           { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
                           ; let b = traceIfFalse "Datum Equality"      $ (ptd /= ptd'') && (ptd' == ptd'') && (td == td')   -- seller change but remain locked
                           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1 -- two tx going in, single going out
-                          ;         traceIfFalse "Swappable:Offer"     $ all (==(True :: Bool)) [a,b,c]
+                          ; let d = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                              -- payment data must be default
+                          ; let e = traceIfFalse "Incorrect Flag"      $ (oFlag ofd == 0)                                   -- Offer stays in contract
+                          ;         traceIfFalse "Swappable:Offer"     $ all (==(True :: Bool)) [a,b,c,d,e]
                           }
 
                         -- other datums fail
                         _ -> traceIfFalse "Swappable:Offer:Undefined Datum" False
-                  
                 -- anything else fails
                 _ -> traceIfFalse "Swappable:Offering:Undefined Datum" False
         
@@ -256,7 +257,7 @@ mkValidator datum redeemer context =
             Just otherDatum ->
               case otherDatum of
                 -- offering only
-                (Offering ptd' _) -> do
+                (Offering ptd' _ ofd) -> do
                   { let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
                   ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
                   ; let txValidityRange  = ContextsV2.txInfoValidRange info
@@ -264,7 +265,8 @@ mkValidator datum redeemer context =
                   ; let b = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue -- buyer must be paid
                   ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 0           -- two tx going in, no continue
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange         -- seller can unlock it
-                  ;         traceIfFalse "Swappable:ORemove"   $ all (==(True :: Bool)) [a,b,c,d]
+                  ; let e = traceIfFalse "Incorrect Flag"      $ (oFlag ofd /= 0)                                             -- Offer is for the remove endpoint
+                  ;         traceIfFalse "Swappable:ORemove"   $ all (==(True :: Bool)) [a,b,c,d,e]
                   }
                 
                 -- anything else fails
@@ -285,7 +287,7 @@ mkValidator datum redeemer context =
       their offer to account for TxId change.
 
     -}
-    (Offering ptd mod) ->
+    (Offering ptd mod _) ->
       case redeemer of
         -- | Remove the UTxO from the contract.
         Remove -> do
@@ -304,7 +306,7 @@ mkValidator datum redeemer context =
             Just outboundDatum ->
               case outboundDatum of
                 -- offering only
-                (Offering ptd' _) -> do
+                (Offering ptd' _ _) -> do
                   { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
                   ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
@@ -383,12 +385,6 @@ mkValidator datum redeemer context =
       case ContextsV2.findOwnInput context of
         Nothing    -> traceError "No Input to Validate."
         Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
-    
-    getTokenName :: PaymentData -> SpecificToken -> PlutusV2.TokenName
-    getTokenName pay tkn =
-      if pAny pay == 0
-        then pTkn pay
-        else sTkn tkn
 
     -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
