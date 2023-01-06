@@ -5,10 +5,15 @@
       "constructor": 0,
       "fields": [
         {
-          "bytes": "a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439"
-        },
+          "int": 0
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
         {
-          "bytes": ""
+          "bytes": "ae9aeba78a6c0d929e08315fed1625fe94dded61ba67fab0e7b91e790aed290a"
         },
         {
           "int": 0

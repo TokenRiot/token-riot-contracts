@@ -1,5 +1,5 @@
 {
-  "constructor": 0,
+  "constructor": 2,
   "fields": [
     {
       "constructor": 0,
@@ -16,24 +16,7 @@
       "constructor": 0,
       "fields": [
         {
-          "bytes": ""
-        },
-        {
-          "bytes": ""
-        },
-        {
-          "int": 0
-        },
-        {
-          "int": 0
-        }
-      ]
-    },
-    {
-      "constructor": 0,
-      "fields": [
-        {
-          "int": 0
+          "bytes": "55d35e95b0f349ee7fd1593a694d1a05c83768805d155d9bfa0d07aed2a18dbc"
         },
         {
           "int": 0

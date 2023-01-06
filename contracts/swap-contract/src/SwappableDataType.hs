@@ -94,9 +94,9 @@ checkValidTimeLock a b =  ( tStart a <= tStart b ) && -- can only increase or re
 -------------------------------------------------------------------------------
 -- | ADA Increase Data Object
 -------------------------------------------------------------------------------
-data ADAIncData = ADAIncData
-  { adaInc  :: Integer
-  -- ^ The increase in the required minimum lovelace .
+data ADAIncData = ADAIncData 
+  { adaInc :: Integer
+  -- ^ An increase to the required minimum ADA.
   }
 PlutusTx.unstableMakeIsData ''ADAIncData
 -------------------------------------------------------------------------------
@@ -112,5 +112,8 @@ PlutusTx.unstableMakeIsData ''MakeOfferData
 -------------------------------------------------------------------------------
 -- | Specific Token Data Object
 -------------------------------------------------------------------------------
-data SpecificToken = SpecificToken { sTkn :: PlutusV2.TokenName }
+data SpecificToken = SpecificToken
+  { sTkn :: PlutusV2.TokenName
+  -- ^^ The specific token name being used in the flatrate swap.
+  }
 PlutusTx.unstableMakeIsData ''SpecificToken

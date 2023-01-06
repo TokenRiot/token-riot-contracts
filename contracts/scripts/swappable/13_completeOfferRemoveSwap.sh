@@ -27,32 +27,11 @@ seller_asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697
 # what is being offered
 offer_asset="12345 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739"
 
-current_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
     --tx-out="${script_address} + 5000000 + ${seller_asset}" | tr -dc '0-9')
-
-next_min_utxo=$(${cli} transaction calculate-min-required-utxo \
-    --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
-    --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
-    --tx-out="${script_address} + 5000000 + ${seller_asset}" | tr -dc '0-9')
-
-difference=$((${next_min_utxo} - ${current_min_utxo}))
-
-if [ "$difference" -lt "0" ]; then
-    min_utxo=${current_min_utxo}
-    # update the increase ada in the redeemer
-    variable=0; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
-    mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
-else
-    echo "Increase Min ADA by" ${difference}
-    min_utxo=${updated_min_utxo}
-    # update the increase ada in the redeemer
-    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
-    mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
-fi
 
 offer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -60,7 +39,7 @@ offer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json \
     --tx-out="${script_address} + 5000000 + ${offer_asset}" | tr -dc '0-9')
 
-script_address_out="${script_address} + ${min_utxo} + ${seller_asset}"
+buyer_address_out="${buyer_address} + ${min_utxo} + ${seller_asset}"
 seller_address_out="${seller_address} + ${offer_min_utxo} + ${offer_asset}"
 echo "Script OUTPUT: "${script_address_out}
 echo "Offer OUTPUT: "${seller_address_out}
@@ -102,10 +81,10 @@ offer_tx_in=${TXIN::-8}
 string=${offer_tx_in}
 IFS='#' read -ra array <<< "$string"
 # update tx id info
-variable=${array[0]}; jq --arg variable "$variable" '.fields[1].fields[0].bytes=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
-mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
-variable=${array[1]}; jq --argjson variable "$variable" '.fields[1].fields[1].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
-mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
+variable=${array[0]}; jq --arg variable "$variable" '.fields[0].fields[0].bytes=$variable' ../data/redeemers/offer-remove-redeemer.json > ../data/redeemers/offer-remove-redeemer-new.json
+mv ../data/redeemers/offer-remove-redeemer-new.json ../data/redeemers/offer-remove-redeemer.json
+variable=${array[1]}; jq --argjson variable "$variable" '.fields[0].fields[1].int=$variable' ../data/redeemers/offer-remove-redeemer.json > ../data/redeemers/offer-remove-redeemer-new.json
+mv ../data/redeemers/offer-remove-redeemer-new.json ../data/redeemers/offer-remove-redeemer.json
 
 # collat info
 echo -e "\033[0;36m Gathering Collateral UTxO Information  \033[0m"
@@ -120,6 +99,10 @@ if [ "${TXNS}" -eq "0" ]; then
 fi
 collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
+slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
+current_slot=$(($slot - 1))
+final_slot=$(($slot + 150))
+
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
 
 echo -e "\033[0;36m Building Tx \033[0m"
@@ -127,6 +110,8 @@ FEE=$(${cli} transaction build \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
+    --invalid-before ${current_slot} \
+    --invalid-hereafter ${final_slot} \
     --change-address ${seller_address} \
     --tx-in ${seller_tx_in} \
     --tx-in-collateral="${collat_utxo}" \
@@ -134,15 +119,14 @@ FEE=$(${cli} transaction build \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
-    --spending-reference-tx-in-redeemer-file ../data/redeemers/offer-redeemer.json \
+    --spending-reference-tx-in-redeemer-file ../data/redeemers/offer-remove-redeemer.json \
     --tx-in ${offer_tx_in} \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/complete-redeemer.json \
     --tx-out="${seller_address_out}" \
-    --tx-out="${script_address_out}" \
-    --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
+    --tx-out="${buyer_address_out}" \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${seller_pkh} \
     --testnet-magic ${testnet_magic})
@@ -152,7 +136,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-exit
+# exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
