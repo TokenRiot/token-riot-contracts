@@ -37,6 +37,7 @@ module SwappableDataType
   , SpecificToken (..)
   , getTokenName
   , OfferFlagData (..)
+  , BidData (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -154,3 +155,11 @@ data OfferFlagData = OfferFlagData
   -- ^ The flag to indicate if the trade should remain in the contract
   }
 PlutusTx.unstableMakeIsData ''OfferFlagData
+-------------------------------------------------------------------------------
+-- | Bid Data Object
+-------------------------------------------------------------------------------
+data BidData = BidData
+  { bAmt :: Integer
+  -- ^ bid amount
+  }
+PlutusTx.unstableMakeIsData ''BidData

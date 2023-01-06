@@ -40,7 +40,6 @@ import qualified Plutus.V2.Ledger.Api           as PlutusV2
 import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
 import           Plutus.Script.Utils.V2.Scripts as Utils
 import           SwappableDataType
-import           AuctionDataType
 import           UsefulFuncs
 {- |
   Author   : The Ancient Kraken
@@ -49,12 +48,14 @@ import           UsefulFuncs
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
-data CustomDatumType =  Swappable  PayToData PaymentData TimeData        |
-                        Auctioning AuctionData                           |
-                        Offering   PayToData MakeOfferData OfferFlagData
+data CustomDatumType =  Swappable  PayToData PaymentData TimeData                    |
+                        Auctioning PayToData PaymentData TimeData PayToData TimeData |
+                        Offering   PayToData MakeOfferData OfferFlagData             |
+                        Bidding    PayToData MakeOfferData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
                                               , ( 'Offering,   2 )
+                                              , ( 'Bidding,    3 )
                                               ]
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
@@ -62,7 +63,7 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 data CustomRedeemerType = Remove                                       |
                           FlatRate  PayToData ADAIncData SpecificToken |
                           Offer     ADAIncData MakeOfferData           |
-                          SwapUTxO  PayToData                          |
+                          SwapUTxO  ADAIncData MakeOfferData           |
                           Update    ADAIncData                         |
                           Bid       BidData                            |
                           Complete                                     |
@@ -91,7 +92,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
 mkValidator :: CustomDatumType -> CustomRedeemerType -> PlutusV2.ScriptContext -> Bool
 mkValidator datum redeemer context =
   case datum of
-    {- | Swappable SwappableData
+    {- | Swappable State
 
       Different ways to swap UTxO walletship.
 
@@ -141,6 +142,7 @@ mkValidator datum redeemer context =
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
                   ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
                   }
+                
                 -- other datums fail
                 _ -> traceIfFalse "Swappable:Transform:Undefined Datum" False
         
@@ -160,7 +162,7 @@ mkValidator datum redeemer context =
 
                 -- A trader may update their UTxO into an auction.
                 -- TODO
-                (Auctioning _) -> False
+                (Auctioning _ _ _ _ _) -> False
 
                 -- Other Datums fail
                 _ -> traceIfFalse "Swappable:Update:Undefined Datum" False
@@ -182,9 +184,34 @@ mkValidator datum redeemer context =
         -- TODO
         OrderBook -> False
 
-        -- | Swap ownership on two utxos with a multisig.
+        -- | Swap ownership on two utxos with a multisig. NOT TESTED!
         -- TODO
-        (SwapUTxO _) -> False
+        (SwapUTxO aid mod) -> let txId = createTxOutRef (moTx mod) (moIdx mod)
+          in case getDatumByTxId txId of
+            Nothing         -> traceIfFalse "Swappable:SwapUTxO:GetDatumByTxId" False
+            Just otherDatum ->
+              case otherDatum of
+                -- swappable only
+                (Swappable ptd' _ _) -> let incomingValue = validatingValue + adaValue (adaInc aid)
+                  in case getOutboundDatumByValue contTxOutputs incomingValue of
+                    Nothing            -> traceIfFalse "Swappable:SwapUTxO:getOutboundDatumByValue" False
+                    Just outboundDatum ->
+                      case outboundDatum of
+                        -- swappable only
+                        (Swappable ptd'' pd' td') ->  do
+                          { let a = traceIfFalse "Ownership Change"    $ (ptd /= ptd') && (ptd' == ptd'') && (td == td')    -- seller change but remain locked
+                          ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2 -- two tx going in, two going out
+                          ; let c = traceIfFalse "Seller Tx Sign"      $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign
+                          ; let d = traceIfFalse "Buyer Tx Signer"     $ ContextsV2.txSignedBy info (ptPkh ptd')            -- buyer must sign
+                          ; let e = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                              -- payment data must be default
+                          ;         traceIfFalse "Swappable:SwapUTxOs" $ all (==(True :: Bool)) [a,b,c,d,e]
+                          }
+                        
+                        -- other datums fail
+                        _ -> traceIfFalse "Swappable:SwapUTxOs:Undefined Datum" False
+                
+                -- other datums fails
+                _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
 
         -- | Flat rate swap of UTxO for an predefined amount of a single token.
         (FlatRate ptd' aid st) -> let incomingValue = validatingValue + adaValue (adaInc aid)
@@ -247,6 +274,7 @@ mkValidator datum redeemer context =
 
                         -- other datums fail
                         _ -> traceIfFalse "Swappable:Offer:Undefined Datum" False
+                
                 -- anything else fails
                 _ -> traceIfFalse "Swappable:Offering:Undefined Datum" False
         
@@ -275,7 +303,7 @@ mkValidator datum redeemer context =
         -- | Other redeemers fail.
         _ -> traceIfFalse "Swappable:Undefined Redeemer" False
     
-    {- | Offering OfferData
+    {- | Offering State
 
       Allows many users to store their offers inside the contract for some offer 
       trade to occur. An offerer may remove their current offers or transform their
@@ -323,7 +351,7 @@ mkValidator datum redeemer context =
                   }
                 
                 -- other endpoints fail
-                _ -> False
+                _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
         
         -- | Complete an offer with a specific swappable UTxO.
         Complete ->  let txId = createTxOutRef (moTx mod) (moIdx mod)
@@ -342,12 +370,12 @@ mkValidator datum redeemer context =
                   }
                 
                 -- anything else fails
-                _ -> False
+                _ -> traceIfFalse "Offering:Complete:Undefined Datum" False
         
         -- | Other Offering endpoints fail
-        _ -> False
+        _ -> traceIfFalse "Offering:Undefined Redeemer" False
 
-    {- | Auctioning AuctionData
+    {- | Auctioning State
       
       Allows a UTxO to be auctioned for some amount of time. Successful auctions are
       placed back into the swappable state as the auction state is a time lock. Similarly 
@@ -365,7 +393,50 @@ mkValidator datum redeemer context =
 
       TODO
     -}
-    (Auctioning _) -> False
+    (Auctioning  _ _ _ _ _) -> False
+    
+    {- | Bidding State 
+
+      Allows a bidder to place their bid into the contract for an on going auction. At the end of
+      the auction, the auctioner will select the best bid and complete the auction or they may reject
+      all bids and remove the UTxO back into the swap state. Similar to the offer state, bidders will
+      need to remove old bids when the auction is over. They may also choose to transform their bid for
+      a new auction or to increase the bid by changing the value.
+    
+      TODO
+    -}
+    (Bidding ptd _) ->
+      case redeemer of
+        -- | Remove the UTxO from the contract.
+        Remove -> do
+          { let walletPkh  = ptPkh ptd
+          ; let walletAddr = createAddress walletPkh (ptSc ptd)
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the UTxO
+          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
+          ;         traceIfFalse "Offering:Remove"     $ all (==(True :: Bool)) [a,b,c]
+          }
+        
+        -- | Transform the auction bid
+        Transform -> 
+          case getOutboundDatum contTxOutputs of
+            Nothing            -> traceIfFalse "Offering:Transform:GetOutboundDatum" False
+            Just outboundDatum ->
+              case outboundDatum of
+                -- transform back into the bidding state
+                (Bidding ptd' _) -> do
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
+                  ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c]
+                  }
+                
+                -- other datums fail
+                _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
+
+        -- Other redeemers fail
+        _ -> traceIfFalse "Bidding:Undefined Redeemer" False
+
   --
   where
     info :: PlutusV2.TxInfo
