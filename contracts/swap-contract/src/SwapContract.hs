@@ -156,9 +156,17 @@ mkValidator datum redeemer context =
                   ;         traceIfFalse "Swappable:Update"     $ all (==(True :: Bool)) [a,b,c,d,e,f]
                   }
                 
-                -- other datums fail
-                _ -> traceIfFalse "Swappable:Transform:Undefined Datum" False
-        
+                -- transform a swappable state into a bid
+                (Bidding ptd' _) -> do
+                  { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
+                  ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
+                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
+                  }
+                
         -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
         (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
           case getOutboundDatumByValue contTxOutputs incomingValue of
@@ -489,7 +497,6 @@ mkValidator datum redeemer context =
       need to remove old bids when the auction is over. They may also choose to transform their bid for
       a new auction or to increase the bid by changing the value.
     
-      TODO
     -}
     (Bidding ptd mod) ->
       case redeemer of

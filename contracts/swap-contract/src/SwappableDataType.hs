@@ -132,6 +132,11 @@ checkValidTimeData :: TimeData -> Bool
 checkValidTimeData a = ( tStart a <= tEnd a )
 -------------------------------------------------------------------------------
 -- | ADA Increase Data Object
+--
+-- Holds the integer amount of lovelace that will be added to some UTxO. This is
+-- useful for transactions where the datum requires more minimum ada. It is supposed
+-- to be created by the spender and placed into a redeemer.
+--
 -------------------------------------------------------------------------------
 data ADAIncData = ADAIncData 
   { adaInc :: Integer
@@ -140,6 +145,10 @@ data ADAIncData = ADAIncData
 PlutusTx.unstableMakeIsData ''ADAIncData
 -------------------------------------------------------------------------------
 -- | Make Offer Data Object
+--
+-- The TxId of the UTxO that an offer belongs too.
+--
+-- @see: createTxOutRef
 -------------------------------------------------------------------------------
 data MakeOfferData = MakeOfferData
   { moTx  :: PlutusV2.BuiltinByteString
