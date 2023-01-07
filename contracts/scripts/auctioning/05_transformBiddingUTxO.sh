@@ -28,8 +28,8 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
 #
-buyer_address_out="${buyer_address} + ${min_utxo} + ${asset}"
-echo "Exit OUTPUT: "${buyer_address_out}
+script_address_out="${script_address} + ${min_utxo} + ${asset}"
+echo "Exit OUTPUT: "${script_address_out}
 #
 # exit
 #
@@ -97,18 +97,20 @@ FEE=$(${cli} transaction build \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
-    --spending-reference-tx-in-redeemer-file ../data/redeemers/remove-redeemer.json \
-    --tx-out="${buyer_address_out}" \
+    --spending-reference-tx-in-redeemer-file ../data/redeemers/transform-redeemer.json \
+    --tx-out="${script_address_out}" \
+    --tx-out-inline-datum-file ../data/bidding/bidding-datum.json  \
     --required-signer-hash ${buyer_pkh} \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
 
+    # --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json  \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
