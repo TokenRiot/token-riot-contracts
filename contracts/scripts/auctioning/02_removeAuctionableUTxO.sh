@@ -5,24 +5,28 @@ export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
 cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
-#
+# staked smart contract address
 script_path="../../swap-contract/swap-contract.plutus"
-script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
-#
+stake_path="../../stake-contract/stake-contract.plutus"
+script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
+
+# collat
+collat_address=$(cat ../wallets/collat-wallet/payment.addr)
+collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
+
+# seller
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
 #
-asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
-min_asset="5000000 + ${asset}"
+asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/auctionable/auctionable-datum.json \
-    --tx-out="${script_address} ${min_asset}" | tr -dc '0-9')
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 #
-min_utxo=2594620 # worst case for auction datum
-
 seller_address_out="${seller_address} + ${min_utxo} + ${asset}"
 echo "Exit OUTPUT: "${seller_address_out}
 #
@@ -33,7 +37,6 @@ ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
     --address ${seller_address} \
     --out-file ../tmp/seller_utxo.json
-
 TXNS=$(jq length ../tmp/seller_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${seller_address} \033[0m \n";
@@ -41,8 +44,6 @@ if [ "${TXNS}" -eq "0" ]; then
 fi
 alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/seller_utxo.json)
-CTXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in-collateral"' ../tmp/seller_utxo.json)
-collateral_tx_in=${CTXIN::-19}
 seller_tx_in=${TXIN::-8}
 
 echo -e "\033[0;36m Gathering Script UTxO Information  \033[0m"
@@ -60,10 +61,22 @@ alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/script_utxo.json)
 script_tx_in=${TXIN::-8}
 
-script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
 # collat info
-collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
-collat_utxo="10e5b05d90199da3f7cb581f00926f5003e22aac8a3d5a33607cd4c57d13aaf3" # in collat wallet
+echo -e "\033[0;36m Gathering Collateral UTxO Information  \033[0m"
+${cli} query utxo \
+    --testnet-magic ${testnet_magic} \
+    --address ${collat_address} \
+    --out-file ../tmp/collat_utxo.json
+
+TXNS=$(jq length ../tmp/collat_utxo.json)
+if [ "${TXNS}" -eq "0" ]; then
+   echo -e "\n \033[0;31m NO UTxOs Found At ${collat_address} \033[0m \n";
+   exit;
+fi
+collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
+
+# script reference
+script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
 
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
@@ -78,7 +91,7 @@ FEE=$(${cli} transaction build \
     --invalid-hereafter ${final_slot} \
     --change-address ${seller_address} \
     --tx-in ${seller_tx_in} \
-    --tx-in-collateral="${collat_utxo}#0" \
+    --tx-in-collateral="${collat_utxo}" \
     --tx-in ${script_tx_in}  \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
     --spending-plutus-script-v2 \
