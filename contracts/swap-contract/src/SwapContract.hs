@@ -65,7 +65,7 @@ data CustomRedeemerType = Remove                                       |
                           Offer     ADAIncData MakeOfferData           |
                           SwapUTxO  ADAIncData MakeOfferData           |
                           Update    ADAIncData                         |
-                          Bid       BidData                            |
+                          Bid                                          |
                           Complete                                     |
                           OrderBook                                    |
                           Transform                                    |
@@ -141,6 +141,19 @@ mkValidator datum redeemer context =
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
                   ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
+                  }
+                
+                -- transform a swappable state into the auctioning state
+                (Auctioning ptd' atd td') -> do
+                  { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer"  $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Incorrect Datum"      $ (ptd == ptd')                                        -- seller and time can't change
+                  ; let c = traceIfFalse "Too Many In/Out"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let d = traceIfFalse "Invalid Auction Time" $ checkValidTimeData atd                               -- valid auction time lock
+                  ; let e = traceIfFalse "Invalid Lock Time"    $ checkValidTimeLock td td'                            -- valid global time lock
+                  ; let f = traceIfFalse "Time Lock Is Live"    $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
+                  ;         traceIfFalse "Swappable:Update"     $ all (==(True :: Bool)) [a,b,c,d,e,f]
                   }
                 
                 -- other datums fail
@@ -531,8 +544,6 @@ mkValidator datum redeemer context =
 
         -- Other redeemers fail
         _ -> traceIfFalse "Bidding:Undefined Redeemer" False
-
-  --
   where
     info :: PlutusV2.TxInfo
     info = ContextsV2.scriptContextTxInfo  context
