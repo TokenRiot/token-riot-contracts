@@ -48,8 +48,8 @@ import           UsefulFuncs
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
-data CustomDatumType =  Swappable  PayToData PaymentData TimeData        |
-                        Auctioning PayToData TimeData TimeData           |
+data CustomDatumType =  Swappable  PayToData PaymentData   TimeData      |
+                        Auctioning PayToData TimeData      TimeData      |
                         Offering   PayToData MakeOfferData OfferFlagData |
                         Bidding    PayToData MakeOfferData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
