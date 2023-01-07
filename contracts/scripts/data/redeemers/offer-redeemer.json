@@ -5,7 +5,7 @@
       "constructor": 0,
       "fields": [
         {
-          "int": 8620
+          "int": 0
         }
       ]
     },
@@ -13,7 +13,7 @@
       "constructor": 0,
       "fields": [
         {
-          "bytes": "5d9f4ee7ff4dd0f5f8d7f42646caba23ebacbfe075a0e7ed8a8643d569cec740"
+          "bytes": "b2a7e7d2496b0ccc4837fe8618f6e1caff70760c813ee200d424a8650cb5b74e"
         },
         {
           "int": 0
