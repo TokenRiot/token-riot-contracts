@@ -507,13 +507,13 @@ mkValidator datum redeemer context =
           ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
           ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the UTxO
           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
-          ;         traceIfFalse "Offering:Remove"     $ all (==(True :: Bool)) [a,b,c]
+          ;         traceIfFalse "Bidding:Remove"      $ all (==(True :: Bool)) [a,b,c]
           }
         
         -- | Transform the auction bid
         Transform -> 
           case getOutboundDatum contTxOutputs of
-            Nothing            -> traceIfFalse "Offering:Transform:GetOutboundDatum" False
+            Nothing            -> traceIfFalse "Bidding:Transform:GetOutboundDatum" False
             Just outboundDatum ->
               case outboundDatum of
                 -- transform back into the bidding state
@@ -521,11 +521,20 @@ mkValidator datum redeemer context =
                   { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
                   ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
-                  ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c]
+                  ;         traceIfFalse "Bidding:Transform"   $ all (==(True :: Bool)) [a,b,c]
+                  }
+                
+                -- offer into a swappable
+                (Swappable ptd' _ td') -> do
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
+                  ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
+                  ;         traceIfFalse "Bidding:Transform"   $ all (==(True :: Bool)) [a,b,c,d]
                   }
                 
                 -- other datums fail
-                _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
+                _ -> traceIfFalse "Bidding:Transform:Undefined Datum" False
 
         -- | Complete an auction with a specific auction UTxO.
         Complete ->  let txId = createTxOutRef (moTx mod) (moIdx mod)
