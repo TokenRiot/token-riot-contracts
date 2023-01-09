@@ -67,7 +67,6 @@ ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
     --address ${collat_address} \
     --out-file ../tmp/collat_utxo.json
-
 TXNS=$(jq length ../tmp/collat_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${collat_address} \033[0m \n";
