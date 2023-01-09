@@ -48,7 +48,7 @@ if [ "$difference" -lt "0" ]; then
     mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json
 else
     echo "Increase Min ADA by" ${difference}
-    min_utxo=${updated_min_utxo}
+    min_utxo=${next_min_utxo}
     # update the increase ada in the redeemer
     variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/redeemers/offer-redeemer.json > ../data/redeemers/offer-redeemer-new.json
     mv ../data/redeemers/offer-redeemer-new.json ../data/redeemers/offer-redeemer.json

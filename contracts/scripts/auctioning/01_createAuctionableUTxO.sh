@@ -5,25 +5,25 @@ export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
 cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
-#
+# staked smart contract address
 script_path="../../swap-contract/swap-contract.plutus"
-script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
+stake_path="../../stake-contract/stake-contract.plutus"
+script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
+
 #
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
-#
-asset="1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
 
-min_asset="5000000 + ${asset}"
-# min_asset="5000000 + ${asset} + 18446744073709551615 d61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6732"
+#
+asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/auctionable/auctionable-datum.json \
-    --tx-out="${script_address} ${min_asset}" | tr -dc '0-9')
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-min_utxo=2594620 # worst case for auction datum
-sc_address_out="${script_address} + ${min_utxo} + ${asset}"
-echo "Script OUTPUT: "${sc_address_out}
+script_address_out="${script_address} + ${min_utxo} + ${asset}"
+echo "Script OUTPUT: "${script_address_out}
 #
 # exit
 #
@@ -51,7 +51,7 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${seller_address} \
     --tx-in ${seller_tx_in} \
-    --tx-out="${sc_address_out}" \
+    --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/auctionable/auctionable-datum.json  \
     --testnet-magic ${testnet_magic})
 

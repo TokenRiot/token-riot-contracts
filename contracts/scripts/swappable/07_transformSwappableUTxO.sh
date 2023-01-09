@@ -115,7 +115,9 @@ FEE=$(${cli} transaction build \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
 
+    # --tx-out-inline-datum-file ../data/auctionable/auctionable-datum.json  \
     # --tx-out-inline-datum-file ../data/offerable/seller-offerable-datum.json  \
+    # --tx-out-inline-datum-file ../data/bidding/bidding-datum.json  \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
