@@ -153,7 +153,7 @@ mkValidator datum redeemer context =
                   ; let d = traceIfFalse "Invalid Auction Time" $ checkValidTimeData atd                               -- valid auction time lock
                   ; let e = traceIfFalse "Invalid Lock Time"    $ checkValidTimeLock td td'                            -- valid global time lock
                   ; let f = traceIfFalse "Time Lock Is Live"    $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-                  ;         traceIfFalse "Swappable:Update"     $ all (==(True :: Bool)) [a,b,c,d,e,f]
+                  ;         traceIfFalse "Swappable:Transform"  $ all (==(True :: Bool)) [a,b,c,d,e,f]
                   }
                 
                 -- transform a swappable state into a bid
@@ -225,16 +225,16 @@ mkValidator datum redeemer context =
                       case outboundDatum of
                         -- swappable only
                         (Swappable ptd'' pd' td') ->  do
-                          { let a = traceIfFalse "Ownership Change"    $ (ptd /= ptd') && (ptd' == ptd'') && (td == td')    -- seller change but remain locked
-                          ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2 -- two tx going in, two going out
-                          ; let c = traceIfFalse "Seller Tx Sign"      $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign
-                          ; let d = traceIfFalse "Buyer Tx Signer"     $ ContextsV2.txSignedBy info (ptPkh ptd')            -- buyer must sign
-                          ; let e = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                              -- payment data must be default
-                          ;         traceIfFalse "Swappable:SwapUTxOs" $ all (==(True :: Bool)) [a,b,c,d,e]
+                          { let a = traceIfFalse "Ownership Change"   $ (ptd /= ptd') && (ptd' == ptd'') && (td == td')    -- seller change but remain locked
+                          ; let b = traceIfFalse "Too Many In/Out"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2 -- two tx going in, two going out
+                          ; let c = traceIfFalse "Seller Tx Sign"     $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign
+                          ; let d = traceIfFalse "Buyer Tx Signer"    $ ContextsV2.txSignedBy info (ptPkh ptd')            -- buyer must sign
+                          ; let e = traceIfFalse "Incorrect Pay Data" $ pd' == defaultPayment                              -- payment data must be default
+                          ;         traceIfFalse "Swappable:SwapUTxO" $ all (==(True :: Bool)) [a,b,c,d,e]
                           }
                         
                         -- other datums fail
-                        _ -> traceIfFalse "Swappable:SwapUTxOs:Undefined Datum" False
+                        _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
                 
                 -- other datums fails
                 _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
@@ -373,7 +373,7 @@ mkValidator datum redeemer context =
                   ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
-                  ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
+                  ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c,d]
                   }
                 
                 -- other endpoints fail
