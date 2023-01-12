@@ -41,6 +41,8 @@ import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
 import           Plutus.Script.Utils.V2.Scripts as Utils
 import           SwappableDataType
 import           UsefulFuncs
+import qualified Plutonomy
+
 {- |
   Author   : The Ancient Kraken
   Copyright: 2022
@@ -632,19 +634,19 @@ mkValidator datum redeemer context =
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------
-validator' :: PlutusV2.Validator
-validator' = PlutusV2.mkValidatorScript
-    $$(PlutusTx.compile [|| wrap ||])
- where
-    wrap = Utils.mkUntypedValidator mkValidator
--------------------------------------------------------------------------------
--- | The code below is required for the plutus script compile.
--------------------------------------------------------------------------------
-script :: Scripts.Script
-script = Scripts.unValidatorScript validator'
+
+wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+wrappedValidator x y z = check (mkValidator (PlutusV2.unsafeFromBuiltinData x) (PlutusV2.unsafeFromBuiltinData y) (PlutusV2.unsafeFromBuiltinData z))
+
+validator :: Validator
+validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+-- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+
 
 swapContractScriptShortBs :: SBS.ShortByteString
-swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+-- swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise validator
+
 
 swapContractScript :: PlutusScript PlutusScriptV2
 swapContractScript = PlutusScriptSerialised swapContractScriptShortBs

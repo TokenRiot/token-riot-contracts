@@ -19,7 +19,7 @@ seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
 #
-asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+asset="1 9e70589a8dd23fd55f65198dc9e9a135751690d6bb3a63f7c28389ef.23644d1d72b3dd229bcbef0471a9778dcc60923301704124954cff7bd3e9de04"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
