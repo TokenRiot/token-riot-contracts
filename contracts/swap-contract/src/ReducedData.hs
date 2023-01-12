@@ -30,6 +30,7 @@ module ReducedData
   , SwapTxInfo (..)
   , SwapTxInInfo (..)
   , SwapTxOut (..)
+  , findTxInByTxOutRef'
   , findOwnInput'
   , getContinuingOutputs'
   , txSignedBy'
@@ -90,6 +91,12 @@ PlutusTx.unstableMakeIsData ''SwapScriptContext
 -------------------------------------------------------------------------------
 -- | Rebuilt Functions
 -------------------------------------------------------------------------------
+
+-- find the tx in 
+findTxInByTxOutRef' :: PlutusV2.TxOutRef -> SwapTxInfo -> Maybe SwapTxInInfo
+findTxInByTxOutRef' outRef SwapTxInfo{txInfoInputs} =
+    find (\SwapTxInInfo{txInInfoOutRef} -> txInInfoOutRef == outRef) txInfoInputs
+
 -- | Find the input currently being validated.
 findOwnInput' :: SwapScriptContext -> Maybe SwapTxInInfo
 findOwnInput' SwapScriptContext{scriptContextTxInfo=SwapTxInfo{txInfoInputs}, scriptContextPurpose=PlutusV2.Spending txOutRef} =
