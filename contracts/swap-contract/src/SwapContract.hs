@@ -42,10 +42,11 @@ import           Plutus.Script.Utils.V2.Scripts as Utils
 import           SwappableDataType
 import           UsefulFuncs
 import qualified Plutonomy
+import           ReducedData
 
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
@@ -644,7 +645,6 @@ validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkV
 
 
 swapContractScriptShortBs :: SBS.ShortByteString
--- swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
 swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise validator
 
 
