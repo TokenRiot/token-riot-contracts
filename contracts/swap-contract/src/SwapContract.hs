@@ -92,7 +92,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
-mkValidator :: CustomDatumType -> CustomRedeemerType -> PlutusV2.ScriptContext -> Bool
+mkValidator :: CustomDatumType -> CustomRedeemerType -> SwapScriptContext -> Bool
 mkValidator datum redeemer context =
   case datum of
     {- | Swappable State
@@ -126,9 +126,9 @@ mkValidator datum redeemer context =
                 -- transform a swappable utxo
                 (Swappable ptd' _ td') -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let txValidityRange  = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1   -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeLock td td'                            -- valid time lock
                   ; let e = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
@@ -138,9 +138,9 @@ mkValidator datum redeemer context =
                 -- transform utxo into an offer
                 (Offering ptd' _ _) -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let txValidityRange  = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1   -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
                   ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
@@ -149,10 +149,10 @@ mkValidator datum redeemer context =
                 -- transform a swappable state into the auctioning state
                 (Auctioning ptd' atd td') -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer"  $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
+                  ; let txValidityRange  = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer"  $ txSignedBy' info (ptPkh ptd)               -- seller must sign it
                   ; let b = traceIfFalse "Incorrect Datum"      $ (ptd == ptd')                                        -- seller and time can't change
-                  ; let c = traceIfFalse "Too Many In/Out"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let c = traceIfFalse "Too Many In/Out"      $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1   -- single tx going in, single going out
                   ; let d = traceIfFalse "Invalid Auction Time" $ checkValidTimeData atd                               -- valid auction time lock
                   ; let e = traceIfFalse "Invalid Lock Time"    $ checkValidTimeLock td td'                            -- valid global time lock
                   ; let f = traceIfFalse "Time Lock Is Live"    $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
@@ -162,9 +162,9 @@ mkValidator datum redeemer context =
                 -- transform a swappable state into a bid
                 (Bidding ptd' _) -> do
                   { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
+                  ; let txValidityRange  = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)               -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1   -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
                   ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
@@ -178,17 +178,17 @@ mkValidator datum redeemer context =
               case outboundDatum of
                 -- update the payment data on a swappable state
                 (Swappable ptd' _ td') -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ (ptd == ptd') && (td == td')                       -- seller and time can't change
-                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
                   }
 
                 -- Update a swappable state into the auctioning state
                 (Auctioning ptd' atd td') -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ (ptd == ptd') && (td == td')                       -- seller and time can't change
-                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData atd                             -- valid time lock
                   ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c,d]
                   }
@@ -201,10 +201,10 @@ mkValidator datum redeemer context =
           { let walletPkh        = ptPkh ptd
           ; let walletAddr       = createAddress walletPkh (ptSc ptd)
           ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-          ; let txValidityRange  = ContextsV2.txInfoValidRange info
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- seller must sign it
-          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- seller must get the UTxO
-          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single tx going in, no continue
+          ; let txValidityRange  = txInfoValidRange info
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info walletPkh                          -- seller must sign it
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly' txOutputs walletAddr validatingValue -- seller must get the UTxO
+          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0            -- single tx going in, no continue
           ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange          -- seller can unlock it
           ;         traceIfFalse "Swappable:Remove"    $ all (==(True :: Bool)) [a,b,c,d]
           }
@@ -215,32 +215,32 @@ mkValidator datum redeemer context =
 
         -- | Swap ownership on two utxos with a multisig. NOT TESTED!
         -- TODO
-        (SwapUTxO aid mod) -> let txId = createTxOutRef (moTx mod) (moIdx mod)
-          in case getDatumByTxId txId of
-            Nothing         -> traceIfFalse "Swappable:SwapUTxO:GetDatumByTxId" False
-            Just otherDatum ->
-              case otherDatum of
-                -- swappable only
-                (Swappable ptd' _ _) -> let incomingValue = validatingValue + adaValue (adaInc aid)
-                  in case getOutboundDatumByValue contTxOutputs incomingValue of
-                    Nothing            -> traceIfFalse "Swappable:SwapUTxO:getOutboundDatumByValue" False
-                    Just outboundDatum ->
-                      case outboundDatum of
-                        -- swappable only
-                        (Swappable ptd'' pd' td') ->  do
-                          { let a = traceIfFalse "Ownership Change"   $ (ptd /= ptd') && (ptd' == ptd'') && (td == td')    -- seller change but remain locked
-                          ; let b = traceIfFalse "Too Many In/Out"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2 -- two tx going in, two going out
-                          ; let c = traceIfFalse "Seller Tx Sign"     $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign
-                          ; let d = traceIfFalse "Buyer Tx Signer"    $ ContextsV2.txSignedBy info (ptPkh ptd')            -- buyer must sign
-                          ; let e = traceIfFalse "Incorrect Pay Data" $ pd' == defaultPayment                              -- payment data must be default
-                          ;         traceIfFalse "Swappable:SwapUTxO" $ all (==(True :: Bool)) [a,b,c,d,e]
-                          }
+        (SwapUTxO _ _) -> False --let txId = createTxOutRef (moTx mod) (moIdx mod)
+          -- in case getDatumByTxId txId of
+          --   Nothing         -> traceIfFalse "Swappable:SwapUTxO:GetDatumByTxId" False
+          --   Just otherDatum ->
+          --     case otherDatum of
+          --       -- swappable only
+          --       (Swappable ptd' _ _) -> let incomingValue = validatingValue + adaValue (adaInc aid)
+          --         in case getOutboundDatumByValue contTxOutputs incomingValue of
+          --           Nothing            -> traceIfFalse "Swappable:SwapUTxO:getOutboundDatumByValue" False
+          --           Just outboundDatum ->
+          --             case outboundDatum of
+          --               -- swappable only
+          --               (Swappable ptd'' pd' td') ->  do
+          --                 { let a = traceIfFalse "Ownership Change"   $ (ptd /= ptd') && (ptd' == ptd'') && (td == td')    -- seller change but remain locked
+          --                 ; let b = traceIfFalse "Too Many In/Out"    $ isNInputs txInputs 2 && isNOutputs contTxOutputs 2 -- two tx going in, two going out
+          --                 ; let c = traceIfFalse "Seller Tx Sign"     $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign
+          --                 ; let d = traceIfFalse "Buyer Tx Signer"    $ ContextsV2.txSignedBy info (ptPkh ptd')            -- buyer must sign
+          --                 ; let e = traceIfFalse "Incorrect Pay Data" $ pd' == defaultPayment                              -- payment data must be default
+          --                 ;         traceIfFalse "Swappable:SwapUTxO" $ all (==(True :: Bool)) [a,b,c,d,e]
+          --                 }
                         
-                        -- other datums fail
-                        _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
+          --               -- other datums fail
+          --               _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
                 
-                -- other datums fails
-                _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
+          --       -- other datums fails
+          --       _ -> traceIfFalse "Swappable:SwapUTxO:Undefined Datum" False
 
         -- | Flat rate swap of UTxO for an predefined amount of a single token.
         (FlatRate ptd' aid st) -> let incomingValue = validatingValue + adaValue (adaInc aid)
@@ -252,11 +252,11 @@ mkValidator datum redeemer context =
                 (Swappable ptd'' _ td') -> do
                   { let sellerAddr = createAddress (ptPkh ptd) (ptSc ptd)
                   ; let thisTkn    = getTokenName pd st
-                  ; let a = traceIfFalse "Payment Not Made"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) thisTkn (pAmt pd) -- seller must be paid
+                  ; let a = traceIfFalse "Payment Not Made"    $ isAddrHoldingExactlyToken' txOutputs sellerAddr (pPid pd) thisTkn (pAmt pd) -- seller must be paid
                   ; let b = traceIfFalse "Ownership Change"    $ (ptd /= ptd'') && (ptd' == ptd'') && (td == td')                           -- seller change but remain locked
                   ; let c = traceIfFalse "Empty Payment Value" $ (pAmt pd) /= 0                                                             -- seller must define price
-                  ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1                         -- single tx going in, single going out
-                  ; let e = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd')                                    -- buyer must sign
+                  ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1                         -- single tx going in, single going out
+                  ; let e = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd')                                    -- buyer must sign
                   ;         traceIfFalse "Swappable:FlatRate"  $ all (==(True :: Bool)) [a,b,c,d,e]
                   }
 
@@ -268,13 +268,13 @@ mkValidator datum redeemer context =
           { let sellerAddr       = createAddress (ptPkh ptd)  (ptSc ptd)
           ; let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
           ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-          ; let txValidityRange  = ContextsV2.txInfoValidRange info
+          ; let txValidityRange  = txInfoValidRange info
           ; let thisTkn          = getTokenName pd st
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd')                                    -- buyer must sign
-          ; let b = traceIfFalse "Payment Not Paid"    $ isAddrHoldingExactlyToken txOutputs sellerAddr (pPid pd) thisTkn (pAmt pd) -- seller must be paid
-          ; let c = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue               -- buyer must be paid
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd')                                    -- buyer must sign
+          ; let b = traceIfFalse "Payment Not Paid"    $ isAddrHoldingExactlyToken' txOutputs sellerAddr (pPid pd) thisTkn (pAmt pd) -- seller must be paid
+          ; let c = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly' txOutputs buyerAddr validatingValue               -- buyer must be paid
           ; let d = traceIfFalse "Empty Payment Value" $ (pAmt pd) /= 0                                                             -- seller must define price
-          ; let e = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0                         -- single tx going in, no continue
+          ; let e = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0                         -- single tx going in, no continue
           ; let f = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange                       -- seller can unlock UTxO
           ;         traceIfFalse "Swappable:FRRemove"  $ all (==(True :: Bool)) [a,b,c,d,e,f]
           }
@@ -293,9 +293,9 @@ mkValidator datum redeemer context =
                       case outboundDatum of
                         -- cont into swappable only
                         (Swappable ptd'' pd' td') -> do
-                          { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
+                          { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
                           ; let b = traceIfFalse "Datum Equality"      $ (ptd /= ptd'') && (ptd' == ptd'') && (td == td')   -- seller change but remain locked
-                          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1 -- two tx going in, single going out
+                          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 2 && isNOutputs' contTxOutputs 1 -- two tx going in, single going out
                           ; let d = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                              -- payment data must be default
                           ; let e = traceIfFalse "Incorrect Flag"      $ (oFlag ofd == 0)                                   -- Offer stays in contract
                           ;         traceIfFalse "Swappable:Offer"     $ all (==(True :: Bool)) [a,b,c,d,e]
@@ -317,10 +317,10 @@ mkValidator datum redeemer context =
                 (Offering ptd' _ ofd) -> do
                   { let buyerAddr        = createAddress (ptPkh ptd') (ptSc ptd')
                   ; let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                  ; let txValidityRange  = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)                       -- seller must sign it
-                  ; let b = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly txOutputs buyerAddr validatingValue -- buyer must be paid
-                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 0           -- two tx going in, no continue
+                  ; let txValidityRange  = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)                       -- seller must sign it
+                  ; let b = traceIfFalse "Token Not Paid"      $ isAddrGettingPaidExactly' txOutputs buyerAddr validatingValue -- buyer must be paid
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 2 && isNOutputs' contTxOutputs 0           -- two tx going in, no continue
                   ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange         -- seller can unlock it
                   ; let e = traceIfFalse "Incorrect Flag"      $ (oFlag ofd /= 0)                                             -- Offer is for the remove endpoint
                   ;         traceIfFalse "Swappable:ORemove"   $ all (==(True :: Bool)) [a,b,c,d,e]
@@ -350,9 +350,9 @@ mkValidator datum redeemer context =
         Remove -> do
           { let walletPkh  = ptPkh ptd
           ; let walletAddr = createAddress walletPkh (ptSc ptd)
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
-          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the UTxO
-          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info walletPkh                          -- wallet must sign it
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly' txOutputs walletAddr validatingValue -- wallet must get the UTxO
+          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0            -- single input no cont output
           ;         traceIfFalse "Offering:Remove"     $ all (==(True :: Bool)) [a,b,c]
           }
         
@@ -364,16 +364,16 @@ mkValidator datum redeemer context =
               case outboundDatum of
                 -- offering only
                 (Offering ptd' _ _) -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- wallet must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
-                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c]
                   }
                 
                 -- offer into a swappable
                 (Swappable ptd' _ td') -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
-                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
                   ;         traceIfFalse "Offering:Transform"  $ all (==(True :: Bool)) [a,b,c,d]
@@ -392,9 +392,9 @@ mkValidator datum redeemer context =
                 (Swappable ptd' _ _) -> do
                   { let sellerPkh  = ptPkh ptd'
                   ; let sellerAddr = createAddress sellerPkh (ptSc ptd')
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info sellerPkh                          -- The seller must sign it 
-                  ; let b = traceIfFalse "Offer Not Returned"  $ isAddrGettingPaidExactly txOutputs sellerAddr validatingValue -- token must go back to printer
-                  ; let c = traceIfFalse "Single Script UTxO"  $ isNInputs txInputs 2                                          -- single script input
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info sellerPkh                          -- The seller must sign it 
+                  ; let b = traceIfFalse "Offer Not Returned"  $ isAddrGettingPaidExactly' txOutputs sellerAddr validatingValue -- token must go back to printer
+                  ; let c = traceIfFalse "Single Script UTxO"  $ isNInputs' txInputs 2                                          -- single script input
                   ;         traceIfFalse "Offering:Complete"   $ all (==(True :: Bool)) [a,b,c]
                   }
                 
@@ -429,12 +429,12 @@ mkValidator datum redeemer context =
           ; let walletAddr          = createAddress walletPkh (ptSc ptd)
           ; let lockTimeInterval    = lockBetweenTimeInterval (tStart gtd) (tEnd gtd)
           ; let auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-          ; let txValidityRange     = ContextsV2.txInfoValidRange info
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
-          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the utxo
+          ; let txValidityRange     = txInfoValidRange info
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info walletPkh                          -- wallet must sign it
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly' txOutputs walletAddr validatingValue -- wallet must get the utxo
           ; let c = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange          -- wallet can unlock it
           ; let d = traceIfFalse "Auction Is Live"     $ isTxOutsideInterval auctionTimeInterval txValidityRange       -- a wallet can unlock it
-          ; let e = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
+          ; let e = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0            -- single input no cont output
           ;         traceIfFalse "Auctioning:Remove"   $ all (==(True :: Bool)) [a,b,c,d,e]
           }
         
@@ -448,11 +448,11 @@ mkValidator datum redeemer context =
                 (Swappable ptd' _ gtd') -> do
                   { let walletPkh           = ptPkh ptd
                   ; let auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-                  ; let txValidityRange     = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                    -- no bids and wallet must sign it
+                  ; let txValidityRange     = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info walletPkh                    -- no bids and wallet must sign it
                   ; let b = traceIfFalse "Auction Is Live"     $ isTxOutsideInterval auctionTimeInterval txValidityRange -- a wallet can unlock it
                   ; let c = traceIfFalse "Datum Equality"      $ (ptd == ptd') && (gtd == gtd')                          -- this retains walletship of the utxo
-                  ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1      -- single input no cont output
+                  ; let d = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1      -- single input no cont output
                   ;         traceIfFalse "Auctioning:Update"   $ all (==(True :: Bool)) [a,b,c,d]
                   }
                                
@@ -474,10 +474,10 @@ mkValidator datum redeemer context =
                         -- cont into swappable only
                         (Swappable ptd'' pd' td') -> do
                           { let auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-                          ; let txValidityRange     = ContextsV2.txInfoValidRange info
-                          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)                  -- seller must sign it
+                          ; let txValidityRange     = txInfoValidRange info
+                          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)                  -- seller must sign it
                           ; let b = traceIfFalse "Datum Equality"      $ (ptd /= ptd'') && (ptd' == ptd'') && (gtd == td')       -- seller change but remain locked
-                          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1      -- two tx going in, single going out
+                          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 2 && isNOutputs' contTxOutputs 1      -- two tx going in, single going out
                           ; let d = traceIfFalse "Incorrect Pay Data"  $ pd' == defaultPayment                                   -- payment data must be default
                           ; let e = traceIfFalse "Auction Is Live"     $ isTxOutsideInterval auctionTimeInterval txValidityRange -- a wallet can unlock it
                           ;         traceIfFalse "Auctioning:Offer"    $ all (==(True :: Bool)) [a,b,c,d,e]
@@ -507,9 +507,9 @@ mkValidator datum redeemer context =
         Remove -> do
           { let walletPkh  = ptPkh ptd
           ; let walletAddr = createAddress walletPkh (ptSc ptd)
-          ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info walletPkh                          -- wallet must sign it
-          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly txOutputs walletAddr validatingValue -- wallet must get the UTxO
-          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 0            -- single input no cont output
+          ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info walletPkh                          -- wallet must sign it
+          ; let b = traceIfFalse "Value Not Returning" $ isAddrGettingPaidExactly' txOutputs walletAddr validatingValue -- wallet must get the UTxO
+          ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0            -- single input no cont output
           ;         traceIfFalse "Bidding:Remove"      $ all (==(True :: Bool)) [a,b,c]
           }
         
@@ -521,16 +521,16 @@ mkValidator datum redeemer context =
               case outboundDatum of
                 -- transform back into the bidding state
                 (Bidding ptd' _) -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- wallet must sign it
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- wallet must sign it
                   ; let b = traceIfFalse "Incorrect Datum"     $ ptd == ptd'                                        -- wallet + stake can't change
-                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ;         traceIfFalse "Bidding:Transform"   $ all (==(True :: Bool)) [a,b,c]
                   }
                 
                 -- offer into a swappable
                 (Swappable ptd' _ td') -> do
-                  { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
-                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
+                  { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
+                  ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
                   ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                        -- seller cant change
                   ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData td'                             -- valid time lock
                   ;         traceIfFalse "Bidding:Transform"   $ all (==(True :: Bool)) [a,b,c,d]
@@ -550,10 +550,10 @@ mkValidator datum redeemer context =
                   { let sellerPkh           = ptPkh ptd'
                   ; let sellerAddr          = createAddress sellerPkh (ptSc ptd')
                   ; let auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-                  ; let txValidityRange     = ContextsV2.txInfoValidRange info
-                  ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info sellerPkh                          -- The seller must sign it 
-                  ; let b = traceIfFalse "Offer Not Returned"  $ isAddrGettingPaidExactly txOutputs sellerAddr validatingValue -- token must go back to printer
-                  ; let c = traceIfFalse "Single Script UTxO"  $ isNInputs txInputs 2 && isNOutputs contTxOutputs 1            -- Two script inputs; single out going
+                  ; let txValidityRange     = txInfoValidRange info
+                  ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info sellerPkh                          -- The seller must sign it 
+                  ; let b = traceIfFalse "Offer Not Returned"  $ isAddrGettingPaidExactly' txOutputs sellerAddr validatingValue -- token must go back to printer
+                  ; let c = traceIfFalse "Single Script UTxO"  $ isNInputs' txInputs 2 && isNOutputs' contTxOutputs 1            -- Two script inputs; single out going
                   ; let d = traceIfFalse "Auction Is Live"     $ isTxOutsideInterval auctionTimeInterval txValidityRange       -- a wallet can unlock it
                   ;         traceIfFalse "Bidding:Complete"    $ all (==(True :: Bool)) [a,b,c,d]
                   }
@@ -564,23 +564,23 @@ mkValidator datum redeemer context =
         -- Other redeemers fail
         _ -> traceIfFalse "Bidding:Undefined Redeemer" False
   where
-    info :: PlutusV2.TxInfo
-    info = ContextsV2.scriptContextTxInfo  context
+    info :: SwapTxInfo
+    info = scriptContextTxInfo context
 
-    txOutputs :: [PlutusV2.TxOut]
-    txOutputs = ContextsV2.txInfoOutputs info
+    txOutputs :: [SwapTxOut]
+    txOutputs = txInfoOutputs info
 
-    txInputs :: [PlutusV2.TxInInfo]
-    txInputs = PlutusV2.txInfoInputs info
+    txInputs :: [SwapTxInInfo]
+    txInputs = txInfoInputs info
 
-    contTxOutputs :: [PlutusV2.TxOut]
-    contTxOutputs = ContextsV2.getContinuingOutputs context
+    contTxOutputs :: [SwapTxOut]
+    contTxOutputs = getContinuingOutputs' context
 
     validatingValue :: PlutusV2.Value
     validatingValue =
-      case ContextsV2.findOwnInput context of
+      case findOwnInput' context of
         Nothing    -> traceError "No Input to Validate."
-        Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
+        Just input -> txOutValue $ txInInfoResolved input
 
     -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
@@ -592,12 +592,12 @@ mkValidator datum redeemer context =
           , PlutusV2.txOutRefIdx = index
           }
 
-    getOutboundDatumByValue :: [PlutusV2.TxOut] -> PlutusV2.Value -> Maybe CustomDatumType
+    getOutboundDatumByValue :: [SwapTxOut] -> PlutusV2.Value -> Maybe CustomDatumType
     getOutboundDatumByValue []     _   = Nothing
     getOutboundDatumByValue (x:xs) val =
-      if PlutusV2.txOutValue x == val -- strict value continue
+      if txOutValue x == val -- strict value continue
         then
-          case PlutusV2.txOutDatum x of
+          case txOutDatum x of
             PlutusV2.NoOutputDatum       -> getOutboundDatumByValue xs val -- skip datumless
             (PlutusV2.OutputDatumHash _) -> getOutboundDatumByValue xs val -- skip embedded datum
             -- inline datum only
@@ -607,10 +607,10 @@ mkValidator datum redeemer context =
                 Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
         else getOutboundDatumByValue xs val
     
-    getOutboundDatum :: [PlutusV2.TxOut] -> Maybe CustomDatumType
+    getOutboundDatum :: [SwapTxOut] -> Maybe CustomDatumType
     getOutboundDatum []     = Nothing
     getOutboundDatum (x:xs) =
-      case PlutusV2.txOutDatum x of
+      case txOutDatum x of
         PlutusV2.NoOutputDatum       -> getOutboundDatum xs -- skip datumless
         (PlutusV2.OutputDatumHash _) -> getOutboundDatum xs -- skip embedded datum
         -- inline datum only
@@ -621,10 +621,10 @@ mkValidator datum redeemer context =
 
     getDatumByTxId :: PlutusV2.TxOutRef -> Maybe CustomDatumType
     getDatumByTxId txId = 
-      case ContextsV2.findTxInByTxOutRef txId info of
+      case findTxInByTxOutRef' txId info of
         Nothing -> Nothing
         Just txIn -> 
-          case PlutusV2.txOutDatum $ PlutusV2.txInInfoResolved txIn of
+          case txOutDatum $ txInInfoResolved txIn of
             PlutusV2.NoOutputDatum       -> Nothing -- skip datumless
             (PlutusV2.OutputDatumHash _) -> Nothing -- skip embedded datum
             -- inline datum only

@@ -37,10 +37,12 @@ module ReducedData
   , isNInputs'
   , isNOutputs'
   , isAddrGettingPaidExactly'
+  , isAddrHoldingExactlyToken'
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
-import qualified Plutus.V2.Ledger.Api as PlutusV2
+import qualified Plutus.V2.Ledger.Api   as PlutusV2
+import           Plutus.V1.Ledger.Value as Value
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -152,3 +154,16 @@ isAddrGettingPaidExactly' (x:xs) addr val
 
     checkVal :: Bool
     checkVal = txOutValue x == val     -- must be exact
+
+-- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token.
+isAddrHoldingExactlyToken' :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.CurrencySymbol -> PlutusV2.TokenName -> Integer -> Bool
+isAddrHoldingExactlyToken' []     _    _   _   _   = False
+isAddrHoldingExactlyToken' (x:xs) addr pid tkn val
+  | checkAddr && checkVal = True
+  | otherwise             = isAddrHoldingExactlyToken' xs addr pid tkn val 
+  where
+    checkAddr :: Bool
+    checkAddr = txOutAddress x == addr
+
+    checkVal :: Bool
+    checkVal = Value.valueOf (txOutValue x) pid tkn == val -- must be exact
