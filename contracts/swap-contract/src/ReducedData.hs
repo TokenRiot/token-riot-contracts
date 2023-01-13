@@ -34,7 +34,6 @@ module ReducedData
   , SwapOutputDatum (..)
   , findTxInByTxOutRef'
   , ownInput
-  , getContinuingOutputs'
   , signedBy
   , isNInputs'
   , isNOutputs'
@@ -107,11 +106,6 @@ findTxInByTxOutRef' :: PlutusV2.TxOutRef -> SwapTxInfo -> Maybe SwapTxInInfo
 findTxInByTxOutRef' outRef SwapTxInfo{txInfoInputs} =
     find (\SwapTxInInfo{txInInfoOutRef} -> txInInfoOutRef == outRef) txInfoInputs
 
--- | Find the input currently being validated.
-findOwnInput' :: SwapScriptContext -> Maybe SwapTxInInfo
-findOwnInput' SwapScriptContext{scriptContextTxInfo=SwapTxInfo{txInfoInputs}, scriptContextPurpose=Spending txOutRef} =
-    find (\SwapTxInInfo{txInInfoOutRef} -> txInInfoOutRef == txOutRef) txInfoInputs
-
 -- rewrite findOwnInput without higher order functions
 {-# inlinable ownInput #-}
 ownInput :: SwapScriptContext -> SwapTxOut
@@ -124,14 +118,6 @@ getScriptInput [] _ = traceError "script input not found"
 getScriptInput ((SwapTxInInfo tref ot) : tl) o_ref
   | tref == o_ref = ot
   | otherwise = getScriptInput tl o_ref
-
-
--- | Get all the outputs that pay to the same script address we are currently spending from, if any.
-getContinuingOutputs' :: SwapScriptContext -> [SwapTxOut]
-getContinuingOutputs' ctx | Just SwapTxInInfo{txInInfoResolved=SwapTxOut{txOutAddress}} <- findOwnInput' ctx = filter (f txOutAddress) (txInfoOutputs $ scriptContextTxInfo ctx)
-    where
-        f addr SwapTxOut{txOutAddress=otherAddress} = addr == otherAddress
-getContinuingOutputs' _ = traceError "Lf" -- "Can't get any continuing outputs"
 
 -- | Check if a transaction was signed by the given public key.
 {-# inlinable signedBy #-}

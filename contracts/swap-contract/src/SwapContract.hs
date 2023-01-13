@@ -112,7 +112,7 @@ mkValidator datum redeemer context =
       echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
       # 1659817771786
     -}
-    (Swappable ptd pd td) -> let !walletPkh        = ptPkh ptd
+    (Swappable ptd _  td) -> let !walletPkh        = ptPkh ptd
                                  !walletAddr       = createAddress walletPkh (ptSc ptd)
                                  !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
                                  !txValidityRange  = txInfoValidRange info
@@ -127,17 +127,14 @@ mkValidator datum redeemer context =
         -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
         Transform -> 
           case getOutboundDatum txOutputs of
-            Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
-            Just outboundDatum ->
-              case outboundDatum of
-                -- transform a swappable utxo
-                (Swappable ptd' _ td') -> signedBy txSigners walletPkh                         -- seller must sign it
-                                       && ptd == ptd'                                          -- seller cant change
-                                       && checkValidTimeLock td td'                            -- valid time lock
-                                       && isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
+            -- transform a swappable utxo
+            (Swappable ptd' _ td') -> signedBy txSigners walletPkh                          -- seller must sign it
+                                    && ptd == ptd'                                          -- seller cant change
+                                    && checkValidTimeLock td td'                            -- valid time lock
+                                    && isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
 
-                {- | DEBUG -}
-                _ -> False
+            {- | DEBUG -}
+            _ -> False
 
         --         -- transform utxo into an offer
         --         (Offering ptd' _ _) -> do
@@ -175,18 +172,15 @@ mkValidator datum redeemer context =
         --           }
                 
         -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
-        (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
-          case getOutboundDatumByValue txOutputs incomingValue of
-            Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue" False
-            Just outboundDatum ->
-              case outboundDatum of
-                -- update the payment data on a swappable state
-                (Swappable ptd' _ td') -> traceIfFalse "sign" (signedBy txSigners walletPkh) -- seller must sign it
-                                       && traceIfFalse "pay"  (ptd == ptd')                  -- seller can't change
-                                       && traceIfFalse "time" (td == td')                    -- time can't change
-                
-                {- | DEBUG -}
-                _ -> False
+        (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid)
+          in case getOutboundDatumByValue txOutputs incomingValue of
+            -- update the payment data on a swappable state
+            (Swappable ptd' _ td') -> signedBy txSigners walletPkh -- seller must sign it
+                                   && ptd == ptd'                  -- seller can't change
+                                   && td == td'                    -- time can't change
+            
+            {- | DEBUG -}
+            _ -> False
 
         --         -- Update a swappable state into the auctioning state
         --         (Auctioning ptd' atd td') -> do
@@ -531,8 +525,8 @@ mkValidator datum redeemer context =
     txOutputs :: [SwapTxOut]
     txOutputs = txInfoOutputs info
 
-    txInputs :: [SwapTxInInfo]
-    txInputs = txInfoInputs info
+    -- txInputs :: [SwapTxInInfo]
+    -- txInputs = txInfoInputs info
 
     validatingInput :: SwapTxOut
     validatingInput = ownInput context
@@ -544,52 +538,52 @@ mkValidator datum redeemer context =
     validatingAddress = txOutAddress validatingInput
 
     -- Create a TxOutRef from the tx hash and index.
-    createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
-    createTxOutRef txHash index = txId
-      where
-        txId :: PlutusV2.TxOutRef
-        txId = PlutusV2.TxOutRef
-          { PlutusV2.txOutRefId  = PlutusV2.TxId { PlutusV2.getTxId = txHash }
-          , PlutusV2.txOutRefIdx = index
-          }
+    -- createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
+    -- createTxOutRef txHash index = txId
+    --   where
+    --     txId :: PlutusV2.TxOutRef
+    --     txId = PlutusV2.TxOutRef
+    --       { PlutusV2.txOutRefId  = PlutusV2.TxId { PlutusV2.getTxId = txHash }
+    --       , PlutusV2.txOutRefIdx = index
+    --       }
 
-    getOutboundDatumByValue :: [SwapTxOut] -> PlutusV2.Value -> Maybe CustomDatumType
-    getOutboundDatumByValue []     _   = Nothing
+    getOutboundDatumByValue :: [SwapTxOut] -> PlutusV2.Value -> CustomDatumType
+    getOutboundDatumByValue []     _   = traceError "nothing found"
     getOutboundDatumByValue (x:xs) val =
       if (txOutAddress x == validatingAddress) && (txOutValue x == val) -- strict value continue
         then
           case txOutDatum x of
-            NoOutputDatum                    -> Nothing
+            NoOutputDatum                    -> traceError "no datum"
             (OutputDatum (PlutusV2.Datum d)) -> 
               case PlutusTx.fromBuiltinData d of
-                Nothing     -> Nothing
-                Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+                Nothing     -> traceError "cant build data"
+                Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
         else getOutboundDatumByValue xs val
     
-    getOutboundDatum :: [SwapTxOut] -> Maybe CustomDatumType
-    getOutboundDatum []     = Nothing
+    getOutboundDatum :: [SwapTxOut] -> CustomDatumType
+    getOutboundDatum []     = traceError "nothing found"
     getOutboundDatum (x:xs) =
       if txOutAddress x == validatingAddress
         then
           case txOutDatum x of
-            NoOutputDatum                    -> Nothing
+            NoOutputDatum                    -> traceError "no datum"
             (OutputDatum (PlutusV2.Datum d)) -> 
               case PlutusTx.fromBuiltinData d of
-                Nothing     -> Nothing
-                Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+                Nothing     -> traceError "cant build data"
+                Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
         else getOutboundDatum xs 
 
-    getDatumByTxId :: PlutusV2.TxOutRef -> Maybe CustomDatumType
-    getDatumByTxId txId = 
-      case findTxInByTxOutRef' txId info of
-        Nothing -> Nothing
-        Just txIn -> 
-          case txOutDatum $ txInInfoResolved txIn of
-            NoOutputDatum                    -> Nothing -- skip datumless
-            (OutputDatum (PlutusV2.Datum d)) -> 
-              case PlutusTx.fromBuiltinData d of
-                Nothing     -> Nothing
-                Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+    -- getDatumByTxId :: PlutusV2.TxOutRef -> CustomDatumType
+    -- getDatumByTxId txId = 
+    --   case findTxInByTxOutRef' txId info of
+    --     Nothing -> traceError "nothing found"
+    --     Just txIn -> 
+    --       case txOutDatum $ txInInfoResolved txIn of
+    --         NoOutputDatum                    -> traceError "no datum"
+    --         (OutputDatum (PlutusV2.Datum d)) -> 
+    --           case PlutusTx.fromBuiltinData d of
+    --             Nothing     -> traceError "cant build data"
+    --             Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------
