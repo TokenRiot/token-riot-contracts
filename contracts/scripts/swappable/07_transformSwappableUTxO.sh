@@ -18,8 +18,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
-# what was sold
-asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+# asset to trade
+asset="1 df8e2ddd300b54a606611a8f20be1aef06dc38d560e00b73e57de5a1.0104a79b1ff28d52381de95b82feb2e56bec6d9533eb005b8d711353d815d4a9"
 
 # whats going back to the script
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \

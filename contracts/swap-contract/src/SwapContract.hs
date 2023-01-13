@@ -112,36 +112,32 @@ mkValidator datum redeemer context =
       echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
       # 1659817771786
     -}
-    (Swappable ptd pd td) -> let walletPkh        = ptPkh ptd
-                                 walletAddr       = createAddress walletPkh (ptSc ptd)
-                                 lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                                 txValidityRange  = txInfoValidRange info
+    (Swappable ptd pd td) -> let !walletPkh        = ptPkh ptd
+                                 !walletAddr       = createAddress walletPkh (ptSc ptd)
+                                 !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+                                 !txValidityRange  = txInfoValidRange info
+                                 !txSigners        = txInfoSignatories info
       in case redeemer of
         
         -- | A trader may remove their UTxO if not currently being timelocked.
-        Remove -> txSignedBy' info walletPkh                                     -- seller must sign it
+        Remove -> signedBy txSigners walletPkh                                   -- seller must sign it
                && isAddrGettingPaidExactly' txOutputs walletAddr validatingValue -- seller must get the UTxO
-               && isNInputs' txInputs 1                                          -- single tx going in
-               && isNOutputs' contTxOutputs 0                                    -- no continue
                && isTxOutsideInterval lockTimeInterval txValidityRange           -- seller can unlock it
 
-        -- -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
-        -- Transform -> 
-        --   case getOutboundDatum contTxOutputs of
-        --     Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
-        --     Just outboundDatum ->
-        --       case outboundDatum of
-        --         -- transform a swappable utxo
-        --         (Swappable ptd' _ td') -> do
-        --           { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-        --           ; let txValidityRange  = txInfoValidRange info
-        --           ; let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)               -- seller must sign it
-        --           ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1   -- single tx going in, single going out
-        --           ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
-        --           ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeLock td td'                            -- valid time lock
-        --           ; let e = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-        --           ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d,e]
-        --           }
+        -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
+        Transform -> 
+          case getOutboundDatum txOutputs of
+            Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
+            Just outboundDatum ->
+              case outboundDatum of
+                -- transform a swappable utxo
+                (Swappable ptd' _ td') -> signedBy txSigners walletPkh                         -- seller must sign it
+                                       && ptd == ptd'                                          -- seller cant change
+                                       && checkValidTimeLock td td'                            -- valid time lock
+                                       && isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
+
+                {- | DEBUG -}
+                _ -> False
 
         --         -- transform utxo into an offer
         --         (Offering ptd' _ _) -> do
@@ -178,19 +174,19 @@ mkValidator datum redeemer context =
         --           ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
         --           }
                 
-        -- -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
-        -- (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
-        --   case getOutboundDatumByValue contTxOutputs incomingValue of
-        --     Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue" False
-        --     Just outboundDatum ->
-        --       case outboundDatum of
-        --         -- update the payment data on a swappable state
-        --         (Swappable ptd' _ td') -> do
-        --           { let a = traceIfFalse "Incorrect Tx Signer" $ txSignedBy' info (ptPkh ptd)             -- seller must sign it
-        --           ; let b = traceIfFalse "Incorrect Datum"     $ (ptd == ptd') && (td == td')                       -- seller and time can't change
-        --           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1 -- single tx going in, single going out
-        --           ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
-        --           }
+        -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
+        (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
+          case getOutboundDatumByValue txOutputs incomingValue of
+            Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue" False
+            Just outboundDatum ->
+              case outboundDatum of
+                -- update the payment data on a swappable state
+                (Swappable ptd' _ td') -> traceIfFalse "sign" (signedBy txSigners walletPkh) -- seller must sign it
+                                       && traceIfFalse "pay"  (ptd == ptd')                  -- seller can't change
+                                       && traceIfFalse "time" (td == td')                    -- time can't change
+                
+                {- | DEBUG -}
+                _ -> False
 
         --         -- Update a swappable state into the auctioning state
         --         (Auctioning ptd' atd td') -> do
@@ -538,14 +534,14 @@ mkValidator datum redeemer context =
     txInputs :: [SwapTxInInfo]
     txInputs = txInfoInputs info
 
-    contTxOutputs :: [SwapTxOut]
-    contTxOutputs = getContinuingOutputs' context
+    validatingInput :: SwapTxOut
+    validatingInput = ownInput context
 
     validatingValue :: PlutusV2.Value
-    validatingValue =
-      case findOwnInput' context of
-        Nothing    -> traceError "No Input to Validate."
-        Just input -> txOutValue $ txInInfoResolved input
+    validatingValue = txOutValue validatingInput
+
+    validatingAddress :: PlutusV2.Address
+    validatingAddress = txOutAddress validatingInput
 
     -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
@@ -560,25 +556,28 @@ mkValidator datum redeemer context =
     getOutboundDatumByValue :: [SwapTxOut] -> PlutusV2.Value -> Maybe CustomDatumType
     getOutboundDatumByValue []     _   = Nothing
     getOutboundDatumByValue (x:xs) val =
-      if txOutValue x == val -- strict value continue
+      if (txOutAddress x == validatingAddress) && (txOutValue x == val) -- strict value continue
         then
           case txOutDatum x of
-            NoOutputDatum                    -> getOutboundDatumByValue xs val -- skip datumless
+            NoOutputDatum                    -> Nothing
             (OutputDatum (PlutusV2.Datum d)) -> 
               case PlutusTx.fromBuiltinData d of
-                Nothing     -> getOutboundDatumByValue xs val
+                Nothing     -> Nothing
                 Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
         else getOutboundDatumByValue xs val
     
     getOutboundDatum :: [SwapTxOut] -> Maybe CustomDatumType
     getOutboundDatum []     = Nothing
     getOutboundDatum (x:xs) =
-      case txOutDatum x of
-        NoOutputDatum                    -> getOutboundDatum xs -- skip datumless
-        (OutputDatum (PlutusV2.Datum d)) -> 
-          case PlutusTx.fromBuiltinData d of
-            Nothing     -> getOutboundDatum xs
-            Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+      if txOutAddress x == validatingAddress
+        then
+          case txOutDatum x of
+            NoOutputDatum                    -> Nothing
+            (OutputDatum (PlutusV2.Datum d)) -> 
+              case PlutusTx.fromBuiltinData d of
+                Nothing     -> Nothing
+                Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+        else getOutboundDatum xs 
 
     getDatumByTxId :: PlutusV2.TxOutRef -> Maybe CustomDatumType
     getDatumByTxId txId = 

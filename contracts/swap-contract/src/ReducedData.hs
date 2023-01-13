@@ -18,6 +18,7 @@
 {-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 -- Options
 {-# OPTIONS_GHC -fno-strictness               #-}
 {-# OPTIONS_GHC -fno-ignore-interface-pragmas #-}
@@ -32,9 +33,9 @@ module ReducedData
   , SwapTxOut (..)
   , SwapOutputDatum (..)
   , findTxInByTxOutRef'
-  , findOwnInput'
+  , ownInput
   , getContinuingOutputs'
-  , txSignedBy'
+  , signedBy
   , isNInputs'
   , isNOutputs'
   , isAddrGettingPaidExactly'
@@ -111,6 +112,20 @@ findOwnInput' :: SwapScriptContext -> Maybe SwapTxInInfo
 findOwnInput' SwapScriptContext{scriptContextTxInfo=SwapTxInfo{txInfoInputs}, scriptContextPurpose=Spending txOutRef} =
     find (\SwapTxInInfo{txInInfoOutRef} -> txInInfoOutRef == txOutRef) txInfoInputs
 
+-- rewrite findOwnInput without higher order functions
+{-# inlinable ownInput #-}
+ownInput :: SwapScriptContext -> SwapTxOut
+ownInput (SwapScriptContext t_info (Spending o_ref)) = getScriptInput (txInfoInputs t_info) o_ref
+
+-- get the validating script input
+{-# inlinable getScriptInput #-}
+getScriptInput :: [SwapTxInInfo] -> PlutusV2.TxOutRef -> SwapTxOut
+getScriptInput [] _ = traceError "script input not found"
+getScriptInput ((SwapTxInInfo tref ot) : tl) o_ref
+  | tref == o_ref = ot
+  | otherwise = getScriptInput tl o_ref
+
+
 -- | Get all the outputs that pay to the same script address we are currently spending from, if any.
 getContinuingOutputs' :: SwapScriptContext -> [SwapTxOut]
 getContinuingOutputs' ctx | Just SwapTxInInfo{txInInfoResolved=SwapTxOut{txOutAddress}} <- findOwnInput' ctx = filter (f txOutAddress) (txInfoOutputs $ scriptContextTxInfo ctx)
@@ -119,33 +134,34 @@ getContinuingOutputs' ctx | Just SwapTxInInfo{txInInfoResolved=SwapTxOut{txOutAd
 getContinuingOutputs' _ = traceError "Lf" -- "Can't get any continuing outputs"
 
 -- | Check if a transaction was signed by the given public key.
-txSignedBy' :: SwapTxInfo -> PlutusV2.PubKeyHash -> Bool
-txSignedBy' SwapTxInfo{txInfoSignatories} k = 
-  case find ((==) k) txInfoSignatories of
-    Just _  -> True
-    Nothing -> False
+{-# inlinable signedBy #-}
+signedBy :: [PlutusV2.PubKeyHash] -> PlutusV2.PubKeyHash -> Bool
+signedBy []     _ = False
+signedBy (x:xs) k
+  | x == k    = True
+  | otherwise =  signedBy xs k
 
 -- | Count the number of inputs that have datums of any kind.
-isNInputs' :: [SwapTxInInfo] -> Integer -> Bool
-isNInputs' utxos number = loopInputs utxos 0
+isNInputs' :: [SwapTxInInfo] -> PlutusV2.Address -> Integer -> Bool
+isNInputs' utxos addr number = loopInputs utxos 0
   where
     loopInputs :: [SwapTxInInfo] -> Integer -> Bool
     loopInputs []     counter = counter == number
-    loopInputs (x:xs) counter = 
-      case txOutDatum $ txInInfoResolved x of
-        NoOutputDatum   -> loopInputs xs   counter
-        (OutputDatum _) -> loopInputs xs ( counter + 1 ) -- inline
+    loopInputs (x:xs) !counter =
+      if (txOutAddress $ txInInfoResolved x) == addr
+        then loopInputs xs (counter + 1)
+        else loopInputs xs counter
 
--- | Count the number of outputs that have datums of any kind.
-isNOutputs' :: [SwapTxOut] -> Integer -> Bool
-isNOutputs' utxos number = loopInputs utxos 0
+-- | Count the number of outputs going to the validator address
+isNOutputs' :: [SwapTxOut] -> PlutusV2.Address -> Integer -> Bool
+isNOutputs' utxos addr number = loopInputs utxos 0
   where
     loopInputs :: [SwapTxOut] -> Integer  -> Bool
     loopInputs []     counter = counter == number
-    loopInputs (x:xs) counter = 
-      case txOutDatum x of
-        NoOutputDatum   -> loopInputs xs   counter
-        (OutputDatum _) -> loopInputs xs ( counter + 1 ) -- inline
+    loopInputs (x:xs) !counter =
+      if txOutAddress x == addr
+        then loopInputs xs (counter + 1)
+        else loopInputs xs counter
 
 -- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token. 
 isAddrGettingPaidExactly' :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.Value -> Bool
