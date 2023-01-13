@@ -33,8 +33,8 @@ stake_min_utxo=$(${cli} transaction calculate-min-required-utxo \
 stake_value=$((${stake_min_utxo}))
 stake_script_reference_utxo="${reference_address} + ${stake_value}"
 
-echo -e "Creating Reference Script:\n" ${swap_script_reference_utxo}
-echo -e "Creating Reference Script:\n" ${stake_script_reference_utxo}
+echo -e "Creating Swap Reference Script:\n" ${swap_script_reference_utxo}
+echo -e "Creating Stake Reference Script:\n" ${stake_script_reference_utxo}
 #
 # exit
 #

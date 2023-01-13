@@ -30,6 +30,7 @@ module ReducedData
   , SwapTxInfo (..)
   , SwapTxInInfo (..)
   , SwapTxOut (..)
+  , SwapOutputDatum (..)
   , findTxInByTxOutRef'
   , findOwnInput'
   , getContinuingOutputs'
@@ -50,12 +51,15 @@ import           Plutus.V1.Ledger.Value as Value
 -------------------------------------------------------------------------------
 -- | Min Max Data Structures
 -------------------------------------------------------------------------------
+-- output datums
+data SwapOutputDatum =  NoOutputDatum | OutputDatum PlutusV2.Datum
+PlutusTx.makeIsDataIndexed ''SwapOutputDatum [('NoOutputDatum, 0), ('OutputDatum, 2)]
 
 -- tx out (outputs)
 data SwapTxOut = SwapTxOut
   { txOutAddress         :: PlutusV2.Address
   , txOutValue           :: PlutusV2.Value
-  , txOutDatum           :: PlutusV2.OutputDatum
+  , txOutDatum           :: SwapOutputDatum
   , txOutReferenceScript :: BuiltinData
   }
 PlutusTx.unstableMakeIsData ''SwapTxOut
@@ -84,16 +88,19 @@ data SwapTxInfo = SwapTxInfo
     }
 PlutusTx.unstableMakeIsData ''SwapTxInfo
 
+-- | Purpose of the script that is currently running
+data SwapScriptPurpose = Spending PlutusV2.TxOutRef
+PlutusTx.makeIsDataIndexed ''SwapScriptPurpose [('Spending, 1)]
+
 -- script context
 data SwapScriptContext = SwapScriptContext
   { scriptContextTxInfo  :: SwapTxInfo
-  , scriptContextPurpose :: PlutusV2.ScriptPurpose 
+  , scriptContextPurpose :: SwapScriptPurpose 
   }
 PlutusTx.unstableMakeIsData ''SwapScriptContext
 -------------------------------------------------------------------------------
 -- | Rebuilt Functions
 -------------------------------------------------------------------------------
-
 -- find the tx in 
 findTxInByTxOutRef' :: PlutusV2.TxOutRef -> SwapTxInfo -> Maybe SwapTxInInfo
 findTxInByTxOutRef' outRef SwapTxInfo{txInfoInputs} =
@@ -101,9 +108,8 @@ findTxInByTxOutRef' outRef SwapTxInfo{txInfoInputs} =
 
 -- | Find the input currently being validated.
 findOwnInput' :: SwapScriptContext -> Maybe SwapTxInInfo
-findOwnInput' SwapScriptContext{scriptContextTxInfo=SwapTxInfo{txInfoInputs}, scriptContextPurpose=PlutusV2.Spending txOutRef} =
+findOwnInput' SwapScriptContext{scriptContextTxInfo=SwapTxInfo{txInfoInputs}, scriptContextPurpose=Spending txOutRef} =
     find (\SwapTxInInfo{txInInfoOutRef} -> txInInfoOutRef == txOutRef) txInfoInputs
-findOwnInput' _ = Nothing
 
 -- | Get all the outputs that pay to the same script address we are currently spending from, if any.
 getContinuingOutputs' :: SwapScriptContext -> [SwapTxOut]
@@ -114,7 +120,8 @@ getContinuingOutputs' _ = traceError "Lf" -- "Can't get any continuing outputs"
 
 -- | Check if a transaction was signed by the given public key.
 txSignedBy' :: SwapTxInfo -> PlutusV2.PubKeyHash -> Bool
-txSignedBy' SwapTxInfo{txInfoSignatories} k = case find ((==) k) txInfoSignatories of
+txSignedBy' SwapTxInfo{txInfoSignatories} k = 
+  case find ((==) k) txInfoSignatories of
     Just _  -> True
     Nothing -> False
 
@@ -126,9 +133,8 @@ isNInputs' utxos number = loopInputs utxos 0
     loopInputs []     counter = counter == number
     loopInputs (x:xs) counter = 
       case txOutDatum $ txInInfoResolved x of
-        PlutusV2.NoOutputDatum         -> loopInputs xs   counter
-        ( PlutusV2.OutputDatumHash _ ) -> loopInputs xs ( counter + 1 ) -- embedded
-        ( PlutusV2.OutputDatum     _ ) -> loopInputs xs ( counter + 1 ) -- inline
+        NoOutputDatum   -> loopInputs xs   counter
+        (OutputDatum _) -> loopInputs xs ( counter + 1 ) -- inline
 
 -- | Count the number of outputs that have datums of any kind.
 isNOutputs' :: [SwapTxOut] -> Integer -> Bool
@@ -138,9 +144,8 @@ isNOutputs' utxos number = loopInputs utxos 0
     loopInputs []     counter = counter == number
     loopInputs (x:xs) counter = 
       case txOutDatum x of
-        PlutusV2.NoOutputDatum         -> loopInputs xs   counter
-        ( PlutusV2.OutputDatumHash _ ) -> loopInputs xs ( counter + 1 ) -- embedded
-        ( PlutusV2.OutputDatum     _ ) -> loopInputs xs ( counter + 1 ) -- inline
+        NoOutputDatum   -> loopInputs xs   counter
+        (OutputDatum _) -> loopInputs xs ( counter + 1 ) -- inline
 
 -- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token. 
 isAddrGettingPaidExactly' :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.Value -> Bool
