@@ -35,17 +35,18 @@ import           Codec.Serialise
 import           Cardano.Api.Shelley            ( PlutusScript (..), PlutusScriptV2 )
 import qualified Data.ByteString.Lazy           as LBS
 import qualified Data.ByteString.Short          as SBS
-import qualified Plutus.V1.Ledger.Scripts       as Scripts
+-- import qualified Plutus.V1.Ledger.Scripts       as Scripts
 import           Plutus.V1.Ledger.Value         as Value
 import qualified Plutus.V2.Ledger.Api           as PlutusV2
-import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
+-- import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
 import           Plutus.Script.Utils.V2.Scripts as Utils
 import           SwappableDataType
 import           UsefulFuncs
 import           ReducedData
+import qualified Plutonomy
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
 starterPid :: PlutusV2.CurrencySymbol
 starterPid = PlutusV2.CurrencySymbol {PlutusV2.unCurrencySymbol = createBuiltinByteString [129, 132, 79, 125, 206, 228, 193, 214, 149, 152, 114, 234, 137, 214, 62, 123, 191, 183, 133, 227, 46, 115, 31, 218, 253, 43, 75, 73] }
@@ -60,12 +61,43 @@ starterValue = Value.singleton starterPid starterTkn (1 :: Integer)
 -- the script reference contract
 refValidatorHash :: PlutusV2.ValidatorHash
 refValidatorHash = PlutusV2.ValidatorHash $ createBuiltinByteString [15, 196, 149, 183, 139, 121, 96, 63, 128, 105, 77, 227, 78, 254, 112, 252, 143, 229, 251, 55, 247, 132, 32, 237, 180, 140, 121, 15]
+
+-- new data
+
+-- tx info
+data OfferTxInfo = OfferTxInfo
+    { txInfoInputs          :: [SwapTxInInfo] -- Transaction inputs
+    , txInfoReferenceInputs :: [SwapTxInInfo] -- ^ Transaction reference inputs
+    , txInfoOutputs         :: [SwapTxOut] -- Transaction outputs
+    , txInfoFee             :: BuiltinData
+    , txInfoMint            :: BuiltinData
+    , txInfoDCert           :: BuiltinData
+    , txInfoWdrl            :: BuiltinData
+    , txInfoValidRange      :: BuiltinData
+    , txInfoSignatories     :: [PlutusV2.PubKeyHash] -- Signatures provided with the transaction, attested that they all signed the tx
+    , txInfoRedeemers       :: BuiltinData
+    , txInfoData            :: BuiltinData
+    , txInfoId              :: BuiltinData
+    }
+PlutusTx.unstableMakeIsData ''OfferTxInfo
+
+-- script context
+data OfferScriptContext = OfferScriptContext
+  { scriptContextTxInfo  :: OfferTxInfo
+  , scriptContextPurpose :: SwapScriptPurpose
+  }
+PlutusTx.unstableMakeIsData ''OfferScriptContext
+
+-- rewrite findOwnInput without higher order functions
+{-# inlinable findValidatingInput #-}
+findValidatingInput :: OfferScriptContext -> SwapTxOut
+findValidatingInput (OfferScriptContext t_info (Spending o_ref)) = thisScriptInput (txInfoInputs t_info) o_ref
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove    |
-                          Complete  |
-                          Transform |
+data CustomRedeemerType = Remove            |
+                          Complete          |
+                          Transform         |
                           Update ADAIncData   
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'Complete,  1 )
@@ -76,7 +108,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
-mkValidator :: OfferDatumType -> CustomRedeemerType -> PlutusV2.ScriptContext -> Bool
+mkValidator :: OfferDatumType -> CustomRedeemerType -> OfferScriptContext -> Bool
 mkValidator datum redeemer context =
   case datum of
     {- | Offering State
@@ -93,12 +125,12 @@ mkValidator datum redeemer context =
     -}
     (Offering ptd mod _) -> let !walletPkh  = ptPkh ptd
                                 !walletAddr = createAddress walletPkh (ptSc ptd)
-                                !txSigners  = ContextsV2.txInfoSignatories info
+                                !txSigners  = txInfoSignatories info
       in case redeemer of
         -- | Remove the UTxO from the contract.
         Remove -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                                  -- wallet must sign it
-               && traceIfFalse "Value Not Returning" (isAddrGettingPaidExactly txOutputs walletAddr validatingValue) -- wallet must get the UTxO
-               && traceIfFalse "Too Many In/Out"     (isNInputs txInputs 1 && isNOutputs contTxOutputs 0)            -- single input no cont output
+               && traceIfFalse "Value Not Returning" (isAddrGettingPaidExactly' txOutputs walletAddr validatingValue) -- wallet must get the UTxO
+               && traceIfFalse "Too Many In/Out"     (isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0)            -- single input no cont output
       
         -- | Transform the make offer tx ref info
         Transform -> 
@@ -106,7 +138,7 @@ mkValidator datum redeemer context =
             -- offering only
             (Offering ptd' _ _) -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                       -- wallet must sign it
                                 && traceIfFalse "Incorrect Datum"     (ptd == ptd')                                        -- wallet + stake can't change
-                                && traceIfFalse "Too Many In/Out"     (isNInputs txInputs 1 && isNOutputs contTxOutputs 1) -- single tx going in, single going out
+                                && traceIfFalse "Too Many In/Out"     (isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1) -- single tx going in, single going out
             
         
         -- | Complete an offer with a specific swappable UTxO.
@@ -116,17 +148,17 @@ mkValidator datum redeemer context =
             (Swappable ptd' _ _) -> let !sellerPkh  = ptPkh ptd'
                                         !sellerAddr = createAddress sellerPkh (ptSc ptd') in
                                     traceIfFalse "Incorrect Tx Signer" (signedBy txSigners sellerPkh)                                  -- The seller must sign it 
-                                 && traceIfFalse "Offer Not Returned"  (isAddrGettingPaidExactly txOutputs sellerAddr validatingValue) -- token must go back to printer
-                                 && traceIfFalse "Single Script UTxO"  (isNInputs txInputs 2)                                          -- single script input
+                                 && traceIfFalse "Offer Not Returned"  (isAddrGettingPaidExactly' txOutputs sellerAddr validatingValue) -- token must go back to printer
+                                 && traceIfFalse "Single Script UTxO"  (isNInputs' txInputs 2)                                          -- single script input
         
         -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
         (Update aid) -> let !incomingValue          = validatingValue + adaValue (adaInc aid)
                             !swapHash               = swapValidatorHash refValidatorDatum
-                            !(swapDatum, swapValue) = head $ ContextsV2.scriptOutputsAt swapHash info
+                            !(swapDatum, swapValue) = head $ thoseScriptOutputs swapHash txOutputs
           in case swapDatum of
-            PlutusV2.NoOutputDatum       -> False
-            (PlutusV2.OutputDatumHash _) -> False
-            (PlutusV2.OutputDatum (PlutusV2.Datum d)) ->
+            NoOutputDatum                    -> False
+            -- (PlutusV2.OutputDatumHash _) -> False
+            (OutputDatum (PlutusV2.Datum d)) ->
               case PlutusTx.fromBuiltinData d of
                 Nothing     -> False
                 Just inline -> 
@@ -135,31 +167,31 @@ mkValidator datum redeemer context =
                     (Swappable ptd' _ td') -> (signedBy txSigners walletPkh)                       -- seller must sign it
                                            && (ptd == ptd') -- seller can not change
                                            && (checkValidTimeData td')                       -- valid time data
-                                           && (isNInputs txInputs 1) -- single tx going in, single going out
+                                           && (isNInputs' txInputs 1) -- single tx going in, single going out
                                            && swapValue == incomingValue -- values must match
     
   where
-    info :: PlutusV2.TxInfo
-    info = ContextsV2.scriptContextTxInfo  context
+    info :: OfferTxInfo
+    info = scriptContextTxInfo context
 
-    txOutputs :: [PlutusV2.TxOut]
-    txOutputs = ContextsV2.txInfoOutputs info
+    txOutputs :: [SwapTxOut]
+    txOutputs = txInfoOutputs info
 
-    txInputs :: [PlutusV2.TxInInfo]
-    txInputs = ContextsV2.txInfoInputs info
+    txInputs :: [SwapTxInInfo]
+    txInputs = txInfoInputs info
 
-    txReferences :: [PlutusV2.TxInInfo]
-    txReferences = ContextsV2.txInfoReferenceInputs info
+    txReferences :: [SwapTxInInfo]
+    txReferences = txInfoReferenceInputs info
 
     refValidatorDatum :: ScriptRefDatumType
     refValidatorDatum = 
       if (length txReferences == 1) && checkReferenceValue
         then 
-          case ContextsV2.txOutDatum $ ContextsV2.txInInfoResolved $ head txReferences of
-            PlutusV2.NoOutputDatum       -> traceError "No Datum"
-            (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
+          case txOutDatum $ txInInfoResolved $ head txReferences of
+            NoOutputDatum       -> traceError "No Datum"
+            -- (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
             -- inline datum only
-            (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+            (OutputDatum (PlutusV2.Datum d)) -> 
               case PlutusTx.fromBuiltinData d of
                 Nothing     -> traceError "Bad Data"
                 Just inline -> PlutusTx.unsafeFromBuiltinData @ScriptRefDatumType inline
@@ -167,19 +199,19 @@ mkValidator datum redeemer context =
 
     checkReferenceValue :: Bool
     checkReferenceValue = Value.geq refValue starterValue
-      where refValue = ContextsV2.txOutValue $ ContextsV2.txInInfoResolved $ head txReferences
+      where refValue = txOutValue $ txInInfoResolved $ head txReferences
 
-    validatingInput :: PlutusV2.TxOut
-    validatingInput = ownInput context
+    validatingInput :: SwapTxOut
+    validatingInput = findValidatingInput context
 
     validatingValue :: PlutusV2.Value
-    validatingValue = PlutusV2.txOutValue validatingInput
+    validatingValue = txOutValue validatingInput
     
     validatingAddress :: PlutusV2.Address
-    validatingAddress = PlutusV2.txOutAddress validatingInput
+    validatingAddress = txOutAddress validatingInput
 
-    contTxOutputs :: [PlutusV2.TxOut]
-    contTxOutputs = getScriptOutputs txOutputs validatingAddress
+    contTxOutputs :: [SwapTxOut]
+    contTxOutputs = theseScriptOutputs txOutputs validatingAddress
 
     -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
@@ -191,44 +223,60 @@ mkValidator datum redeemer context =
           , PlutusV2.txOutRefIdx = index
           }
 
-    getOutboundDatum :: [PlutusV2.TxOut] -> OfferDatumType
+    getOutboundDatum :: [SwapTxOut] -> OfferDatumType
     getOutboundDatum []     = traceError "Nothing Found"
     getOutboundDatum (x:xs) =
-      case PlutusV2.txOutDatum x of
-        PlutusV2.NoOutputDatum       -> getOutboundDatum xs
-        (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
+      case txOutDatum x of
+        NoOutputDatum       -> getOutboundDatum xs
+        -- (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
         -- inline datum only
-        (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+        (OutputDatum (PlutusV2.Datum d)) -> 
           case PlutusTx.fromBuiltinData d of
             Nothing     -> traceError "Bad Data"
             Just inline -> PlutusTx.unsafeFromBuiltinData @OfferDatumType inline
 
     getDatumByTxId :: PlutusV2.TxOutRef -> SwapDatumType
     getDatumByTxId txId = 
-      case PlutusV2.txOutDatum $ PlutusV2.txInInfoResolved $ txInFromTxRef txInputs txId of
-        PlutusV2.NoOutputDatum       -> traceError "No Datum"
-        (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
+      case txOutDatum $ txInInfoResolved $ swapTxInFromTxRef txInputs txId of
+        NoOutputDatum       -> traceError "No Datum"
+        -- (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum"
         -- inline datum only
-        (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+        (OutputDatum (PlutusV2.Datum d)) -> 
           case PlutusTx.fromBuiltinData d of
             Nothing     -> traceError "Bad Data"
             Just inline -> PlutusTx.unsafeFromBuiltinData @SwapDatumType inline
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------
-offerValidator :: PlutusV2.Validator
-offerValidator = PlutusV2.mkValidatorScript
-    $$(PlutusTx.compile [|| wrap ||])
- where
-    wrap = Utils.mkUntypedValidator mkValidator
--------------------------------------------------------------------------------
--- | The code below is required for the plutus script compile.
--------------------------------------------------------------------------------
-script :: Scripts.Script
-script = Scripts.unValidatorScript offerValidator
+-- offerValidator :: PlutusV2.Validator
+-- offerValidator = PlutusV2.mkValidatorScript
+--     $$(PlutusTx.compile [|| wrap ||])
+--  where
+--     wrap = Utils.mkUntypedValidator mkValidator
+-- -------------------------------------------------------------------------------
+-- -- | The code below is required for the plutus script compile.
+-- -------------------------------------------------------------------------------
+-- script :: Scripts.Script
+-- script = Scripts.unValidatorScript offerValidator
+
+-- offerContractScriptShortBs :: SBS.ShortByteString
+-- offerContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+
+-- offerContractScript :: PlutusScript PlutusScriptV2
+-- offerContractScript = PlutusScriptSerialised offerContractScriptShortBs
+
+-- -------------------------------------------------------------------------------
+-- -- | Now we need to compile the Validator.
+-- -------------------------------------------------------------------------------
+wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+wrappedValidator x y z = check (mkValidator (PlutusV2.unsafeFromBuiltinData x) (PlutusV2.unsafeFromBuiltinData y) (PlutusV2.unsafeFromBuiltinData z))
+
+validator :: Validator
+validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+-- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
 offerContractScriptShortBs :: SBS.ShortByteString
-offerContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+offerContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise validator
 
 offerContractScript :: PlutusScript PlutusScriptV2
 offerContractScript = PlutusScriptSerialised offerContractScriptShortBs

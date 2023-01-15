@@ -60,6 +60,10 @@ starterValue = Value.singleton starterPid starterTkn (1 :: Integer)
 -- the script reference contract
 refValidatorHash :: PlutusV2.ValidatorHash
 refValidatorHash = PlutusV2.ValidatorHash $ createBuiltinByteString [15, 196, 149, 183, 139, 121, 96, 63, 128, 105, 77, 227, 78, 254, 112, 252, 143, 229, 251, 55, 247, 132, 32, 237, 180, 140, 121, 15]
+-- The new data types
+
+
+
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
