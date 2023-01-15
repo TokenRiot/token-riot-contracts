@@ -46,6 +46,10 @@ library
   hs-source-dirs:       src
 
   exposed-modules:      SwapContract
+                        OfferContract
+                        BidContract
+                        AuctionContract
+                        ScriptRefContract
                         SwappableDataType
                         ReducedData
 
@@ -74,3 +78,54 @@ executable swap-contract
   build-depends:        cardano-api
                       , swap-contract
 
+executable ref-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              ref-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+
+executable offer-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              offer-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+
+executable bid-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              bid-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+
+executable auction-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              auction-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract

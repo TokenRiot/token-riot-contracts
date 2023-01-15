@@ -36,15 +36,21 @@ module SwappableDataType
   , MakeOfferData (..)
   , SpecificToken (..)
   , getTokenName
+  , ScriptRefDatumType (..)
   , OfferFlagData (..)
+  , OfferDatumType (..)
+  , BidDatumType (..)
+  , SwapDatumType (..)
+  , AuctionDatumType (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api as PlutusV2
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
+
 -------------------------------------------------------------------------------
 -- | Pay To Data
 -- 
@@ -180,3 +186,26 @@ data OfferFlagData = OfferFlagData
   -- ^ The flag to indicate if the trade should remain in the contract.
   }
 PlutusTx.unstableMakeIsData ''OfferFlagData
+-------------------------------------------------------------------------------
+-- | Datum Types
+-------------------------------------------------------------------------------
+data ScriptRefDatumType = ScriptRefDatumType
+  { swapValidatorHash    :: PlutusV2.ValidatorHash
+  , offerValidatorHash   :: PlutusV2.ValidatorHash
+  , auctionValidatorHash :: PlutusV2.ValidatorHash
+  , bidValidatorHash     :: PlutusV2.ValidatorHash
+  , adminPkh             :: PlutusV2.PubKeyHash
+  }
+PlutusTx.unstableMakeIsData ''ScriptRefDatumType
+
+data OfferDatumType = Offering PayToData MakeOfferData OfferFlagData
+PlutusTx.makeIsDataIndexed ''OfferDatumType  [('Offering, 0)]
+
+data BidDatumType = Bidding PayToData MakeOfferData
+PlutusTx.makeIsDataIndexed ''BidDatumType  [('Bidding, 0)]
+
+data SwapDatumType = Swappable PayToData PaymentData TimeData
+PlutusTx.makeIsDataIndexed ''SwapDatumType [('Swappable, 0)]
+
+data AuctionDatumType = Auctioning PayToData TimeData TimeData
+PlutusTx.makeIsDataIndexed ''AuctionDatumType [('Auctioning, 0)]

@@ -1,10 +1,10 @@
 import Prelude
 import Cardano.Api
-import SwapContract ( swapContractScript )
+import ScriptRefContract ( refContractScript )
 
 main :: IO ()
 main = do
-  result <- writeFileTextEnvelope "swap-contract.plutus" Nothing swapContractScript
+  result <- writeFileTextEnvelope "script-ref-contract.plutus" Nothing refContractScript
   case result of
     Left err -> print $ displayError err
     Right () -> return ()
