@@ -108,10 +108,12 @@ PlutusTx.makeIsDataIndexed ''SwapScriptPurpose [('Spending, 1)]
 -- | Check if a transaction was signed by the given public key.
 {-# inlinable signedBy #-}
 signedBy :: [PlutusV2.PubKeyHash] -> PlutusV2.PubKeyHash -> Bool
-signedBy []     _ = False
-signedBy (x:xs) k
-  | x == k    = True
-  | otherwise =  signedBy xs k
+signedBy list k = loop list
+  where
+    loop [] = False
+    loop (x:xs)
+      | x == k = True
+      | otherwise = loop xs
 
 {-# inlinable theseScriptOutputs #-}
 theseScriptOutputs :: [SwapTxOut] -> PlutusV2.Address -> [SwapTxOut]
@@ -142,7 +144,7 @@ isNInputs' :: [SwapTxInInfo] -> Integer -> Bool
 isNInputs' utxos number = loopInputs utxos 0
   where
     loopInputs :: [SwapTxInInfo] -> Integer -> Bool
-    loopInputs []     counter = counter == number
+    loopInputs []     !counter = counter == number
     loopInputs (x:xs) !counter = 
       case txOutDatum $ txInInfoResolved x of
         NoOutputDatum   -> loopInputs xs   counter
@@ -154,25 +156,24 @@ isNOutputs' :: [SwapTxOut] -> Integer -> Bool
 isNOutputs' utxos number = loopInputs utxos 0
   where
     loopInputs :: [SwapTxOut] -> Integer  -> Bool
-    loopInputs []     counter = counter == number
+    loopInputs []     !counter = counter == number
     loopInputs (x:xs) !counter = 
       case txOutDatum x of
         NoOutputDatum   -> loopInputs xs   counter
         (OutputDatum _) -> loopInputs xs ( counter + 1 ) -- inline
 
--- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token. 
+
 {-# INLINABLE isAddrGettingPaidExactly' #-}
 isAddrGettingPaidExactly' :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.Value -> Bool
-isAddrGettingPaidExactly' []     _    _   = False
-isAddrGettingPaidExactly' (x:xs) addr val
-  | checkAddr && checkVal = True
-  | otherwise             = isAddrGettingPaidExactly' xs addr val
+isAddrGettingPaidExactly' = loop 
   where
-    checkAddr :: Bool
-    checkAddr = txOutAddress x == addr
-
-    checkVal :: Bool
-    checkVal = txOutValue x == val     -- must be exact
+    loop :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.Value -> Bool
+    loop [] _ _ = False
+    loop (x:xs) addr val = 
+      let checkAddr = txOutAddress x == addr
+          checkVal  = txOutValue x == val
+          found     = checkAddr && checkVal
+      in found || loop xs addr val
 
 -- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token.
 isAddrHoldingExactlyToken' :: [SwapTxOut] -> PlutusV2.Address -> PlutusV2.CurrencySymbol -> PlutusV2.TokenName -> Integer -> Bool

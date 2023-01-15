@@ -60,7 +60,7 @@ starterValue = Value.singleton starterPid starterTkn (1 :: Integer)
 
 -- the script reference contract
 refValidatorHash :: PlutusV2.ValidatorHash
-refValidatorHash = PlutusV2.ValidatorHash $ createBuiltinByteString [15, 196, 149, 183, 139, 121, 96, 63, 128, 105, 77, 227, 78, 254, 112, 252, 143, 229, 251, 55, 247, 132, 32, 237, 180, 140, 121, 15]
+refValidatorHash = PlutusV2.ValidatorHash $ createBuiltinByteString [254, 238, 169, 123, 27, 228, 117, 143, 166, 88, 214, 238, 249, 83, 26, 159, 80, 54, 171, 210, 216, 91, 49, 189, 229, 199, 47, 237]
 
 -- new data
 
@@ -128,17 +128,19 @@ mkValidator datum redeemer context =
                                 !txSigners  = txInfoSignatories info
       in case redeemer of
         -- | Remove the UTxO from the contract.
-        Remove -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                                  -- wallet must sign it
-               && traceIfFalse "Value Not Returning" (isAddrGettingPaidExactly' txOutputs walletAddr validatingValue) -- wallet must get the UTxO
-               && traceIfFalse "Too Many In/Out"     (isNInputs' txInputs 1 && isNOutputs' contTxOutputs 0)            -- single input no cont output
+        Remove -> (signedBy txSigners walletPkh)                                   -- wallet must sign it
+               && (isAddrGettingPaidExactly' txOutputs walletAddr validatingValue) -- wallet must get the UTxO
+              --  && (isNInputs' txInputs 1)                                          -- single input 
+              --  && (isNOutputs' contTxOutputs 0)                                    -- no cont output
       
         -- | Transform the make offer tx ref info
         Transform -> 
           case getOutboundDatum contTxOutputs of
             -- offering only
-            (Offering ptd' _ _) -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                       -- wallet must sign it
-                                && traceIfFalse "Incorrect Datum"     (ptd == ptd')                                        -- wallet + stake can't change
-                                && traceIfFalse "Too Many In/Out"     (isNInputs' txInputs 1 && isNOutputs' contTxOutputs 1) -- single tx going in, single going out
+            (Offering ptd' _ _) -> (signedBy txSigners walletPkh) -- wallet must sign it
+                                && (ptd == ptd')                  -- wallet + stake can't change
+                                && (isNInputs' txInputs 1)        -- single tx going in
+                                && (isNOutputs' contTxOutputs 1)  -- single going out
             
         
         -- | Complete an offer with a specific swappable UTxO.
@@ -164,11 +166,11 @@ mkValidator datum redeemer context =
                 Just inline -> 
                   case PlutusTx.unsafeFromBuiltinData @SwapDatumType inline of
                     -- update the payment data on a swappable state
-                    (Swappable ptd' _ td') -> (signedBy txSigners walletPkh)                       -- seller must sign it
-                                           && (ptd == ptd') -- seller can not change
-                                           && (checkValidTimeData td')                       -- valid time data
-                                           && (isNInputs' txInputs 1) -- single tx going in, single going out
-                                           && swapValue == incomingValue -- values must match
+                    (Swappable ptd' _ td') -> traceIfFalse "sign"  (signedBy txSigners walletPkh)                       -- seller must sign it
+                                           && traceIfFalse "owner" (ptd == ptd') -- seller can not change
+                                           && traceIfFalse "time"  (checkValidTimeData td')                       -- valid time data
+                                           && traceIfFalse "ins"   (isNInputs' txInputs 1) -- single tx going in, single going out
+                                           && traceIfFalse "value" (swapValue == incomingValue) -- values must match
     
   where
     info :: OfferTxInfo

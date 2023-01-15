@@ -6,7 +6,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # staked smart contract address
-script_path="../../swap-contract/swap-contract.plutus"
+script_path="../../swap-contract/offer-contract.plutus"
 stake_path="../../stake-contract/stake-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
@@ -18,13 +18,13 @@ buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/b
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
-# what is being sold
-asset="12345 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739"
+#
+asset="12345 6effa18e41008cd0b13f3959a5a4af40b92ca936bb7669f40d3b1f81.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6732"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
-    --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json \
+    --tx-out-inline-datum-file ../data/offering/buyer-offer-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
 buyer_address_out="${buyer_address} + ${min_utxo} + ${asset}"
@@ -86,10 +86,10 @@ FEE=$(${cli} transaction build \
     --tx-in ${buyer_tx_in} \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${script_tx_in}  \
-    --spending-tx-in-reference="${script_ref_utxo}#1" \
+    --spending-tx-in-reference="${script_ref_utxo}#2" \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
-    --spending-reference-tx-in-redeemer-file ../data/redeemers/remove-redeemer.json \
+    --spending-reference-tx-in-redeemer-file ../data/offering/remove-redeemer.json \
     --tx-out="${buyer_address_out}" \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${buyer_pkh} \
