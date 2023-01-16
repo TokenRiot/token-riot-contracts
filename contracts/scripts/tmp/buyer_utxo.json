@@ -1,25 +1,12 @@
 {
-    "ce48aca9a8bb19d1c59ada3cf9dbb8a225777409cd37026063e91326e764fc52#0": {
+    "6c78ecab0bee4befe337b614a2c6ad42141f3b5e7ba8532c44c2bab101b46620#1": {
         "address": "addr_test1vrdhhl7yrfpufkwrzdpw8l29wsy6adqrq249ypvd7d6fzwc6x00av",
         "datum": null,
         "datumhash": null,
         "inlineDatum": null,
         "referenceScript": null,
         "value": {
-            "6effa18e41008cd0b13f3959a5a4af40b92ca936bb7669f40d3b1f81": {
-                "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6732": 12345
-            },
-            "lovelace": 1667970
-        }
-    },
-    "ce48aca9a8bb19d1c59ada3cf9dbb8a225777409cd37026063e91326e764fc52#1": {
-        "address": "addr_test1vrdhhl7yrfpufkwrzdpw8l29wsy6adqrq249ypvd7d6fzwc6x00av",
-        "datum": null,
-        "datumhash": null,
-        "inlineDatum": null,
-        "referenceScript": null,
-        "value": {
-            "lovelace": 23876858833
+            "lovelace": 23875704189
         }
     }
 }

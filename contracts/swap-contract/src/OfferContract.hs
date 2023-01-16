@@ -130,8 +130,8 @@ mkValidator datum redeemer context =
         -- | Remove the UTxO from the contract.
         Remove -> (signedBy txSigners walletPkh)                                   -- wallet must sign it
                && (isAddrGettingPaidExactly' txOutputs walletAddr validatingValue) -- wallet must get the UTxO
-              --  && (isNInputs' txInputs 1)                                          -- single input 
-              --  && (isNOutputs' contTxOutputs 0)                                    -- no cont output
+               && (isNInputs' txInputs 1)                                          -- single input 
+               && (isNOutputs' contTxOutputs 0)                                    -- no cont output
       
         -- | Transform the make offer tx ref info
         Transform -> 
@@ -274,8 +274,8 @@ wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
 wrappedValidator x y z = check (mkValidator (PlutusV2.unsafeFromBuiltinData x) (PlutusV2.unsafeFromBuiltinData y) (PlutusV2.unsafeFromBuiltinData z))
 
 validator :: Validator
-validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
--- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+-- validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
 offerContractScriptShortBs :: SBS.ShortByteString
 offerContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise validator
