@@ -47,6 +47,7 @@ library
 
   exposed-modules:      SwapContract
                         SwappableDataType
+                        ReducedFunctions
 
   build-depends:        bytestring
                       , cardano-api

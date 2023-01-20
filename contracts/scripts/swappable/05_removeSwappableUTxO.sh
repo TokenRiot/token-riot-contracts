@@ -18,8 +18,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
-#
-asset="1 29554843ec2823b1a3b1bf1abd21b1bb0862d5efa6dea0838c9da0ee.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+# asset to trade
+asset="1 cffbbfaef33f2e8f9ce99b0b7610a6403d5cb03d44d5977be66f46cb.015592033a2850503565abef1188040c41a3429234c83f6cb41042db0a51b404"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
