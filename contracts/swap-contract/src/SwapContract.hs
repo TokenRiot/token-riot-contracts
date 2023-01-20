@@ -119,90 +119,66 @@ mkValidator datum redeemer context =
                                  !txValidityRange  = ContextsV2.txInfoValidRange info
                                  !txSigners        = ContextsV2.txInfoSignatories info
       in case redeemer of
-        -- -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
-        -- Transform -> 
-        --   case getOutboundDatum contTxOutputs of
-        --     Nothing            -> traceIfFalse "Swappable:Transform:GetOutboundDatum" False
-        --     Just outboundDatum ->
-        --       case outboundDatum of
-        --         -- transform a swappable utxo
-        --         (Swappable ptd' _ td') -> do
-        --           { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-        --           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-        --           ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-        --           ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
-        --           ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
-        --           ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeLock td td'                            -- valid time lock
-        --           ; let e = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-        --           ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d,e]
-        --           }
+        -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
+        Transform -> 
+          case getOutboundDatum contTxOutputs of
+            -- transform a swappable utxo
+            (Swappable ptd' _ td') -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                                   && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
+                                   && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single tx going in, single going out
+                                   && traceIfFalse "owns"   (ptd == ptd')                                          -- seller cant change
+                                   && traceIfFalse "time"   (checkValidTimeLock td td')                            -- valid time lock
+                                   && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
-        --         -- transform utxo into an offer
-        --         (Offering ptd' _ _) -> do
-        --           { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-        --           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-        --           ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-        --           ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
-        --           ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
-        --           ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-        --           ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
-        --           }
+            -- transform utxo into an offer
+            (Offering ptd' _ _) -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                                && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
+                                && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single tx going in, single going out
+                                && traceIfFalse "owns"   (ptd == ptd')                                          -- seller cant change
+                                && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+            
+            -- transform a swappable state into the auctioning state
+            (Auctioning ptd' atd td') -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                                      && traceIfFalse "owns"   (ptd == ptd')                                          -- seller cant change
+                                      && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
+                                      && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single tx going in, single going out
+                                      && traceIfFalse "Aucti"  (checkValidTimeData atd)                               -- valid auction time lock
+                                      && traceIfFalse "time"   (checkValidTimeLock td td')                            -- valid time lock
+                                      && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+            
+            -- transform a swappable state into a bid
+            (Bidding ptd' _) -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                             && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
+                             && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single tx going in, single going out
+                             && traceIfFalse "owns"   (ptd == ptd')                                          -- seller cant change
+                             && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
                 
-        --         -- transform a swappable state into the auctioning state
-        --         (Auctioning ptd' atd td') -> do
-        --           { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-        --           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-        --           ; let a = traceIfFalse "Incorrect Tx Signer"  $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-        --           ; let b = traceIfFalse "Incorrect Datum"      $ (ptd == ptd')                                        -- seller and time can't change
-        --           ; let c = traceIfFalse "Too Many In/Out"      $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
-        --           ; let d = traceIfFalse "Invalid Auction Time" $ checkValidTimeData atd                               -- valid auction time lock
-        --           ; let e = traceIfFalse "Invalid Lock Time"    $ checkValidTimeLock td td'                            -- valid global time lock
-        --           ; let f = traceIfFalse "Time Lock Is Live"    $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-        --           ;         traceIfFalse "Swappable:Transform"  $ all (==(True :: Bool)) [a,b,c,d,e,f]
-        --           }
-                
-        --         -- transform a swappable state into a bid
-        --         (Bidding ptd' _) -> do
-        --           { let lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-        --           ; let txValidityRange  = ContextsV2.txInfoValidRange info
-        --           ; let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)               -- seller must sign it
-        --           ; let b = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1   -- single tx going in, single going out
-        --           ; let c = traceIfFalse "Datum Is Changing"   $ ptd == ptd'                                          -- seller cant change
-        --           ; let d = traceIfFalse "Time Lock Is Live"   $ isTxOutsideInterval lockTimeInterval txValidityRange -- seller can unlock it
-        --           ;         traceIfFalse "Swappable:Transform" $ all (==(True :: Bool)) [a,b,c,d]
-        --           }
-                
-        -- -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
-        -- (Update aid) -> let incomingValue = validatingValue + adaValue (adaInc aid) in
-        --   case getOutboundDatumByValue contTxOutputs incomingValue of
-        --     Nothing            -> traceIfFalse "Swappable:Update:GetOutboundDatumByValue" False
-        --     Just outboundDatum ->
-        --       case outboundDatum of
-        --         -- update the payment data on a swappable state
-        --         (Swappable ptd' _ td') -> do
-        --           { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
-        --           ; let b = traceIfFalse "Incorrect Datum"     $ (ptd == ptd') && (td == td')                       -- seller and time can't change
-        --           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
-        --           ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c]
-        --           }
+        -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
+        (Update aid) -> let !incomingValue = validatingValue + adaValue (adaInc aid) in
+          case getOutboundDatumByValue contTxOutputs incomingValue of
+            -- update the payment data on a swappable state
+            (Swappable ptd' _ td') -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                                   && traceIfFalse "Datum"  (ptd == ptd')                   -- seller and time can't change
+                                   && traceIfFalse "Time"   (td == td')                     -- seller and time can't change
+                                   && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
+                                   && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single tx going in, single going out
 
-        --         -- Update a swappable state into the auctioning state
-        --         (Auctioning ptd' atd td') -> do
-        --           { let a = traceIfFalse "Incorrect Tx Signer" $ ContextsV2.txSignedBy info (ptPkh ptd)             -- seller must sign it
-        --           ; let b = traceIfFalse "Incorrect Datum"     $ (ptd == ptd') && (td == td')                       -- seller and time can't change
-        --           ; let c = traceIfFalse "Too Many In/Out"     $ isNInputs txInputs 1 && isNOutputs contTxOutputs 1 -- single tx going in, single going out
-        --           ; let d = traceIfFalse "Invalid Time Change" $ checkValidTimeData atd                             -- valid time lock
-        --           ;         traceIfFalse "Swappable:Update"    $ all (==(True :: Bool)) [a,b,c,d]
-        --           }
+            -- Update a swappable state into the auctioning state
+            (Auctioning ptd' atd td') -> traceIfFalse "Signer" (signedBy txSigners walletPkh)  -- seller must sign it
+                                      && traceIfFalse "Datum"  (ptd == ptd')                   -- seller can't change
+                                      && traceIfFalse "Time"   (td == td')                     -- time can't change
+                                      && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1) -- single tx going in
+                                      && traceIfFalse "Outs"   (nOutputs contTxOutputs 1)      -- single going out
+                                      && traceIfFalse "Change" (checkValidTimeData atd)        -- valid time lock
 
-        --         -- Other Datums fail
-        --         _ -> traceIfFalse "Swappable:Update:Undefined Datum" False
+            -- Other Datums fail
+            _ -> traceIfFalse "Swappable:Update:Undefined Datum" False
         
         -- | A trader may remove their UTxO if not currently being timelocked.
-        Remove -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                          -- seller must sign it
-               && traceIfFalse "Value Not Returning" (findPayout txOutputs walletAddr validatingValue) -- seller must get the UTxO
-               && traceIfFalse "Too Many In"         (nInputs txInputs scriptAddr 1)            -- single tx going in, no continue
-               && traceIfFalse "Time Lock Is Live"   (isTxOutsideInterval lockTimeInterval txValidityRange)          -- seller can unlock it
+        Remove -> traceIfFalse "Incorrect Tx Signer" (signedBy txSigners walletPkh)                         -- seller must sign it
+               && traceIfFalse "Value Not Returning" (findPayout txOutputs walletAddr validatingValue)      -- seller must get the UTxO
+               && traceIfFalse "Too Many In"         (nInputs txInputs scriptAddr 1)                        -- single tx going in, no continue
+               && traceIfFalse "Time Lock Is Live"   (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
         
         -- | Order Book Dex Endpoint
         -- TODO
@@ -552,17 +528,6 @@ mkValidator datum redeemer context =
     contTxOutputs :: [PlutusV2.TxOut]
     contTxOutputs = getScriptOutputs txOutputs scriptAddr
 
-
-    -- contTxOutputs :: [PlutusV2.TxOut]
-    -- contTxOutputs = ContextsV2.getContinuingOutputs context
-
-    -- validatingValue :: PlutusV2.Value
-    -- validatingValue =
-    --   case ContextsV2.findOwnInput context of
-    --     Nothing    -> traceError "No Input to Validate."
-    --     Just input -> PlutusV2.txOutValue $ PlutusV2.txInInfoResolved input
-
-    -- Create a TxOutRef from the tx hash and index.
     createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
     createTxOutRef txHash index = txId
       where
@@ -590,17 +555,20 @@ mkValidator datum redeemer context =
                     Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
             else getOutboundDatumByValue' xs val
     
-    getOutboundDatum :: [PlutusV2.TxOut] -> Maybe CustomDatumType
-    getOutboundDatum []     = Nothing
-    getOutboundDatum (x:xs) =
-      case PlutusV2.txOutDatum x of
-        PlutusV2.NoOutputDatum       -> getOutboundDatum xs -- skip datumless
-        (PlutusV2.OutputDatumHash _) -> getOutboundDatum xs -- skip embedded datum
-        -- inline datum only
-        (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
-          case PlutusTx.fromBuiltinData d of
-            Nothing     -> getOutboundDatum xs
-            Just inline -> Just $ PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
+    getOutboundDatum :: [PlutusV2.TxOut] -> CustomDatumType
+    getOutboundDatum txOuts = getOutboundDatum' txOuts
+      where
+        getOutboundDatum' :: [PlutusV2.TxOut] -> CustomDatumType
+        getOutboundDatum' []     = traceError "Nothing Found On Cont"
+        getOutboundDatum' (x:xs) =
+          case PlutusV2.txOutDatum x of
+            PlutusV2.NoOutputDatum       -> getOutboundDatum' xs
+            (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum On Cont"
+            -- inline datum only
+            (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+              case PlutusTx.fromBuiltinData d of
+                Nothing     -> traceError "Bad Data On Cont"
+                Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
 
     getDatumByTxId :: PlutusV2.TxOutRef -> Maybe CustomDatumType
     getDatumByTxId txId = 
