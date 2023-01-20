@@ -17,7 +17,7 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 
 # asset to trade
-asset="1 cffbbfaef33f2e8f9ce99b0b7610a6403d5cb03d44d5977be66f46cb.015592033a2850503565abef1188040c41a3429234c83f6cb41042db0a51b404"
+asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -25,8 +25,9 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-sc_address_out="${script_address} + ${min_utxo} + ${asset}"
-echo "Script OUTPUT: "${sc_address_out}
+script_address_out="${script_address} + ${min_utxo} + ${single_asset}"
+script_change_address_out="${script_address} + ${min_utxo} + ${change_asset}"
+echo "Script OUTPUT: "${script_address_out}
 #
 # exit
 #
@@ -54,7 +55,7 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${seller_address} \
     --tx-in ${seller_tx_in} \
-    --tx-out="${sc_address_out}" \
+    --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
     --testnet-magic ${testnet_magic})
 
@@ -63,7 +64,8 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+wc -c < ../tmp/tx.draft
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
