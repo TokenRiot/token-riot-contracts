@@ -214,7 +214,6 @@ mkValidator datum redeemer context =
                            && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                         -- buyer must be paid
                            && traceIfFalse "Empty"  (pAmt pd /= 0)                                                     -- seller must define price
                            && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                    -- single tx going in
-                           && traceIfFalse "Out"    (nOutputs contTxOutputs 1)                                         -- single going out
                            && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
         
         -- | Offer to change walletship of UTxO for some amount of a single token + extras.
