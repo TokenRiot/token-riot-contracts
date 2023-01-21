@@ -1,0 +1,18 @@
+[
+    {
+        "executionUnits": {
+            "memory": 3773526,
+            "steps": 1044327415
+        },
+        "lovelaceCost": 293029,
+        "scriptHash": "9dcaf4fd6ad52de7ffc7f4647e11fcccce9985d9a06740019a016d4a"
+    },
+    {
+        "executionUnits": {
+            "memory": 8126908,
+            "steps": 2148972418
+        },
+        "lovelaceCost": 623864,
+        "scriptHash": "9dcaf4fd6ad52de7ffc7f4647e11fcccce9985d9a06740019a016d4a"
+    }
+]

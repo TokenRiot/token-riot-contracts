@@ -224,7 +224,7 @@ mkValidator datum redeemer context =
               case getOutboundDatumByValue contTxOutputs incomingValue of
                 -- cont into swappable only
                 (Swappable ptd'' pd' td') -> traceIfFalse "sign" (signedBy txSigners walletPkh)  -- seller must sign
-                                          && traceIfFalse "oldo" (ptd /= ptd'')                  -- cant sell this
+                                          && traceIfFalse "oldo" (ptd /= ptd'')                  -- cant sell this to self
                                           && traceIfFalse "newo" (ptd' == ptd'')                 -- new owner must own it
                                           && traceIfFalse "time" (td == td')                     -- time data must remain
                                           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2) -- single tx going in
@@ -244,6 +244,7 @@ mkValidator datum redeemer context =
             -- offering only
             (Offering ptd' _ ofd) -> let !buyerAddr = createAddress (ptPkh ptd') (ptSc ptd')
                                   in traceIfFalse "sign" (signedBy txSigners walletPkh)                         -- seller must sign
+                                  && traceIfFalse "oldo" (ptd /= ptd')                                          -- cant sell this to self
                                   && traceIfFalse "Pays" (findPayout txOutputs buyerAddr thisValue)             -- buyer must be paid
                                   && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2)                        -- double tx going in
                                   && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
