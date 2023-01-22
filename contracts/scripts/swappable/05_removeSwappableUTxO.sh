@@ -41,6 +41,8 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
+collat_address_out="${collat_address} + 170553 + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.007e08f756ee74d9d925df9c9881c717cf3c5fd510aedec0bf992c7a5a4a397a + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.0112b80ebdbaa0ed5fe4dfe57679d1474428fa9eee815ca58103b4d3da3912c3 + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.0169f3226794a28a9cd8b3c7e9e98190a43249d93b09fb290197c045c2cad68b"
+
 seller_address_out="${seller_address} + ${min_utxo} + ${asset}"
 echo "Exit OUTPUT: "${seller_address_out}
 #
@@ -89,16 +91,24 @@ if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${collat_address} \033[0m \n";
    exit;
 fi
-collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
+# alltxin=""
+# TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in-collateral"' ../tmp/collat_utxo.json)
+# collat_tx_in=${TXIN::-19}
+collat_tx_in=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
+
+# echo $collat_tx_in
+# echo $collat_utxo
+# exit
 
 # script reference utxo
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
 
+    # --tx-out-return-collateral="${collat_address_out}" \
+    # --tx-total-collateral 1393977 \
 # slot contraints
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
-
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
@@ -107,7 +117,7 @@ FEE=$(${cli} transaction build \
     --invalid-before ${current_slot} \
     --invalid-hereafter ${final_slot} \
     --change-address ${seller_address} \
-    --tx-in-collateral="${collat_utxo}" \
+    --tx-in-collateral ${collat_tx_in} \
     --tx-in ${seller_tx_in} \
     --tx-in ${script_tx_in} \
     --spending-tx-in-reference="${script_ref_utxo}#1" \

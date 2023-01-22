@@ -303,6 +303,7 @@ mkValidator datum redeemer context =
             (Swappable ptd' _ _) -> let !sellerPkh  = ptPkh ptd'
                                         !sellerAddr = createAddress sellerPkh (ptSc ptd')
                                  in traceIfFalse "Sign" (signedBy txSigners sellerPkh)              -- seller must sign it
+                                 && traceIfFalse "oldo" (ptd /= ptd')                               -- cant sell this to self
                                  && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue) -- seller must get the UTxO
                                  && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)             -- double tx going in
             
@@ -429,6 +430,7 @@ mkValidator datum redeemer context =
                                            !txValidityRange     = ContextsV2.txInfoValidRange info
                                     in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                            -- seller must sign it
                                     && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)               -- seller must get the UTxO
+                                    && traceIfFalse "oldo" (ptd /= ptd')                                             -- cant sell this to self
                                     && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                           -- double tx going in
                                     && traceIfFalse "Out"  (nOutputs contTxOutputs 1)                                -- single going out
                                     && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
