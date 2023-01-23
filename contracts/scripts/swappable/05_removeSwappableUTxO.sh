@@ -60,6 +60,7 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
 collat_address_out="${collat_address} + 170553 + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.007e08f756ee74d9d925df9c9881c717cf3c5fd510aedec0bf992c7a5a4a397a + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.0112b80ebdbaa0ed5fe4dfe57679d1474428fa9eee815ca58103b4d3da3912c3 + 1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.0169f3226794a28a9cd8b3c7e9e98190a43249d93b09fb290197c045c2cad68b"
 
 seller_address_out="${seller_address} + ${min_utxo} + ${asset}"
+# seller_address_out="${seller_address} + 25000000000"
 echo "Remove OUTPUT: "${seller_address_out}
 #
 # exit

@@ -14,9 +14,10 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # seller
-seller_address=$(cat ../wallets/seller-wallet/payment.addr)
-seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
+payee_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
+
+reward_address="addr_test1qrupt9d9ug2ufnrrajp2q7gwvmrtzzgr80p5ug7q8nt4d66hu0s5mnhxh2853wtsgn9gdz6wuqtaqnkv0yk78p474d6qudapqh"
 # find rewards
 rewardBalance=$(${cli} query stake-address-info \
     --testnet-magic ${testnet_magic} \
@@ -40,12 +41,12 @@ echo $withdrawalString
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
-    --address ${seller_address} \
+    --address ${payee_address} \
     --out-file ../tmp/seller_utxo.json
 
 TXNS=$(jq length ../tmp/seller_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
-   echo -e "\n \033[0;31m NO UTxOs Found At ${seller_address} \033[0m \n";
+   echo -e "\n \033[0;31m NO UTxOs Found At ${payee_address} \033[0m \n";
    exit;
 fi
 alltxin=""
@@ -73,14 +74,14 @@ FEE=$(${cli} transaction build \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
-    --change-address ${seller_address} \
+    --change-address ${payee_address} \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${seller_tx_in} \
     --withdrawal ${withdrawalString} \
     --withdrawal-tx-in-reference="${script_ref_utxo}#1" \
     --withdrawal-plutus-script-v2 \
     --withdrawal-reference-tx-in-redeemer-file ../data/redeemers/withdraw-redeemer.json \
-    --tx-out="${seller_address}+${rewardBalance}" \
+    --tx-out="${reward_address}+${rewardBalance}" \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
 
@@ -89,11 +90,11 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-exit
+# exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/seller-wallet/payment.skey \
+    --signing-key-file ../wallets/delegator-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \

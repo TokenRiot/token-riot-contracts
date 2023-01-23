@@ -49,15 +49,15 @@ import           UsefulFuncs
 -- | The only allowed pool.
 -------------------------------------------------------------------------------
 poolId :: PlutusV2.PubKeyHash
-poolId = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [189, 102, 172, 41, 26, 197, 33, 222, 175, 34, 20, 31, 176, 229, 226, 240, 237, 61, 166, 49, 89, 185, 244, 158, 31, 80, 10, 207] }
+poolId = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [96, 128, 185, 199, 107, 75, 25, 194, 29, 23, 180, 9, 26, 162, 5, 65, 124, 184, 10, 84, 73, 246, 56, 194, 126, 236, 9, 70] }
 -------------------------------------------------------------------------------
 -- | The only allowed payout address.
 -------------------------------------------------------------------------------
 payoutPkh :: PlutusV2.PubKeyHash
-payoutPkh = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [66, 23, 239, 18, 207, 227, 97, 45, 43, 20, 117, 103, 227, 20, 151, 188, 12, 10, 172, 91, 248, 214, 98, 41, 16, 132, 86, 203] }
+payoutPkh = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [248, 21, 149, 165, 226, 21, 196, 204, 99, 236, 130, 160, 121, 14, 102, 198, 177, 9, 3, 59, 195, 78, 35, 192, 60, 215, 86, 235] }
 
 payoutSc :: PlutusV2.PubKeyHash
-payoutSc = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [32, 243, 21, 227, 76, 76, 166, 181, 93, 144, 215, 18, 88, 137, 81, 127, 38, 249, 7, 151, 92, 121, 60, 100, 140, 197, 135, 68] }
+payoutSc = PlutusV2.PubKeyHash { PlutusV2.getPubKeyHash = createBuiltinByteString [87, 227, 225, 77, 206, 230, 186, 143, 72, 185, 112, 68, 202, 134, 139, 78, 224, 23, 208, 78, 204, 121, 45, 227, 134, 190, 171, 116] }
 
 payoutAddr :: PlutusV2.Address
 payoutAddr = createAddress payoutPkh payoutSc
