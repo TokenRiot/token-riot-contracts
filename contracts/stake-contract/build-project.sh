@@ -2,7 +2,7 @@
 set -e
 
 echo -e "\033[1;35m Building Staking Contract... \033[0m" 
-testnet_magic=$(cat ../../scripts/data/testnet.magic)
+testnet_magic=$(cat ../scripts/data/testnet.magic)
 
 # get info
 poolId=$(cat start_info.json | jq -r .poolId)
@@ -71,10 +71,10 @@ echo -e "\nStake Cert";cat stake.cert | jq
 echo -e "\nDeleg Cert";cat deleg.cert | jq
 
 # update the register redeemer to put the stake key on chain
-variable=$(cat stake.hash); jq --arg variable "$variable" '.fields[0].fields[0].bytes=$variable' ../../scripts/data/redeemers/register-redeemer.json > ../../scripts/data/redeemers/register-redeemer-new.json
-mv ../../scripts/data/redeemers/register-redeemer-new.json ../../scripts/data/redeemers/register-redeemer.json
+variable=$(cat stake.hash); jq --arg variable "$variable" '.fields[0].fields[0].bytes=$variable' ../scripts/data/redeemers/register-redeemer.json > ../scripts/data/redeemers/register-redeemer-new.json
+mv ../scripts/data/redeemers/register-redeemer-new.json ../scripts/data/redeemers/register-redeemer.json
 
-variable=$(cat stake.hash); jq --arg variable "$variable" '.fields[0].fields[0].bytes=$variable' ../../scripts/data/redeemers/withdraw-redeemer.json > ../../scripts/data/redeemers/withdraw-redeemer-new.json
-mv ../../scripts/data/redeemers/withdraw-redeemer-new.json ../../scripts/data/redeemers/withdraw-redeemer.json
+variable=$(cat stake.hash); jq --arg variable "$variable" '.fields[0].fields[0].bytes=$variable' ../scripts/data/redeemers/withdraw-redeemer.json > ../scripts/data/redeemers/withdraw-redeemer-new.json
+mv ../scripts/data/redeemers/withdraw-redeemer-new.json ../scripts/data/redeemers/withdraw-redeemer.json
 
 echo -e "\nDONE\n"
