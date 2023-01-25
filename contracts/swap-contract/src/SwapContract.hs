@@ -49,10 +49,11 @@ import           ReducedFunctions
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
-data CustomDatumType =  Swappable  PayToData PaymentData   TimeData      |
-                        Auctioning PayToData TimeData      TimeData      |
-                        Offering   PayToData MakeOfferData OfferFlagData |
-                        Bidding    PayToData MakeOfferData
+data CustomDatumType
+  = Swappable  PayToData PaymentData   TimeData
+  | Auctioning PayToData TimeData      TimeData
+  | Offering   PayToData MakeOfferData OfferFlagData
+  | Bidding    PayToData MakeOfferData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
                                               , ( 'Offering,   2 )
@@ -61,18 +62,19 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove                                       |
-                          FlatRate  PayToData ADAIncData SpecificToken |
-                          Offer     ADAIncData MakeOfferData           |
-                          SwapUTxO  ADAIncData MakeOfferData           |
-                          Update    ADAIncData                         |
-                          Bid                                          |
-                          Complete                                     |
-                          OrderBook                                    |
-                          Transform                                    |
-                          FRRemove  PayToData SpecificToken            |
-                          ORemove   MakeOfferData                      |
-                          Debug
+data CustomRedeemerType 
+  = Remove
+  | FlatRate  PayToData ADAIncData SpecificToken
+  | Offer     ADAIncData MakeOfferData
+  | SwapUTxO  ADAIncData MakeOfferData
+  | Update    ADAIncData
+  | Bid
+  | Complete
+  | OrderBook
+  | Transform
+  | FRRemove  PayToData SpecificToken
+  | ORemove   MakeOfferData
+  | Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
                                                 , ( 'FlatRate,  1 )
                                                 , ( 'Offer,     2 )
