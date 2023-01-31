@@ -39,7 +39,10 @@ module ReducedFunctions
 import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api      as V2
 import qualified Plutus.V1.Ledger.Value    as Value
-
+{- |
+  Author   : The Ancient Kraken
+  Copyright: 2023
+-}
 {-# inlinable getScriptOutputs #-}
 getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
 getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []

@@ -44,7 +44,7 @@ import           UsefulFuncs
 import           ReducedFunctions
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.

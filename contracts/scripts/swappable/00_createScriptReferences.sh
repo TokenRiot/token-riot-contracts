@@ -14,24 +14,25 @@ stake_script_path="../../stake-contract/stake-contract.plutus"
 
 # Addresses
 reference_address=$(cat ../wallets/reference-wallet/payment.addr)
+script_reference_address="addr_test1qq4m4tup6h0zv3xsgtz22yxmk86qrm9j7wt3aunhwpg7hjd5skxg5duh2s97g6pvq2wrqcpr76u8m8uhd4gh9uhzqnnq0eush3"
 
 swap_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-reference-script-file ${swap_script_path} \
-    --tx-out="${reference_address} + 1000000" | tr -dc '0-9')
+    --tx-out="${script_reference_address} + 1000000" | tr -dc '0-9')
 
 swap_value=$((${swap_min_utxo}))
-swap_script_reference_utxo="${reference_address} + ${swap_value}"
+swap_script_reference_utxo="${script_reference_address} + ${swap_value}"
 
 stake_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-reference-script-file ${stake_script_path} \
-    --tx-out="${reference_address} + 1000000" | tr -dc '0-9')
+    --tx-out="${script_reference_address} + 1000000" | tr -dc '0-9')
 
 stake_value=$((${stake_min_utxo}))
-stake_script_reference_utxo="${reference_address} + ${stake_value}"
+stake_script_reference_utxo="${script_reference_address} + ${stake_value}"
 
 echo -e "Creating Reference Script:\n" ${swap_script_reference_utxo}
 echo -e "Creating Reference Script:\n" ${stake_script_reference_utxo}

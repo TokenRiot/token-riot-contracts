@@ -43,7 +43,7 @@ import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api as PlutusV2
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
 -------------------------------------------------------------------------------
 -- | Pay To Data
