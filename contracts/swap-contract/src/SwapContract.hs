@@ -27,7 +27,6 @@
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module SwapContract
   ( swapContractScript
-  , swapContractScriptShortBs
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -49,10 +48,10 @@ import           ReducedFunctions
   Copyright: 2023
 -}
 lockPid :: V2.CurrencySymbol
-lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [254, 67, 217, 228, 63, 221, 205, 93, 162, 223, 115, 214, 63, 237, 245, 3, 134, 124, 239, 37, 53, 223, 12, 139, 77, 213, 19, 64] }
+lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [246, 241, 20, 169, 241, 31, 249, 131, 236, 10, 81, 220, 165, 251, 110, 182, 228, 253, 59, 3, 251, 143, 239, 16, 62, 130, 91, 119] }
 
 lockTkn :: V2.TokenName
-lockTkn = V2.TokenName {V2.unTokenName = createBuiltinByteString [78, 69, 87, 77, 95] }
+lockTkn = V2.TokenName {V2.unTokenName = createBuiltinByteString [84, 104, 105, 115, 73, 115, 79, 110, 101, 83, 116, 97, 114, 116, 101, 114, 84, 111, 107, 101, 110, 70, 111, 114, 84, 101, 115, 116, 105, 110, 103, 52] }
 
 -- check for nft here
 lockValue :: V2.Value
@@ -60,17 +59,21 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash =  V2.ValidatorHash $ createBuiltinByteString [244, 112, 29, 51, 244, 194, 108, 51, 221, 146, 159, 57, 198, 163, 232, 159, 252, 188, 248, 57, 77, 44, 193, 244, 2, 217, 138, 196]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [129, 40, 202, 155, 192, 213, 103, 180, 68, 142, 122, 240, 14, 189, 69, 55, 164, 112, 237, 76, 227, 210, 47, 46, 37, 170, 139, 80]
 
+{-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
-calculateServiceFee (Swappable _ pd _) (Reference _ sf) =
-  if (pPid pd == Value.adaSymbol) == True && (pTkn pd == Value.adaToken) == True
-  then
-    if divide (pAmt pd) (servicePerc sf) > (serviceFee sf + frontendFee sf)
-    then divide (pAmt pd) (servicePerc sf)
-    else (serviceFee sf + frontendFee sf)
-  else (serviceFee sf + frontendFee sf)
-calculateServiceFee _ _ = 0
+calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
+  if (pPid pd == Value.adaSymbol) && (pTkn pd == Value.adaToken)
+  then if percentFee > sumFee then percentFee else sumFee
+  else sumFee
+  where
+    percentFee :: Integer
+    percentFee = divide (pAmt pd) (servicePerc sf)
+
+    sumFee :: Integer
+    sumFee = (serviceFee sf + frontendFee sf)
+calculateServiceFee _ (Reference _ sf _) = (serviceFee sf + frontendFee sf)
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
@@ -509,7 +512,7 @@ mkValidator datum redeemer context =
       where
         
         cashAddr :: ReferenceDatum -> V2.Address
-        cashAddr (Reference ca _) = createAddress (caPkh ca) (caSc ca)
+        cashAddr (Reference ca _ _) = createAddress (caPkh ca) (caSc ca)
       
         feeValue :: V2.Value
         feeValue = Value.singleton Value.adaSymbol Value.adaToken (calculateServiceFee d r)

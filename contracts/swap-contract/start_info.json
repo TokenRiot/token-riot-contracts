@@ -1,0 +1,11 @@
+{
+    "__comment1__":"The start token info",
+    "pid": "f6f114a9f11ff983ec0a51dca5fb6eb6e4fd3b03fb8fef103e825b77",
+    "tkn": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734",
+    "__comment2__":"The multisig Info",
+    "pkh1":"a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439",
+    "pkh2":"db7bffc41a43c4d9c31342e3fd457409aeb40302aa52058df374913b",
+    "pkh3":"7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
+    "__comment3__":"The threshold Info",
+    "thres": 2
+}

@@ -28,6 +28,7 @@
 module ReferenceDataType
   ( CashierAddressData (..)
   , ServiceFeeData (..)
+  , MultisigData (..)
   , ReferenceDatum (..)
   ) where
 import qualified PlutusTx
@@ -70,7 +71,18 @@ instance Eq ServiceFeeData where
            ( frontendFee a == frontendFee b )
 
 -------------------------------------------------------------------------------
+-- | Multisig Information
+-------------------------------------------------------------------------------
+data MultisigData = MultisigData
+  { mPkhs :: [V2.PubKeyHash]
+  -- ^ List of the multisig public key hashes
+  , mThres :: Integer
+  -- ^ The number of multsig sigatures required.
+  }
+PlutusTx.unstableMakeIsData ''MultisigData
+
+-------------------------------------------------------------------------------
 -- | Reference Datum
 -------------------------------------------------------------------------------
-data ReferenceDatum = Reference CashierAddressData ServiceFeeData
+data ReferenceDatum = Reference CashierAddressData ServiceFeeData MultisigData
 PlutusTx.unstableMakeIsData ''ReferenceDatum
