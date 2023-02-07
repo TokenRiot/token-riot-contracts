@@ -1,6 +1,6 @@
-import           Prelude
-import           Cardano.Api
-import           SwapContract ( swapContractScript )
+import Prelude
+import Cardano.Api
+import SwapContract ( swapContractScript )
 
 main :: IO ()
 main = do

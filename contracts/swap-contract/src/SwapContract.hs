@@ -35,17 +35,42 @@ import           Codec.Serialise
 import           Cardano.Api.Shelley            ( PlutusScript (..), PlutusScriptV2 )
 import qualified Data.ByteString.Lazy           as LBS
 import qualified Data.ByteString.Short          as SBS
+import qualified Plutus.V1.Ledger.Value         as Value
 import qualified Plutus.V1.Ledger.Scripts       as Scripts
-import qualified Plutus.V2.Ledger.Api           as PlutusV2
-import qualified Plutus.V2.Ledger.Contexts      as ContextsV2
-import           Plutus.Script.Utils.V2.Scripts as Utils
+import qualified Plutus.V2.Ledger.Api           as V2
+import qualified Plutus.V2.Ledger.Contexts      as V2
+import           Plutus.Script.Utils.V2.Typed.Scripts.Validators as Utils
 import           SwappableDataType
+import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+lockPid :: V2.CurrencySymbol
+lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [254, 67, 217, 228, 63, 221, 205, 93, 162, 223, 115, 214, 63, 237, 245, 3, 134, 124, 239, 37, 53, 223, 12, 139, 77, 213, 19, 64] }
+
+lockTkn :: V2.TokenName
+lockTkn = V2.TokenName {V2.unTokenName = createBuiltinByteString [78, 69, 87, 77, 95] }
+
+-- check for nft here
+lockValue :: V2.Value
+lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
+
+-- reference hash
+referenceHash :: V2.ValidatorHash
+referenceHash =  V2.ValidatorHash $ createBuiltinByteString [244, 112, 29, 51, 244, 194, 108, 51, 221, 146, 159, 57, 198, 163, 232, 159, 252, 188, 248, 57, 77, 44, 193, 244, 2, 217, 138, 196]
+
+calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
+calculateServiceFee (Swappable _ pd _) (Reference _ sf) =
+  if (pPid pd == Value.adaSymbol) == True && (pTkn pd == Value.adaToken) == True
+  then
+    if divide (pAmt pd) (servicePerc sf) > (serviceFee sf + frontendFee sf)
+    then divide (pAmt pd) (servicePerc sf)
+    else (serviceFee sf + frontendFee sf)
+  else (serviceFee sf + frontendFee sf)
+calculateServiceFee _ _ = 0
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
@@ -92,7 +117,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
-mkValidator :: CustomDatumType -> CustomRedeemerType -> PlutusV2.ScriptContext -> Bool
+mkValidator :: CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
 mkValidator datum redeemer context =
   case datum of
     {- | Swappable State
@@ -118,8 +143,8 @@ mkValidator datum redeemer context =
     (Swappable ptd pd td) -> let !walletPkh        = ptPkh ptd
                                  !walletAddr       = createAddress walletPkh (ptSc ptd)
                                  !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
-                                 !txValidityRange  = ContextsV2.txInfoValidRange info
-                                 !txSigners        = ContextsV2.txInfoSignatories info
+                                 !txValidityRange  = V2.txInfoValidRange info
+                                 !txSigners        = V2.txInfoSignatories info
       in case redeemer of
         -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
         Transform -> 
@@ -193,6 +218,10 @@ mkValidator datum redeemer context =
         -- | Flat rate swap of UTxO for an predefined amount of a single token.
         (FlatRate ptd' aid st) -> let !incomingValue = thisValue + adaValue (adaInc aid)
                                       !thisTkn       = getTokenName pd st
+                                      !refTxIns      = V2.txInfoReferenceInputs info
+                                      !refTxOut      = getReferenceInput refTxIns referenceHash
+                                      !refDatum      = getReferenceDatum refTxOut
+                                      !refValue      = V2.txOutValue refTxOut
           in case getOutboundDatumByValue contTxOutputs incomingValue of
             -- swappable only
             (Swappable ptd'' _ td') -> traceIfFalse "Pays" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
@@ -203,6 +232,8 @@ mkValidator datum redeemer context =
                                     && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                                    -- single tx going in
                                     && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                         -- single going out
                                     && traceIfFalse "sign" (signedBy txSigners (ptPkh ptd'))                                  -- buyer must sign
+                                    && traceIfFalse "val"  (Value.geq refValue lockValue) -- check if correct reference
+                                    && traceIfFalse "fee"  (checkServiceFeePayout (Swappable ptd pd td) refDatum)
 
             -- other datums fail
             _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
@@ -272,7 +303,7 @@ mkValidator datum redeemer context =
     -}
     (Offering ptd mod _) -> let !walletPkh  = ptPkh ptd
                                 !walletAddr = createAddress walletPkh (ptSc ptd)
-                                !txSigners  = ContextsV2.txInfoSignatories info
+                                !txSigners  = V2.txInfoSignatories info
       in case redeemer of
         -- | Remove the UTxO from the contract.
         Remove -> traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
@@ -336,8 +367,8 @@ mkValidator datum redeemer context =
                                     !walletAddr          = createAddress walletPkh (ptSc ptd)
                                     !lockTimeInterval    = lockBetweenTimeInterval (tStart gtd) (tEnd gtd)
                                     !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-                                    !txValidityRange     = ContextsV2.txInfoValidRange info
-                                    !txSigners           = ContextsV2.txInfoSignatories info
+                                    !txValidityRange     = V2.txInfoValidRange info
+                                    !txSigners           = V2.txInfoSignatories info
       in case redeemer of
         -- | Remove the UTxO from the contract before the auction starts or after a failed auction.
         Remove -> traceIfFalse "Sign" (signedBy txSigners walletPkh)                            -- seller must sign it
@@ -396,7 +427,7 @@ mkValidator datum redeemer context =
     -}
     (Bidding ptd mod) -> let !walletPkh  = ptPkh ptd
                              !walletAddr = createAddress walletPkh (ptSc ptd)
-                             !txSigners  = ContextsV2.txInfoSignatories info
+                             !txSigners  = V2.txInfoSignatories info
       in case redeemer of
         -- | Remove the UTxO from the contract.
         Remove -> traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
@@ -429,7 +460,7 @@ mkValidator datum redeemer context =
             (Auctioning ptd' atd _) -> let !sellerPkh           = ptPkh ptd'
                                            !sellerAddr          = createAddress sellerPkh (ptSc ptd')
                                            !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
-                                           !txValidityRange     = ContextsV2.txInfoValidRange info
+                                           !txValidityRange     = V2.txInfoValidRange info
                                     in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                            -- seller must sign it
                                     && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)               -- seller must get the UTxO
                                     && traceIfFalse "oldo" (ptd /= ptd')                                             -- cant sell this to self
@@ -443,77 +474,98 @@ mkValidator datum redeemer context =
         -- Other redeemers fail
         _ -> traceIfFalse "Bidding:Undefined Redeemer" False
   where
-    info :: PlutusV2.TxInfo
-    info = ContextsV2.scriptContextTxInfo  context
+    info :: V2.TxInfo
+    info = V2.scriptContextTxInfo  context
 
-    txOutputs :: [PlutusV2.TxOut]
-    txOutputs = ContextsV2.txInfoOutputs info
+    txOutputs :: [V2.TxOut]
+    txOutputs = V2.txInfoOutputs info
 
-    txInputs :: [PlutusV2.TxInInfo]
-    txInputs = PlutusV2.txInfoInputs info
+    txInputs :: [V2.TxInInfo]
+    txInputs = V2.txInfoInputs info
 
-    validatingInput :: PlutusV2.TxOut
+    validatingInput :: V2.TxOut
     validatingInput = ownInput context
 
-    thisValue :: PlutusV2.Value
-    thisValue = PlutusV2.txOutValue validatingInput
+    thisValue :: V2.Value
+    thisValue = V2.txOutValue validatingInput
     
-    scriptAddr :: PlutusV2.Address
-    scriptAddr = PlutusV2.txOutAddress validatingInput
+    scriptAddr :: V2.Address
+    scriptAddr = V2.txOutAddress validatingInput
 
-    contTxOutputs :: [PlutusV2.TxOut]
+    contTxOutputs :: [V2.TxOut]
     contTxOutputs = getScriptOutputs txOutputs scriptAddr
 
-    createTxOutRef :: PlutusV2.BuiltinByteString -> Integer -> PlutusV2.TxOutRef
+    createTxOutRef :: V2.BuiltinByteString -> Integer -> V2.TxOutRef
     createTxOutRef txHash index = txId
       where
-        txId :: PlutusV2.TxOutRef
-        txId = PlutusV2.TxOutRef
-          { PlutusV2.txOutRefId  = PlutusV2.TxId { PlutusV2.getTxId = txHash }
-          , PlutusV2.txOutRefIdx = index
+        txId :: V2.TxOutRef
+        txId = V2.TxOutRef
+          { V2.txOutRefId  = V2.TxId { V2.getTxId = txHash }
+          , V2.txOutRefIdx = index
           }
+    
+    checkServiceFeePayout :: CustomDatumType -> ReferenceDatum -> Bool
+    checkServiceFeePayout d r = (findPayout txOutputs (cashAddr r) feeValue)
+      where
+        
+        cashAddr :: ReferenceDatum -> V2.Address
+        cashAddr (Reference ca _) = createAddress (caPkh ca) (caSc ca)
+      
+        feeValue :: V2.Value
+        feeValue = Value.singleton Value.adaSymbol Value.adaToken (calculateServiceFee d r)
 
-    getOutboundDatumByValue :: [PlutusV2.TxOut] -> PlutusV2.Value -> CustomDatumType
+    getReferenceDatum :: V2.TxOut -> ReferenceDatum
+    getReferenceDatum x = 
+      case V2.txOutDatum x of
+        V2.NoOutputDatum       -> traceError "No Datum"
+        (V2.OutputDatumHash _) -> traceError "Embedded Datum"
+        (V2.OutputDatum (V2.Datum d)) -> 
+          case PlutusTx.fromBuiltinData d of
+            Nothing     -> traceError "Bad Data"
+            Just inline -> PlutusTx.unsafeFromBuiltinData @ReferenceDatum inline
+
+
+    getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> CustomDatumType
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
       where
-        getOutboundDatumByValue' :: [PlutusV2.TxOut] -> PlutusV2.Value -> CustomDatumType
+        getOutboundDatumByValue' :: [V2.TxOut] -> V2.Value -> CustomDatumType
         getOutboundDatumByValue' []     _   = traceError "Nothing Found By Value"
         getOutboundDatumByValue' (x:xs) val =
-          if PlutusV2.txOutValue x == val -- strict value continue
+          if V2.txOutValue x == val -- strict value continue
             then
-              case PlutusV2.txOutDatum x of
-                PlutusV2.NoOutputDatum       -> getOutboundDatumByValue' xs val -- skip datumless
-                (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum Found By Value"
+              case V2.txOutDatum x of
+                V2.NoOutputDatum       -> getOutboundDatumByValue' xs val -- skip datumless
+                (V2.OutputDatumHash _) -> traceError "Embedded Datum Found By Value"
                 -- inline datum only
-                (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+                (V2.OutputDatum (V2.Datum d)) -> 
                   case PlutusTx.fromBuiltinData d of
                     Nothing     -> traceError "Bad Data Found By Value"
                     Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
             else getOutboundDatumByValue' xs val
     
-    getOutboundDatum :: [PlutusV2.TxOut] -> CustomDatumType
+    getOutboundDatum :: [V2.TxOut] -> CustomDatumType
     getOutboundDatum txOuts = getOutboundDatum' txOuts
       where
-        getOutboundDatum' :: [PlutusV2.TxOut] -> CustomDatumType
+        getOutboundDatum' :: [V2.TxOut] -> CustomDatumType
         getOutboundDatum' []     = traceError "Nothing Found On Cont"
         getOutboundDatum' (x:xs) =
-          case PlutusV2.txOutDatum x of
-            PlutusV2.NoOutputDatum       -> getOutboundDatum' xs
-            (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum On Cont"
+          case V2.txOutDatum x of
+            V2.NoOutputDatum       -> getOutboundDatum' xs
+            (V2.OutputDatumHash _) -> traceError "Embedded Datum On Cont"
             -- inline datum only
-            (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+            (V2.OutputDatum (V2.Datum d)) -> 
               case PlutusTx.fromBuiltinData d of
                 Nothing     -> traceError "Bad Data On Cont"
                 Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
 
     -- this needs to not be able to reference the txId that is being spent
-    getDatumByTxId :: PlutusV2.TxOutRef -> CustomDatumType
+    getDatumByTxId :: V2.TxOutRef -> CustomDatumType
     getDatumByTxId txId = 
-      case PlutusV2.txOutDatum $ PlutusV2.txInInfoResolved $ txInFromTxRef txInputs txId of
-        PlutusV2.NoOutputDatum       -> traceError "No Datum On TxId"
-        (PlutusV2.OutputDatumHash _) -> traceError "Embedded Datum On TxId"
+      case V2.txOutDatum $ V2.txInInfoResolved $ txInFromTxRef txInputs txId of
+        V2.NoOutputDatum       -> traceError "No Datum On TxId"
+        (V2.OutputDatumHash _) -> traceError "Embedded Datum On TxId"
         -- inline datum only
-        (PlutusV2.OutputDatum (PlutusV2.Datum d)) -> 
+        (V2.OutputDatum (V2.Datum d)) -> 
           case PlutusTx.fromBuiltinData d of
             Nothing     -> traceError "Bad Data On TxId"
             Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
@@ -521,8 +573,8 @@ mkValidator datum redeemer context =
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------
-validator' :: PlutusV2.Validator
-validator' = PlutusV2.mkValidatorScript
+validator' :: V2.Validator
+validator' = V2.mkValidatorScript
     $$(PlutusTx.compile [|| wrap ||])
  where
     wrap = Utils.mkUntypedValidator mkValidator

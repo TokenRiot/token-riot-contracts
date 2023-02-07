@@ -126,6 +126,7 @@ script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.s
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
+
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
