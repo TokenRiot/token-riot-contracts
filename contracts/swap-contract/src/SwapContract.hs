@@ -219,12 +219,13 @@ mkValidator datum redeemer context =
         (SwapUTxO _ _) -> False
 
         -- | Flat rate swap of UTxO for an predefined amount of a single token.
-        (FlatRate ptd' aid st) -> let !incomingValue = thisValue + adaValue (adaInc aid)
-                                      !thisTkn       = getTokenName pd st
-                                      !refTxIns      = V2.txInfoReferenceInputs info
-                                      !refTxOut      = getReferenceInput refTxIns referenceHash
-                                      !refDatum      = getReferenceDatum refTxOut
-                                      !refValue      = V2.txOutValue refTxOut
+        (FlatRate ptd' aid st) -> 
+          let !incomingValue = thisValue + adaValue (adaInc aid)
+              !thisTkn       = getTokenName pd st
+              !refTxIns      = V2.txInfoReferenceInputs info
+              !refTxOut      = getReferenceInput refTxIns referenceHash
+              !refDatum      = getReferenceDatum refTxOut
+              !refValue      = V2.txOutValue refTxOut
           in case getOutboundDatumByValue contTxOutputs incomingValue of
             -- swappable only
             (Swappable ptd'' _ td') -> traceIfFalse "Pays" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
@@ -235,22 +236,29 @@ mkValidator datum redeemer context =
                                     && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                                    -- single tx going in
                                     && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                         -- single going out
                                     && traceIfFalse "sign" (signedBy txSigners (ptPkh ptd'))                                  -- buyer must sign
-                                    && traceIfFalse "val"  (Value.geq refValue lockValue) -- check if correct reference
-                                    && traceIfFalse "fee"  (checkServiceFeePayout (Swappable ptd pd td) refDatum)
+                                    && traceIfFalse "val"  (Value.geq refValue lockValue)                                     -- check if correct reference
+                                    && traceIfFalse "fee"  (checkServiceFeePayout (Swappable ptd pd td) refDatum)             -- check if paying fee
 
             -- other datums fail
             _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
         
         -- | Flat rate purchase into buyer wallet of UTxO for an predefined amount of a single token.
-        (FRRemove ptd' st) -> let !buyerPkh  = ptPkh ptd'
-                                  !buyerAddr = createAddress buyerPkh (ptSc ptd')
-                                  !thisTkn   = getTokenName pd st
-                           in traceIfFalse "Signer" (signedBy txSigners buyerPkh)                                      -- seller must sign it
-                           && traceIfFalse "Tokens" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
-                           && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                         -- buyer must be paid
-                           && traceIfFalse "Empty"  (pAmt pd /= 0)                                                     -- seller must define price
-                           && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                    -- single tx going in
-                           && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
+        (FRRemove ptd' st) -> 
+          let !buyerPkh  = ptPkh ptd'
+              !buyerAddr = createAddress buyerPkh (ptSc ptd')
+              !thisTkn   = getTokenName pd st
+              !refTxIns  = V2.txInfoReferenceInputs info
+              !refTxOut  = getReferenceInput refTxIns referenceHash
+              !refDatum  = getReferenceDatum refTxOut
+              !refValue  = V2.txOutValue refTxOut
+          in traceIfFalse "Signer" (signedBy txSigners buyerPkh)                                      -- seller must sign it
+          && traceIfFalse "Tokens" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
+          && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                         -- buyer must be paid
+          && traceIfFalse "Empty"  (pAmt pd /= 0)                                                     -- seller must define price
+          && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                    -- single tx going in
+          && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
+          && traceIfFalse "val"    (Value.geq refValue lockValue)                                     -- check if correct reference
+          && traceIfFalse "fee"    (checkServiceFeePayout (Swappable ptd pd td) refDatum)             -- check if paying fee
         
         -- | Offer to change walletship of UTxO for some amount of a single token + extras.
         (Offer aid mod) -> let !txId = createTxOutRef (moTx mod) (moIdx mod)
