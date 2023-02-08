@@ -59,16 +59,13 @@ data ServiceFeeData = ServiceFeeData
   -- ^ The service provider fee percentage
   , serviceFee  :: Integer
   -- ^ Mando service fee
-  , frontendFee :: Integer
-  -- ^ Mando front end fee
   }
 PlutusTx.unstableMakeIsData ''ServiceFeeData
 
 instance Eq ServiceFeeData where
   {-# INLINABLE (==) #-}
   a == b = ( servicePerc a == servicePerc b ) &&
-           ( serviceFee  a == serviceFee  b ) &&
-           ( frontendFee a == frontendFee b )
+           ( serviceFee  a == serviceFee  b )
 
 -------------------------------------------------------------------------------
 -- | Multisig Information

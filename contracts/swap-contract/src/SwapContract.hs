@@ -59,21 +59,21 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [129, 40, 202, 155, 192, 213, 103, 180, 68, 142, 122, 240, 14, 189, 69, 55, 164, 112, 237, 76, 227, 210, 47, 46, 37, 170, 139, 80]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [50, 66, 67, 119, 86, 37, 59, 140, 254, 132, 205, 186, 210, 164, 152, 153, 192, 132, 76, 60, 121, 242, 126, 230, 36, 63, 165, 52]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
 calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
   if (pPid pd == Value.adaSymbol) && (pTkn pd == Value.adaToken)
-  then if percentFee > sumFee then percentFee else sumFee
-  else sumFee
+  then if percentFee > sFee then percentFee else sFee
+  else sFee
   where
     percentFee :: Integer
     percentFee = divide (pAmt pd) (servicePerc sf)
 
-    sumFee :: Integer
-    sumFee = (serviceFee sf + frontendFee sf)
-calculateServiceFee _ (Reference _ sf _) = (serviceFee sf + frontendFee sf)
+    sFee :: Integer
+    sFee = serviceFee sf
+calculateServiceFee _ (Reference _ sf _) = serviceFee sf
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
