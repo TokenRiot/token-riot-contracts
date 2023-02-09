@@ -45,12 +45,6 @@ data CashierAddressData = CashierAddressData
   }
 PlutusTx.unstableMakeIsData ''CashierAddressData
 
--- a is old; b is new
-instance Eq CashierAddressData where
-  {-# INLINABLE (==) #-}
-  a == b = ( caPkh a == caPkh b ) &&
-           ( caSc  a == caSc  b )
-
 -------------------------------------------------------------------------------
 -- | Fee Payout Info
 -------------------------------------------------------------------------------
@@ -61,11 +55,6 @@ data ServiceFeeData = ServiceFeeData
   -- ^ Mando service fee
   }
 PlutusTx.unstableMakeIsData ''ServiceFeeData
-
-instance Eq ServiceFeeData where
-  {-# INLINABLE (==) #-}
-  a == b = ( servicePerc a == servicePerc b ) &&
-           ( serviceFee  a == serviceFee  b )
 
 -------------------------------------------------------------------------------
 -- | Multisig Information

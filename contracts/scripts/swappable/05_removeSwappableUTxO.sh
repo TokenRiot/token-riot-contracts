@@ -85,6 +85,7 @@ slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
 
+    # --calculate-plutus-script-cost ../tmp/tx.cost \
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
@@ -109,6 +110,10 @@ IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
+
+# echo TOTAL MEMORY
+# jq -r  '[.[].executionUnits] | add' ../tmp/tx.cost
+
 #
 # exit
 #
