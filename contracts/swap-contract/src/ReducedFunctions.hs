@@ -27,6 +27,7 @@
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module ReducedFunctions
   ( signedBy
+  , checkMultisig
   , txInFromTxRef
   , findPayout
   , findTokenHolder
@@ -34,6 +35,7 @@ module ReducedFunctions
   , nOutputs
   , nRedeemers
   , getScriptOutputs
+  , getReferenceInput
   , ownInput
   ) where
 import           PlutusTx.Prelude
@@ -43,6 +45,19 @@ import qualified Plutus.V1.Ledger.Value    as Value
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+getReferenceInput :: [V2.TxInInfo] -> V2.ValidatorHash -> V2.TxOut
+getReferenceInput txRefs vHash = getReferenceInput' txRefs
+  where
+    getReferenceInput' :: [V2.TxInInfo] -> V2.TxOut
+    getReferenceInput' [] = traceError "no references"
+    getReferenceInput' (x:xs)
+      | checkHash x == True = V2.txInInfoResolved x
+      | otherwise = getReferenceInput' xs
+    
+    checkHash :: V2.TxInInfo -> Bool
+    checkHash (V2.TxInInfo _ (V2.TxOut (V2.Address (V2.ScriptCredential vHash') _) _ _ _)) = vHash == vHash' 
+    checkHash _ = False
+
 {-# inlinable getScriptOutputs #-}
 getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
 getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
@@ -86,6 +101,17 @@ signedBy list k = loop list
     loop (x:xs)
       | x == k = True
       | otherwise = loop xs
+
+{-# INLINABLE checkMultisig #-}
+checkMultisig :: [V2.PubKeyHash] -> [V2.PubKeyHash] -> Integer -> Bool
+checkMultisig signers pkhs thres = loopSigs pkhs 0
+  where
+    loopSigs :: [V2.PubKeyHash] -> Integer  -> Bool
+    loopSigs []     counter = counter >= thres
+    loopSigs (x:xs) counter = 
+      if signedBy signers x
+        then loopSigs xs (counter + 1) -- just add up the good sigs
+        else loopSigs xs counter       -- toss out the bad
 
 {-# INLINABLE findPayout #-}
 findPayout :: [V2.TxOut] -> V2.Address -> V2.Value -> Bool

@@ -46,7 +46,9 @@ library
   hs-source-dirs:       src
 
   exposed-modules:      SwapContract
+                        ReferenceContract
                         SwappableDataType
+                        ReferenceDataType
                         ReducedFunctions
 
   build-depends:        bytestring
@@ -64,6 +66,19 @@ executable swap-contract
   import:               base, project-config
   hs-source-dirs:       app
   main-is:              swap-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+
+executable reference-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              reference-contract.hs
   
   ghc-options:          -threaded 
                         -rtsopts 

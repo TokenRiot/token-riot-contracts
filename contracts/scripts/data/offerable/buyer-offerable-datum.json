@@ -16,7 +16,7 @@
       "constructor": 0,
       "fields": [
         {
-          "bytes": "2102c65d7d560fbc71122d9c02064ab1b1de475b0f04cb8a9696fa347339c87d"
+          "bytes": "ce292515e5ad94df23e6fb60af3532b15a21b35c56f868ba316e3eb422dad1bf"
         },
         {
           "int": 0
@@ -27,7 +27,7 @@
       "constructor": 0,
       "fields": [
         {
-          "int": 1
+          "int": 0
         }
       ]
     }

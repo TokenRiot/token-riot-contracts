@@ -14,6 +14,9 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
+# service fee
+deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
+
 # buyer
 buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
 buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/buyer-wallet/payment.vkey)
@@ -23,32 +26,10 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-seller_asset="1 4aa8f49a12e9eeaa45cf65c1db24e6bac563ed272145ec72b6c81fdb.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 
-     + 1 52b0a53baf53c19cd0ccea078f4eb3e45537ac0498889ac146d2a215.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 5c2e705e8c75baca44902b59476211b8fa5b0ffe11de9d8b09b2f456.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 5f794d046b93ac60aec9ef5e6f2ce9bba022d7fedc9328b088839c16.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 66cdeca96ced54672d849bcde2b5679b064c7c5602b758e9116405ed.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 7088a885a273c2bbcb2629aa45bfaccf90516859da51c30c24949b98.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 78082f5621692a3dde0bc2b9b271e19e3e7750c791a5ff83702d8682.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 7ce548852b3b2fff45752615f47cb3e449c1665c5f197cb4d8c69dba.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 7f312461ab69c28468c199100aa7aecdad0f71f4155264f77891e51f.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 a193a418550603df4a2f88e8e8bc8b919c823e1d1b05eeace1b48033.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 ac0c4daa8485b83dce345b884c130fdfbaa9544cd8e3dec33ceaf881.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 bc33a67b964f47914a2e09b92332a6755d2e4a35445a25c657d2e0e1.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 c207ba811698592da25d7c2d0c41476baacce5dcf53f3084be116d68.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 c8e9790b2989b87ba8ef0a4b0fc38d2535bd616194af8b886f1f9422.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+seller_asset="1 5cb840dd5094cc8219d01a997ba9656fd8020945d373c37f97b6a7b6.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
-
-# what is being offered
-# offer_asset="12345 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739"
 # asset to trade
-offer_asset="1 f48ed78c4c268158ef11ce050a96de452679e33a316acae2e9efdd7e.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 e184dcdf4df43652cfcb3c2b5e989d018f04cace48eaa9aa02811053.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 e20c67759540c2c4e5dfe7d7e93ed1b6692ebf2cfded8865f0e2d403.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 e3d98d8e62fe328468c0191759b3ad2ba5fbf1232b6b31070cdea848.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730
-     + 1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731
-     + 1 35a701244b5da5c238ad2cad27d750959f3ce0d0ff22766e73cc4efe.9cb3366523f23275f2618273f27d7f43d31dcab0890d3e65dc42a548a196a27a"
+offer_asset="1 53e4deacc6f8cd78f3490d64d199467df7a5893363d964b1cdba1a5d.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -64,8 +45,10 @@ offer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
 
 buyer_address_out="${buyer_address} + ${min_utxo} + ${seller_asset}"
 seller_address_out="${seller_address} + ${offer_min_utxo} + ${offer_asset}"
-echo "Script OUTPUT: "${script_address_out}
+service_address_out="${deleg_address} + 2000000"
+echo "Script OUTPUT: "${buyer_address_out}
 echo "Offer OUTPUT: "${seller_address_out}
+echo "Service OUTPUT: "${service_address_out}
 #
 # exit
 #
@@ -127,17 +110,18 @@ current_slot=$(($slot - 1))
 final_slot=$(($slot + 150))
 
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.signed )
+data_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/referenceable-tx.signed )
 
-    # --out-file ../tmp/tx.draft \
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
-    --calculate-plutus-script-cost ../tmp/tx.cost \
+    --out-file ../tmp/tx.draft \
     --invalid-before ${current_slot} \
     --invalid-hereafter ${final_slot} \
     --change-address ${seller_address} \
     --tx-in ${seller_tx_in} \
+    --read-only-tx-in-reference="${data_ref_utxo}#0" \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${sale_tx_in} \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
@@ -150,6 +134,7 @@ FEE=$(${cli} transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/complete-redeemer.json \
     --tx-out="${seller_address_out}" \
+    --tx-out="${service_address_out}" \
     --tx-out="${buyer_address_out}" \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${seller_pkh} \
@@ -160,8 +145,8 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 
-echo TOTAL MEMORY
-jq -r  '[.[].executionUnits.memory] | add' ../tmp/tx.cost
+# echo TOTAL MEMORY
+# jq -r  '[.[].executionUnits.memory] | add' ../tmp/tx.cost
 #
 exit
 #

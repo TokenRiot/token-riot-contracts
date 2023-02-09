@@ -8,19 +8,17 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/buyer-wallet/payment.addr)
-# receiver_address=$(cat ../wallets/buyer-wallet/payment.addr)
-receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
+receiver_address=$(cat ../wallets/seller-wallet/payment.addr)
+# receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
 # Define Asset to be printed here
 asset=""
 return_asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 # asset to trade
-asset="1 35a701244b5da5c238ad2cad27d750959f3ce0d0ff22766e73cc4efe.9cb3366523f23275f2618273f27d7f43d31dcab0890d3e65dc42a548a196a27a + 1 e184dcdf4df43652cfcb3c2b5e989d018f04cace48eaa9aa02811053.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 e20c67759540c2c4e5dfe7d7e93ed1b6692ebf2cfded8865f0e2d403.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 e3d98d8e62fe328468c0191759b3ad2ba5fbf1232b6b31070cdea848.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 f48ed78c4c268158ef11ce050a96de452679e33a316acae2e9efdd7e.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
+asset="1 5cb840dd5094cc8219d01a997ba9656fd8020945d373c37f97b6a7b6.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
-
-
-min_utxo=6000000
+min_utxo=2000000
 
 token_to_be_traded="${receiver_address} + 2500000000"
 token_to_be_changed="${receiver_address} + ${min_utxo} + ${asset}"
