@@ -104,6 +104,7 @@ FEE=$(${cli} transaction build \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
 
+
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}

@@ -35,9 +35,7 @@ import           Cardano.Api.Shelley                             ( PlutusScript 
 import qualified Data.ByteString.Lazy                            as LBS
 import qualified Data.ByteString.Short                           as SBS
 import qualified Plutus.V1.Ledger.Scripts                        as Scripts
-import qualified Plutus.V1.Ledger.Value                          as Value
 import qualified Plutus.V2.Ledger.Api                            as V2
-import qualified Plutus.V2.Ledger.Contexts                       as V2
 import           Plutus.Script.Utils.V2.Typed.Scripts.Validators as Utils
 import           ReferenceDataType
 import           ReducedFunctions
@@ -62,7 +60,7 @@ mkValidator datum redeemer context =
           !txSigners = V2.txInfoSignatories info
           !listOfPkh = mPkhs msd
           !threshold = mThres msd
-      in traceIfFalse "mul" (checkMultisig txSigners listOfPkh threshold)
+      in traceIfFalse "multisig error" (checkMultisig txSigners listOfPkh threshold)
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------

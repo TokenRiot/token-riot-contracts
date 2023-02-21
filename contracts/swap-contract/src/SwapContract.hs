@@ -32,13 +32,12 @@ module SwapContract
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import           Codec.Serialise
-import           Cardano.Api.Shelley            ( PlutusScript (..), PlutusScriptV2 )
-import qualified Data.ByteString.Lazy           as LBS
-import qualified Data.ByteString.Short          as SBS
-import qualified Plutus.V1.Ledger.Value         as Value
-import qualified Plutus.V1.Ledger.Scripts       as Scripts
-import qualified Plutus.V2.Ledger.Api           as V2
-import qualified Plutus.V2.Ledger.Contexts      as V2
+import           Cardano.Api.Shelley                             ( PlutusScript (..), PlutusScriptV2 )
+import qualified Data.ByteString.Lazy                            as LBS
+import qualified Data.ByteString.Short                           as SBS
+import qualified Plutus.V1.Ledger.Value                          as Value
+import qualified Plutus.V1.Ledger.Scripts                        as Scripts
+import qualified Plutus.V2.Ledger.Api                            as V2
 import           Plutus.Script.Utils.V2.Typed.Scripts.Validators as Utils
 import           SwappableDataType
 import           ReferenceDataType
@@ -60,7 +59,7 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [50, 66, 67, 119, 86, 37, 59, 140, 254, 132, 205, 186, 210, 164, 152, 153, 192, 132, 76, 60, 121, 242, 126, 230, 36, 63, 165, 52]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [130, 167, 86, 164, 46, 233, 133, 242, 116, 159, 109, 83, 8, 100, 133, 154, 41, 49, 115, 206, 25, 195, 166, 245, 6, 157, 252, 168]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
@@ -75,6 +74,7 @@ calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
     sFee :: Integer
     sFee = serviceFee sf
 calculateServiceFee _ (Reference _ sf _) = serviceFee sf
+
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
@@ -103,19 +103,21 @@ data CustomRedeemerType
   | Transform
   | FRRemove  PayToData SpecificToken
   | ORemove   MakeOfferData
+  | CTimeLock
   | Debug
-PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,    0 )
-                                                , ( 'FlatRate,  1 )
-                                                , ( 'Offer,     2 )
-                                                , ( 'SwapUTxO,  3 )
-                                                , ( 'Update,    4 )
-                                                , ( 'Bid,       5 )
-                                                , ( 'Complete,  6 )
-                                                , ( 'OrderBook, 7 )
-                                                , ( 'Transform, 8 )
-                                                , ( 'FRRemove,  9 )
-                                                , ( 'ORemove,  10 )
-                                                , ( 'Debug,    11 )
+PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,     0 )
+                                                , ( 'FlatRate,   1 )
+                                                , ( 'Offer,      2 )
+                                                , ( 'SwapUTxO,   3 )
+                                                , ( 'Update,     4 )
+                                                , ( 'Bid,        5 )
+                                                , ( 'Complete,   6 )
+                                                , ( 'OrderBook,  7 )
+                                                , ( 'Transform,  8 )
+                                                , ( 'FRRemove,   9 )
+                                                , ( 'ORemove,   10 )
+                                                , ( 'CTimeLock, 11 )
+                                                , ( 'Debug,     12 )
                                                 ]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
@@ -213,13 +215,18 @@ mkValidator datum redeemer context =
                && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in, no continue
                && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
         
-        -- | Order Book Dex Endpoint
-        -- TODO
-        OrderBook -> False
-
-        -- | Swap ownership on two utxos with a multisig.
-        -- TODO
-        (SwapUTxO _ _) -> False
+        -- | A trader may cancel their timelock by paying a fee.
+        CTimeLock ->
+          let !refTxIns = V2.txInfoReferenceInputs info
+              !refTxOut = getReferenceInput refTxIns referenceHash
+              !refDatum = getReferenceDatum refTxOut
+              !refValue = V2.txOutValue refTxOut
+          in traceIfFalse "Sign" (signedBy txSigners walletPkh)                               -- seller must sign it
+          && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue)                  -- seller must get the UTxO
+          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                              -- single tx going in, no continue
+          && traceIfFalse "Lock" (not $ isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "val"  (Value.geq refValue lockValue)                               -- check if correct reference
+          && traceIfFalse "fee"  (checkCancellationFeePayout refDatum)                        -- check if paying fee
 
         -- | Flat rate swap of UTxO for an predefined amount of a single token.
         (FlatRate ptd' aid st) -> 
@@ -542,6 +549,16 @@ mkValidator datum redeemer context =
           { V2.txOutRefId  = V2.TxId { V2.getTxId = txHash }
           , V2.txOutRefIdx = index
           }
+    
+    checkCancellationFeePayout :: ReferenceDatum -> Bool
+    checkCancellationFeePayout (Reference ca sf _) = (findPayout txOutputs cashAddr feeValue)
+       where
+        
+        cashAddr :: V2.Address
+        cashAddr = createAddress (caPkh ca) (caSc ca)
+      
+        feeValue :: V2.Value
+        feeValue = Value.singleton Value.adaSymbol Value.adaToken (cancellationFee sf)
     
     checkServiceFeePayout :: CustomDatumType -> ReferenceDatum -> Bool
     checkServiceFeePayout d r = (findPayout txOutputs (cashAddr r) feeValue)
