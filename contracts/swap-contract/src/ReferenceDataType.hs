@@ -43,8 +43,7 @@ data CashierAddressData = CashierAddressData
   , caSc  :: V2.PubKeyHash
   -- ^ Pay to this stake key.
   }
-PlutusTx.unstableMakeIsData ''CashierAddressData
-
+PlutusTx.makeIsDataIndexed ''CashierAddressData [('CashierAddressData, 0)]
 -------------------------------------------------------------------------------
 -- | Fee Payout Info
 -------------------------------------------------------------------------------
@@ -53,9 +52,10 @@ data ServiceFeeData = ServiceFeeData
   -- ^ The service provider fee percentage
   , serviceFee  :: Integer
   -- ^ Mando service fee
+  , cancellationFee :: Integer
+  -- ^ The fee to cancel a time lock
   }
-PlutusTx.unstableMakeIsData ''ServiceFeeData
-
+PlutusTx.makeIsDataIndexed ''ServiceFeeData [('ServiceFeeData, 0)]
 -------------------------------------------------------------------------------
 -- | Multisig Information
 -------------------------------------------------------------------------------
@@ -65,10 +65,9 @@ data MultisigData = MultisigData
   , mThres :: Integer
   -- ^ The number of multsig sigatures required.
   }
-PlutusTx.unstableMakeIsData ''MultisigData
-
+PlutusTx.makeIsDataIndexed ''MultisigData [('MultisigData, 0)]
 -------------------------------------------------------------------------------
 -- | Reference Datum
 -------------------------------------------------------------------------------
 data ReferenceDatum = Reference CashierAddressData ServiceFeeData MultisigData
-PlutusTx.unstableMakeIsData ''ReferenceDatum
+PlutusTx.makeIsDataIndexed ''ReferenceDatum [('Reference, 0)]

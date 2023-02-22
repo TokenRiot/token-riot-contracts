@@ -16,7 +16,7 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --tes
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
 # asset to trade
-asset="1 f6f114a9f11ff983ec0a51dca5fb6eb6e4fd3b03fb8fef103e825b77.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \

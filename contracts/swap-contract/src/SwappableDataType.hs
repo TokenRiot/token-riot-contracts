@@ -59,7 +59,7 @@ data PayToData = PayToData
   , ptSc  :: PlutusV2.PubKeyHash
   -- ^ Pay to this stake key.
   }
-PlutusTx.unstableMakeIsData ''PayToData
+PlutusTx.makeIsDataIndexed ''PayToData [('PayToData, 0)]
 
 instance Eq PayToData where
   {-# INLINABLE (==) #-}
@@ -83,7 +83,7 @@ data PaymentData = PaymentData
   , pAny :: Integer
   -- ^ A flag that allows any token to from a pid to be used.
   }
-PlutusTx.unstableMakeIsData ''PaymentData
+PlutusTx.makeIsDataIndexed ''PaymentData [('PaymentData, 0)]
 
 instance Eq PaymentData where
   {-# INLINABLE (==) #-}
@@ -114,7 +114,7 @@ data TimeData = TimeData
   , tEnd   :: Integer
   -- ^ The ending unix time.
   }
-PlutusTx.unstableMakeIsData ''TimeData
+PlutusTx.makeIsDataIndexed ''TimeData [('TimeData, 0)]
 
 instance Eq TimeData where
   {-# INLINABLE (==) #-}
@@ -142,7 +142,8 @@ data ADAIncData = ADAIncData
   { adaInc :: Integer
   -- ^ An increase to the ADA on a UTxO.
   }
-PlutusTx.unstableMakeIsData ''ADAIncData
+PlutusTx.makeIsDataIndexed ''ADAIncData [('ADAIncData, 0)]
+
 -------------------------------------------------------------------------------
 -- | Make Offer Data Object
 --
@@ -156,7 +157,8 @@ data MakeOfferData = MakeOfferData
   , moIdx :: Integer
   -- ^ The index of the tx hash.
   }
-PlutusTx.unstableMakeIsData ''MakeOfferData
+PlutusTx.makeIsDataIndexed ''MakeOfferData [('MakeOfferData, 0)]
+
 -------------------------------------------------------------------------------
 -- | Specific Token Data Object
 -------------------------------------------------------------------------------
@@ -164,7 +166,7 @@ data SpecificToken = SpecificToken
   { sTkn :: PlutusV2.TokenName
   -- ^^ The specific token name being used in the flatrate swap.
   }
-PlutusTx.unstableMakeIsData ''SpecificToken
+PlutusTx.makeIsDataIndexed ''SpecificToken [('SpecificToken, 0)]
 
 -- Given a payment data and a specific token return the correct token name.
 getTokenName :: PaymentData -> SpecificToken -> PlutusV2.TokenName
@@ -179,4 +181,5 @@ data OfferFlagData = OfferFlagData
   { oFlag :: Integer
   -- ^ The flag to indicate if the trade should remain in the contract.
   }
-PlutusTx.unstableMakeIsData ''OfferFlagData
+PlutusTx.makeIsDataIndexed ''OfferFlagData [('OfferFlagData, 0)]
+
