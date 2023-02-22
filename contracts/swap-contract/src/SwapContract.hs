@@ -27,7 +27,6 @@
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module SwapContract
   ( swapContractScript
-  , swapContractScriptShortBs
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
