@@ -59,11 +59,11 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [130, 167, 86, 164, 46, 233, 133, 242, 116, 159, 109, 83, 8, 100, 133, 154, 41, 49, 115, 206, 25, 195, 166, 245, 6, 157, 252, 168]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [134, 118, 177, 105, 24, 131, 19, 45, 9, 214, 188, 255, 143, 151, 242, 244, 168, 62, 148, 158, 157, 239, 156, 34, 246, 60, 39, 27]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
-calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
+calculateServiceFee (Swappable _ pd _) (Reference _ sf _ _) =
   if (pPid pd == Value.adaSymbol) && (pTkn pd == Value.adaToken)
   then if percentFee > sFee then percentFee else sFee
   else sFee
@@ -73,7 +73,7 @@ calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
 
     sFee :: Integer
     sFee = serviceFee sf
-calculateServiceFee _ (Reference _ sf _) = serviceFee sf
+calculateServiceFee _ (Reference _ sf _ _) = serviceFee sf
 
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
@@ -551,7 +551,7 @@ mkValidator datum redeemer context =
           }
     
     checkCancellationFeePayout :: ReferenceDatum -> Bool
-    checkCancellationFeePayout (Reference ca sf _) = (findPayout txOutputs cashAddr feeValue)
+    checkCancellationFeePayout (Reference ca sf _ _) = (findPayout txOutputs cashAddr feeValue)
        where
         
         cashAddr :: V2.Address
@@ -565,7 +565,7 @@ mkValidator datum redeemer context =
       where
         
         cashAddr :: ReferenceDatum -> V2.Address
-        cashAddr (Reference ca _ _) = createAddress (caPkh ca) (caSc ca)
+        cashAddr (Reference ca _ _ _) = createAddress (caPkh ca) (caSc ca)
       
         feeValue :: V2.Value
         feeValue = Value.singleton Value.adaSymbol Value.adaToken (calculateServiceFee d r)
