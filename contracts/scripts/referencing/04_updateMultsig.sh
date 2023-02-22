@@ -23,14 +23,8 @@ buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/b
 # asset to trade
 asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
-min_utxo=$(${cli} transaction calculate-min-required-utxo \
-    --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
-    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
-    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
-
-deleg_address_out="${deleg_address} + ${min_utxo} + ${asset}"
-echo "Remove OUTPUT: "${deleg_address_out}
+script_address_out="${script_address} + 5000000 + ${asset}"
+echo "Update OUTPUT: "${script_address_out}
 #
 # exit
 #
@@ -94,8 +88,9 @@ FEE=$(${cli} transaction build \
     --spending-tx-in-reference="${script_ref_utxo}#1" \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
-    --spending-reference-tx-in-redeemer-file ../data/redeemers/remove-redeemer.json \
-    --tx-out="${deleg_address_out}" \
+    --spending-reference-tx-in-redeemer-file ../data/referencing/update-multisig-redeemer.json \
+    --tx-out="${script_address_out}" \
+    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
     --required-signer-hash ${deleg_pkh} \
     --required-signer-hash ${seller_pkh} \
     --required-signer-hash ${buyer_pkh} \
@@ -113,9 +108,9 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
     --signing-key-file ../wallets/delegator-wallet/payment.skey \
+    --signing-key-file ../wallets/collat-wallet/payment.skey \
     --signing-key-file ../wallets/seller-wallet/payment.skey \
     --signing-key-file ../wallets/buyer-wallet/payment.skey \
-    --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/referenceable-tx.signed \
     --testnet-magic ${testnet_magic}

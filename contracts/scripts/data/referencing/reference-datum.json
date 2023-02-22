@@ -27,7 +27,7 @@
       ]
     },
     {
-      "constructor": 0, 
+      "constructor": 0,
       "fields": [
         {
           "list": [
@@ -35,7 +35,7 @@
               "bytes": "a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439"
             },
             {
-              "bytes": "d9335ba4f8ebc0b8c9361613071cdc9e9fe92de49b8f2a4782023ef4"
+              "bytes": "db7bffc41a43c4d9c31342e3fd457409aeb40302aa52058df374913b"
             },
             {
               "bytes": "7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4"
@@ -44,6 +44,23 @@
         },
         {
           "int": 2
+        },
+        {
+          "bytes": "a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439"
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": "bd66ac291ac521deaf22141fb0e5e2f0ed3da63159b9f49e1f500acf"
+        },
+        {
+          "bytes": "7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4"
+        },
+        {
+          "bytes": ""
         }
       ]
     }

@@ -59,7 +59,7 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [39, 19, 111, 201, 140, 255, 56, 171, 212, 76, 105, 56, 62, 20, 184, 224, 140, 190, 250, 2, 214, 21, 166, 192, 201, 205, 175, 78]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [233, 95, 79, 68, 68, 116, 60, 3, 82, 158, 225, 241, 234, 5, 72, 162, 43, 150, 174, 242, 113, 223, 135, 194, 102, 65, 130, 80]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer

@@ -31,14 +31,13 @@ module ReferenceContract
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import           Codec.Serialise
-import           Cardano.Api.Shelley                             ( PlutusScript (..), PlutusScriptV2 )
-import qualified Data.ByteString.Lazy                            as LBS
-import qualified Data.ByteString.Short                           as SBS
-import qualified Plutus.V1.Ledger.Scripts                        as Scripts
-import qualified Plutus.V2.Ledger.Api                            as V2
-import           Plutus.Script.Utils.V2.Typed.Scripts.Validators as Utils
+import           Cardano.Api.Shelley   ( PlutusScript (..), PlutusScriptV2 )
+import qualified Data.ByteString.Lazy  as LBS
+import qualified Data.ByteString.Short as SBS
+import qualified Plutus.V2.Ledger.Api  as V2
 import           ReferenceDataType
 import           ReducedFunctions
+import           Plutonomy
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -129,7 +128,7 @@ mkValidator datum redeemer context =
       && traceIfFalse "mul" (lengthCheck sd')                             -- valid new multisig
       && traceIfFalse "hot" (mHot sd == mHot sd')                         -- hot key cant change
     
-    -- | Update the multisig
+    -- | Update the hotkey
     (Reference pd sf sd sp, UpdateHotKey) ->
       let !info                         = V2.scriptContextTxInfo context
           !txSigners                    = V2.txInfoSignatories info
@@ -170,9 +169,10 @@ mkValidator datum redeemer context =
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
     
-    -- | Debug for testing; set to false or remove
+    -- | Debug for testing; set to false or remove at prod
     (Reference _ _ _ _, Debug) -> True
   where
+    -- | get the datum by searching the tx outputs by the validating value
     getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> ReferenceDatum
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
       where
@@ -192,19 +192,15 @@ mkValidator datum redeemer context =
 -------------------------------------------------------------------------------
 -- | Now we need to compile the Validator.
 -------------------------------------------------------------------------------
-validator' :: V2.Validator
-validator' = V2.mkValidatorScript
-    $$(PlutusTx.compile [|| wrap ||])
- where
-    wrap = Utils.mkUntypedValidator mkValidator
--------------------------------------------------------------------------------
--- | The code below is required for the plutus script compile.
--------------------------------------------------------------------------------
-script :: Scripts.Script
-script = Scripts.unValidatorScript validator'
+wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+wrappedValidator x y z = check (mkValidator (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
+
+validator :: V2.Validator
+validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+  $$(PlutusTx.compile [|| wrappedValidator ||])
 
 referenceContractScriptShortBs :: SBS.ShortByteString
-referenceContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+referenceContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise validator
 
 referenceContractScript :: PlutusScript PlutusScriptV2
 referenceContractScript = PlutusScriptSerialised referenceContractScriptShortBs
