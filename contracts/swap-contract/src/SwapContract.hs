@@ -48,7 +48,7 @@ import           ReducedFunctions
   Copyright: 2023
 -}
 lockPid :: V2.CurrencySymbol
-lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [246, 241, 20, 169, 241, 31, 249, 131, 236, 10, 81, 220, 165, 251, 110, 182, 228, 253, 59, 3, 251, 143, 239, 16, 62, 130, 91, 119] }
+lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [141, 247, 22, 50, 179, 201, 219, 80, 209, 158, 199, 167, 4, 87, 114, 65, 136, 239, 89, 190, 122, 59, 59, 176, 202, 187, 186, 153] }
 
 lockTkn :: V2.TokenName
 lockTkn = V2.TokenName {V2.unTokenName = createBuiltinByteString [84, 104, 105, 115, 73, 115, 79, 110, 101, 83, 116, 97, 114, 116, 101, 114, 84, 111, 107, 101, 110, 70, 111, 114, 84, 101, 115, 116, 105, 110, 103, 52] }
