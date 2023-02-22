@@ -90,7 +90,7 @@ instance Eq SigningData where
            ( mHot   a == mHot   b )
 
 changeHotKeyOnly :: SigningData -> SigningData -> Bool
-changeHotKeyOnly a b = (mPkhs a == mPkhs b) && (mThres a == mThres b) && (mHot a /= mHot b)
+changeHotKeyOnly a b = (mPkhs a == mPkhs b) && (mThres a == mThres b)
 
 lengthCheck :: SigningData -> Bool
 lengthCheck msd = lengthCheck' pkhs 0
@@ -102,10 +102,10 @@ lengthCheck msd = lengthCheck' pkhs 0
     thres = mThres msd
 
     lengthCheck' :: [V2.PubKeyHash] -> Integer -> Bool
-    lengthCheck' []     !counter = counter <= thres
+    lengthCheck' []     !counter = counter >= thres
     lengthCheck' (_:xs) !counter =
-      if counter > thres
-        then False
+      if counter >= thres
+        then True  -- there are enough signers
         else lengthCheck' xs (counter + 1)
 -------------------------------------------------------------------------------
 -- | Stake Pool Information
