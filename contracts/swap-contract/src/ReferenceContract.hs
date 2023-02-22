@@ -50,13 +50,15 @@ data CustomRedeemerType
   = UpdateCashier
   | UpdateFee
   | UpdateMultisig
+  | UpdateHotKey
   | UpdatePool
   | Debug
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ('UpdateCashier,  0)
                                                 , ('UpdateFee,      1)
                                                 , ('UpdateMultisig, 2)
-                                                , ('UpdatePool,     3)
-                                                , ('Debug,          4)
+                                                , ('UpdateHotKey,   3)
+                                                , ('UpdatePool,     4)
+                                                , ('Debug,          5)
                                                 ]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
@@ -66,47 +68,47 @@ mkValidator :: ReferenceDatum -> CustomRedeemerType -> V2.ScriptContext -> Bool
 mkValidator datum redeemer context =
   case (datum, redeemer) of
     -- | Update the cashier address
-    (Reference _ sf msd sp, UpdateCashier) ->
-      let !info                       = V2.scriptContextTxInfo context
-          !txSigners                  = V2.txInfoSignatories info
-          !txInputs                   = V2.txInfoInputs info
-          !txOutputs                  = V2.txInfoOutputs info
-          !validatingInput            = ownInput context
-          !thisValue                  = V2.txOutValue validatingInput
-          !scriptAddr                 = V2.txOutAddress validatingInput
-          !contTxOutputs              = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                  = mPkhs msd
-          !threshold                  = mThres msd
-          !(Reference _ sf' msd' sp') = getOutboundDatumByValue txOutputs thisValue
+    (Reference _ sf sd sp, UpdateCashier) ->
+      let !info                      = V2.scriptContextTxInfo context
+          !txSigners                 = V2.txInfoSignatories info
+          !txInputs                  = V2.txInfoInputs info
+          !txOutputs                 = V2.txInfoOutputs info
+          !validatingInput           = ownInput context
+          !thisValue                 = V2.txOutValue validatingInput
+          !scriptAddr                = V2.txOutAddress validatingInput
+          !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                 = mPkhs sd
+          !threshold                 = mThres sd
+          !(Reference _ sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
-      && traceIfFalse "dat" (msd == msd')                                 -- multisig cant change
+      && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
     
     -- | Update the service fee
-    (Reference pd _ msd sp, UpdateFee) ->
-      let !info                       = V2.scriptContextTxInfo context
-          !txSigners                  = V2.txInfoSignatories info
-          !txInputs                   = V2.txInfoInputs info
-          !txOutputs                  = V2.txInfoOutputs info
-          !validatingInput            = ownInput context
-          !thisValue                  = V2.txOutValue validatingInput
-          !scriptAddr                 = V2.txOutAddress validatingInput
-          !contTxOutputs              = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                  = mPkhs msd
-          !threshold                  = mThres msd
-          !(Reference pd' _ msd' sp') = getOutboundDatumByValue txOutputs thisValue
+    (Reference pd _ sd sp, UpdateFee) ->
+      let !info                      = V2.scriptContextTxInfo context
+          !txSigners                 = V2.txInfoSignatories info
+          !txInputs                  = V2.txInfoInputs info
+          !txOutputs                 = V2.txInfoOutputs info
+          !validatingInput           = ownInput context
+          !thisValue                 = V2.txOutValue validatingInput
+          !scriptAddr                = V2.txOutAddress validatingInput
+          !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                 = mPkhs sd
+          !threshold                 = mThres sd
+          !(Reference pd' _ sd' sp') = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
-      && traceIfFalse "dat" (msd == msd')                                 -- multisig cant change
+      && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
 
     -- | Update the multisig
-    (Reference pd sf msd sp, UpdateMultisig) ->
+    (Reference pd sf sd sp, UpdateMultisig) ->
       let !info                         = V2.scriptContextTxInfo context
           !txSigners                    = V2.txInfoSignatories info
           !txInputs                     = V2.txInfoInputs info
@@ -115,35 +117,57 @@ mkValidator datum redeemer context =
           !thisValue                    = V2.txOutValue validatingInput
           !scriptAddr                   = V2.txOutAddress validatingInput
           !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                    = mPkhs msd
-          !threshold                    = mThres msd
-          !(Reference pd' sf' msd' sp') = getOutboundDatumByValue txOutputs thisValue
+          !listOfPkh                    = mPkhs sd
+          !threshold                    = mThres sd
+          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
-      && traceIfFalse "mul" (lengthCheck msd')                            -- valid new multisig
+      && traceIfFalse "mul" (lengthCheck sd')                             -- valid new multisig
+      && traceIfFalse "hot" (mHot sd == mHot sd')                         -- hot key cant change
     
-    -- | Update stake pool info
-    (Reference pd sf msd _, UpdatePool) ->
-      let !info                       = V2.scriptContextTxInfo context
-          !txSigners                  = V2.txInfoSignatories info
-          !txInputs                   = V2.txInfoInputs info
-          !txOutputs                  = V2.txInfoOutputs info
-          !validatingInput            = ownInput context
-          !thisValue                  = V2.txOutValue validatingInput
-          !scriptAddr                 = V2.txOutAddress validatingInput
-          !contTxOutputs              = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                  = mPkhs msd
-          !threshold                  = mThres msd
-          !(Reference pd' sf' msd' _) = getOutboundDatumByValue txOutputs thisValue
+    -- | Update the multisig
+    (Reference pd sf sd sp, UpdateHotKey) ->
+      let !info                         = V2.scriptContextTxInfo context
+          !txSigners                    = V2.txInfoSignatories info
+          !txInputs                     = V2.txInfoInputs info
+          !txOutputs                    = V2.txInfoOutputs info
+          !validatingInput              = ownInput context
+          !thisValue                    = V2.txOutValue validatingInput
+          !scriptAddr                   = V2.txOutAddress validatingInput
+          !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                    = mPkhs sd
+          !threshold                    = mThres sd
+          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
-      && traceIfFalse "dat" (msd == msd')                                 -- multisig cant change
+      && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
+      && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
+      && traceIfFalse "hot" (changeHotKeyOnly sd sd')                        -- hot key change only
+    
+    -- | Update stake pool info
+    (Reference pd sf sd _, UpdatePool) ->
+      let !info                      = V2.scriptContextTxInfo context
+          !txSigners                 = V2.txInfoSignatories info
+          !txInputs                  = V2.txInfoInputs info
+          !txOutputs                 = V2.txInfoOutputs info
+          !validatingInput           = ownInput context
+          !thisValue                 = V2.txOutValue validatingInput
+          !scriptAddr                = V2.txOutAddress validatingInput
+          !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                 = mPkhs sd
+          !threshold                 = mThres sd
+          !(Reference pd' sf' sd' _) = getOutboundDatumByValue txOutputs thisValue
+      in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
+      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
+      && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
     
     -- | Debug for testing; set to false or remove
@@ -155,7 +179,7 @@ mkValidator datum redeemer context =
         getOutboundDatumByValue' :: [V2.TxOut] -> V2.Value -> ReferenceDatum
         getOutboundDatumByValue' []     _   = traceError "Nothing Found"
         getOutboundDatumByValue' (x:xs) val =
-          if V2.txOutValue x == val                                              -- strict value continue
+          if V2.txOutValue x == val                                            -- strict value continue
           then
             case V2.txOutDatum x of
               V2.NoOutputDatum              -> getOutboundDatumByValue' xs val -- skip datumless

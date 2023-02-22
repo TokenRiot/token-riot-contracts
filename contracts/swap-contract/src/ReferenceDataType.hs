@@ -28,7 +28,8 @@
 module ReferenceDataType
   ( CashierAddressData (..)
   , ServiceFeeData (..)
-  , MultisigData (..)
+  , SigningData (..)
+  , changeHotKeyOnly
   , lengthCheck
   , StakePoolData (..)
   , ReferenceDatum (..)
@@ -72,20 +73,26 @@ instance Eq ServiceFeeData where
 -------------------------------------------------------------------------------
 -- | Multisig Information
 -------------------------------------------------------------------------------
-data MultisigData = MultisigData
+data SigningData = SigningData
   { mPkhs  :: [V2.PubKeyHash]
   -- ^ List of the multisig public key hashes
   , mThres :: Integer
   -- ^ The number of multsig sigatures required
+  , mHot   :: V2.PubKeyHash
+  -- ^ The token riot hot key
   }
-PlutusTx.makeIsDataIndexed ''MultisigData [('MultisigData, 0)]
+PlutusTx.makeIsDataIndexed ''SigningData [('SigningData, 0)]
 
-instance Eq MultisigData where
+instance Eq SigningData where
   {-# INLINABLE (==) #-}
   a == b = ( mPkhs  a == mPkhs  b ) &&
-           ( mThres a == mThres b )
+           ( mThres a == mThres b ) &&
+           ( mHot   a == mHot   b )
 
-lengthCheck :: MultisigData -> Bool
+changeHotKeyOnly :: SigningData -> SigningData -> Bool
+changeHotKeyOnly a b = (mPkhs a == mPkhs b) && (mThres a == mThres b) && (mHot a /= mHot b)
+
+lengthCheck :: SigningData -> Bool
 lengthCheck msd = lengthCheck' pkhs 0
   where
     pkhs :: [V2.PubKeyHash]
@@ -121,5 +128,5 @@ instance Eq StakePoolData where
 -------------------------------------------------------------------------------
 -- | Reference Datum
 -------------------------------------------------------------------------------
-data ReferenceDatum = Reference CashierAddressData ServiceFeeData MultisigData StakePoolData
+data ReferenceDatum = Reference CashierAddressData ServiceFeeData SigningData StakePoolData
 PlutusTx.makeIsDataIndexed ''ReferenceDatum [('Reference, 0)]
