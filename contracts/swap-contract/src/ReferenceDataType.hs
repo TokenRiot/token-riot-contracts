@@ -29,6 +29,7 @@ module ReferenceDataType
   ( CashierAddressData (..)
   , ServiceFeeData (..)
   , MultisigData (..)
+  , StakePoolData (..)
   , ReferenceDatum (..)
   ) where
 import qualified PlutusTx
@@ -39,9 +40,9 @@ import qualified Plutus.V2.Ledger.Api as V2
 -------------------------------------------------------------------------------
 data CashierAddressData = CashierAddressData
   { caPkh :: V2.PubKeyHash
-  -- ^ Pay to this public key hash.
+  -- ^ Pay to this public key hash
   , caSc  :: V2.PubKeyHash
-  -- ^ Pay to this stake key.
+  -- ^ Pay to this stake key
   }
 PlutusTx.makeIsDataIndexed ''CashierAddressData [('CashierAddressData, 0)]
 -------------------------------------------------------------------------------
@@ -63,9 +64,21 @@ data MultisigData = MultisigData
   { mPkhs :: [V2.PubKeyHash]
   -- ^ List of the multisig public key hashes
   , mThres :: Integer
-  -- ^ The number of multsig sigatures required.
+  -- ^ The number of multsig sigatures required
   }
 PlutusTx.makeIsDataIndexed ''MultisigData [('MultisigData, 0)]
+-------------------------------------------------------------------------------
+-- | Stake Pool Information
+-------------------------------------------------------------------------------
+data StakePoolData = StakePoolData
+  { poolId :: V2.PubKeyHash
+  -- ^ The pool where the contract will be staked
+  , rewardPkh :: V2.PubKeyHash
+  -- ^ The reward public key has for staking
+  , rewardSc :: V2.PubKeyHash
+  -- ^ The reward staking credential for staking
+  }
+PlutusTx.makeIsDataIndexed ''StakePoolData [('StakePoolData, 0)]
 -------------------------------------------------------------------------------
 -- | Reference Datum
 -------------------------------------------------------------------------------
