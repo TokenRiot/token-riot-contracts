@@ -66,7 +66,7 @@ jq \
 ../scripts/data/referencing/reference-datum.json | sponge ../scripts/data/referencing/reference-datum.json
 
 
-echo -e "\033[1;35m Run Swap Contract \033[0m" 
+echo -e "\033[1;35m Run Swap Contract \033[0m"
 
 # starter nft data
 python3 -c "import binascii;a=$(cat start_info.json | jq .pid);s=binascii.unhexlify(a);print([x for x in s])" > start.pid
@@ -94,6 +94,21 @@ echo -e "\nValidator Hash:" $(cat validator.hash)
 python3 -c "import binascii;a='$(cat validator.hash)';s=binascii.unhexlify(a);print([x for x in s])" > validator.bytes
 echo -e "\nValidator Bytes:" $(cat validator.bytes)
 
+echo -e "\033[1;35m Run Stake Contract \033[0m"
+
+pid=$(python3 -c "import binascii;a='$(jq -r '.pid' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
+tkn=$(python3 -c "import binascii;a='$(jq -r '.tkn' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
+valid=$(python3 -c "import binascii;a='$(cat reference.hash)';s=binascii.unhexlify(a);print([x for x in s])")
+jq \
+--argjson pid "$pid" \
+--argjson tkn "$tkn" \
+--argjson valid "$valid" \
+'.pid=$pid | 
+.tkn=$tkn | 
+.valid=$valid
+' \
+staking_info.json | sponge staking_info.json
+
 
 cabal run stake-contract
 
@@ -115,6 +130,17 @@ cardano-cli stake-address deregistration-certificate --stake-script-file stake-c
 poolId=$(jq -r '.poolId' start_info.json)
 cardano-cli stake-address delegation-certificate --stake-script-file stake-contract.plutus --stake-pool-id ${poolId} --out-file deleg.cert
 echo -e "\nDeleg Cert";cat deleg.cert | jq
+
+stakeHash=$(cat stake.hash)
+jq \
+--arg stakeHash "$stakeHash" \
+'.fields[0].fields[0].bytes=$stakeHash' \
+../scripts/data/staking/register-redeemer.json | sponge ../scripts/data/staking/register-redeemer.json
+
+jq \
+--arg stakeHash "$stakeHash" \
+'.fields[0].fields[0].bytes=$stakeHash' \
+../scripts/data/staking/withdraw-redeemer.json | sponge ../scripts/data/staking/withdraw-redeemer.json
 
 # complete
 echo "DONE"

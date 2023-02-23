@@ -37,7 +37,7 @@ if [ "${TXNS}" -eq "0" ]; then
    exit;
 fi
 alltxin=""
-TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/payee_utxo.json)
+TXIN=$(jq -r --arg alltxin "" 'to_entries[] | select(.value.value | length < 2) | .key | . + $alltxin + " --tx-in"' ../tmp/payee_utxo.json)
 payee_tx_in=${TXIN::-8}
 
 echo -e "\033[0;36m Building Tx \033[0m"
@@ -47,7 +47,7 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${payee_address} \
     --tx-in ${payee_tx_in} \
-    --certificate ../../stake-contract/stake.cert \
+    --certificate ../../swap-contract/stake.cert \
     --testnet-magic ${testnet_magic})
 
 IFS=':' read -ra VALUE <<< "${FEE}"

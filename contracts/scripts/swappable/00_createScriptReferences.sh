@@ -11,7 +11,7 @@ ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../
 # contract path
 swap_script_path="../../swap-contract/swap-contract.plutus"
 stake_script_path="../../swap-contract/stake-contract.plutus"
-refer_script_path=../../swap-contract/reference-contract.plutus
+refer_script_path="../../swap-contract/reference-contract.plutus"
 
 # Addresses
 reference_address=$(cat ../wallets/reference-wallet/payment.addr)

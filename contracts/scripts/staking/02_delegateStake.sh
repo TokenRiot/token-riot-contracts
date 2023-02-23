@@ -11,6 +11,7 @@ ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../
 # collateral for stake contract
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
+
 # payee
 payee_address=$(cat ../wallets/delegator-wallet/payment.addr)
 #
@@ -28,7 +29,7 @@ if [ "${TXNS}" -eq "0" ]; then
    exit;
 fi
 alltxin=""
-TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/payee_utxo.json)
+TXIN=$(jq -r --arg alltxin "" 'to_entries[] | select(.value.value | length < 2) | .key | . + $alltxin + " --tx-in"' ../tmp/payee_utxo.json)
 payee_tx_in=${TXIN::-8}
 
 # collat info
@@ -46,6 +47,8 @@ fi
 collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/stake-reference-utxo.signed )
+data_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/referenceable-tx.signed )
+
 
 
 echo -e "\033[0;36m Building Tx \033[0m"
@@ -54,12 +57,13 @@ FEE=$(${cli} transaction build \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${payee_address} \
+    --read-only-tx-in-reference="${data_ref_utxo}#0" \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${payee_tx_in} \
-    --certificate ../../stake-contract/deleg.cert \
+    --certificate ../../swap-contract/deleg.cert \
     --certificate-tx-in-reference="${script_ref_utxo}#1" \
     --certificate-plutus-script-v2 \
-    --certificate-reference-tx-in-redeemer-file ../data/redeemers/register-redeemer.json \
+    --certificate-reference-tx-in-redeemer-file ../data/staking/register-redeemer.json \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
 
