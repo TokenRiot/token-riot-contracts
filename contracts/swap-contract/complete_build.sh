@@ -9,6 +9,11 @@ echo -e "\033[1;35m Build Contracts \033[0m"
 cabal build -w ghc-8.10.7 -O2
 
 echo -e "\033[1;35m Run Reference Contract \033[0m" 
+
+rm reference.addr
+rm reference.hash
+rm reference.bytes
+
 cabal run reference-contract
 
 # Get script address
@@ -80,17 +85,9 @@ reference_info.json | sponge reference_info.json
 
 echo -e "\033[1;35m Run Swap Contract \033[0m"
 
-# starter nft data
-python3 -c "import binascii;a=$(cat start_info.json | jq .pid);s=binascii.unhexlify(a);print([x for x in s])" > start.pid
-python3 -c "import binascii;a=$(cat start_info.json | jq .tkn);s=binascii.unhexlify(a);print([x for x in s])" > start.tkn
-
-python3 -c "from update_contracts import changeStartLockPid;changeStartLockPid('./src/SwapContract.hs', './src/SwapContract-new.hs', $(cat start.pid))"
-mv ./src/SwapContract-new.hs ./src/SwapContract.hs
-python3 -c "from update_contracts import changeStartLockTkn;changeStartLockTkn('./src/SwapContract.hs', './src/SwapContract-new.hs', $(cat start.tkn))"
-mv ./src/SwapContract-new.hs ./src/SwapContract.hs
-
-python3 -c "from update_contracts import changeLockHash;changeLockHash('./src/SwapContract.hs', './src/SwapContract-new.hs', $(cat ./reference.bytes))"
-mv ./src/SwapContract-new.hs ./src/SwapContract.hs
+rm validator.addr
+rm validator.hash
+rm validator.bytes
 
 cabal run swap-contract
 
@@ -107,6 +104,13 @@ python3 -c "import binascii;a='$(cat validator.hash)';s=binascii.unhexlify(a);pr
 echo -e "\nValidator Bytes:" $(cat validator.bytes)
 
 echo -e "\033[1;35m Run Stake Contract \033[0m"
+
+rm stake.addr
+rm stake.hash
+rm stake.bytes
+rm stake.cert
+rm destake.cert
+rm deleg.cert
 
 cabal run stake-contract
 
@@ -139,6 +143,9 @@ jq \
 --arg stakeHash "$stakeHash" \
 '.fields[0].fields[0].bytes=$stakeHash' \
 ../scripts/data/staking/withdraw-redeemer.json | sponge ../scripts/data/staking/withdraw-redeemer.json
+
+# copy contracts into test-suite
+cp swap-contract.plutus reference-contract.plutus stake-contract.plutus ../test-suite/contracts
 
 # complete
 echo "DONE"
