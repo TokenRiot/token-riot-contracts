@@ -28,7 +28,9 @@
 module ReferenceDataType
   ( CashierAddressData (..)
   , ServiceFeeData (..)
-  , MultisigData (..)
+  , SigningData (..)
+  , changeHotKeyOnly
+  , lengthCheck
   , StakePoolData (..)
   , ReferenceDatum (..)
   ) where
@@ -45,42 +47,86 @@ data CashierAddressData = CashierAddressData
   -- ^ Pay to this stake key
   }
 PlutusTx.makeIsDataIndexed ''CashierAddressData [('CashierAddressData, 0)]
+
+instance Eq CashierAddressData where
+  {-# INLINABLE (==) #-}
+  a == b = ( caPkh a == caPkh b ) &&
+           ( caSc  a == caSc  b )
 -------------------------------------------------------------------------------
 -- | Fee Payout Info
 -------------------------------------------------------------------------------
 data ServiceFeeData = ServiceFeeData
-  { servicePerc :: Integer
+  { servicePerc     :: Integer
   -- ^ The service provider fee percentage
-  , serviceFee  :: Integer
+  , serviceFee      :: Integer
   -- ^ Mando service fee
   , cancellationFee :: Integer
   -- ^ The fee to cancel a time lock
   }
 PlutusTx.makeIsDataIndexed ''ServiceFeeData [('ServiceFeeData, 0)]
+
+instance Eq ServiceFeeData where
+  {-# INLINABLE (==) #-}
+  a == b = ( servicePerc a     == servicePerc     b ) &&
+           ( serviceFee  a     == serviceFee      b ) &&
+           ( cancellationFee a == cancellationFee b )
 -------------------------------------------------------------------------------
 -- | Multisig Information
 -------------------------------------------------------------------------------
-data MultisigData = MultisigData
-  { mPkhs :: [V2.PubKeyHash]
+data SigningData = SigningData
+  { mPkhs  :: [V2.PubKeyHash]
   -- ^ List of the multisig public key hashes
   , mThres :: Integer
   -- ^ The number of multsig sigatures required
+  , mHot   :: V2.PubKeyHash
+  -- ^ The token riot hot key
   }
-PlutusTx.makeIsDataIndexed ''MultisigData [('MultisigData, 0)]
+PlutusTx.makeIsDataIndexed ''SigningData [('SigningData, 0)]
+
+instance Eq SigningData where
+  {-# INLINABLE (==) #-}
+  a == b = ( mPkhs  a == mPkhs  b ) &&
+           ( mThres a == mThres b ) &&
+           ( mHot   a == mHot   b )
+
+changeHotKeyOnly :: SigningData -> SigningData -> Bool
+changeHotKeyOnly a b = (mPkhs a == mPkhs b) && (mThres a == mThres b)
+
+lengthCheck :: SigningData -> Bool
+lengthCheck msd = lengthCheck' pkhs 0
+  where
+    pkhs :: [V2.PubKeyHash]
+    pkhs = mPkhs msd
+
+    thres :: Integer
+    thres = mThres msd
+
+    lengthCheck' :: [V2.PubKeyHash] -> Integer -> Bool
+    lengthCheck' []     !counter = counter >= thres
+    lengthCheck' (_:xs) !counter =
+      if counter >= thres
+        then True  -- there are enough signers
+        else lengthCheck' xs (counter + 1)
 -------------------------------------------------------------------------------
 -- | Stake Pool Information
 -------------------------------------------------------------------------------
 data StakePoolData = StakePoolData
-  { poolId :: V2.PubKeyHash
+  { poolId    :: V2.PubKeyHash
   -- ^ The pool where the contract will be staked
   , rewardPkh :: V2.PubKeyHash
   -- ^ The reward public key has for staking
-  , rewardSc :: V2.PubKeyHash
+  , rewardSc  :: V2.PubKeyHash
   -- ^ The reward staking credential for staking
   }
 PlutusTx.makeIsDataIndexed ''StakePoolData [('StakePoolData, 0)]
+
+instance Eq StakePoolData where
+  {-# INLINABLE (==) #-}
+  a == b = ( poolId    a == poolId    b ) &&
+           ( rewardPkh a == rewardPkh b ) &&
+           ( rewardSc  a == rewardSc  b )
 -------------------------------------------------------------------------------
 -- | Reference Datum
 -------------------------------------------------------------------------------
-data ReferenceDatum = Reference CashierAddressData ServiceFeeData MultisigData
+data ReferenceDatum = Reference CashierAddressData ServiceFeeData SigningData StakePoolData
 PlutusTx.makeIsDataIndexed ''ReferenceDatum [('Reference, 0)]

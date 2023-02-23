@@ -1,11 +1,24 @@
 {
-    "__comment1__":"The start token info",
+    "__comment1__":"The starter token info",
     "pid": "8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99",
     "tkn": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734",
-    "__comment2__":"The multisig Info",
+    "__comment2__":"The cashier address",
+    "caPkh":"7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
+    "caSc":"",
+    "__comment3__":"The service fee info",
+    "servicePerc":40,
+    "serviceFee":2000000,
+    "cancellationFee":5000000,
+    "__comment4__":"The multisig Info",
     "pkh1":"a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439",
     "pkh2":"db7bffc41a43c4d9c31342e3fd457409aeb40302aa52058df374913b",
     "pkh3":"7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
-    "__comment3__":"The threshold Info",
-    "thres": 2
+    "__comment5__":"The threshold Info",
+    "thres": 2,
+    "__comment6__":"The hot key info",
+    "hotPkh":"a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439",
+    "__comment7__":"The staking info",
+    "poolId": "bd66ac291ac521deaf22141fb0e5e2f0ed3da63159b9f49e1f500acf",
+    "rewardPkh": "7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
+    "rewardSc": ""
 }

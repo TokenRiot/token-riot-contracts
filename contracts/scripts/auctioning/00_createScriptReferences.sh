@@ -10,7 +10,7 @@ ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../
 
 # contract path
 swap_script_path="../../swap-contract/swap-contract.plutus"
-stake_script_path="../../stake-contract/stake-contract.plutus"
+stake_script_path="../../swap-contract/stake-contract.plutus"
 refer_script_path=../../swap-contract/reference-contract.plutus
 
 # Addresses

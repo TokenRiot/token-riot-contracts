@@ -47,6 +47,7 @@ library
 
   exposed-modules:      SwapContract
                         ReferenceContract
+                        StakeContract
                         SwappableDataType
                         ReferenceDataType
                         ReducedFunctions
@@ -59,6 +60,7 @@ library
                       , plutus-script-utils
                       , serialise
                       , useful-funcs
+                      , plutonomy
 
   ghc-options: -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
 
@@ -87,4 +89,22 @@ executable reference-contract
 
   build-depends:        cardano-api
                       , swap-contract
+
+executable stake-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              stake-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
 

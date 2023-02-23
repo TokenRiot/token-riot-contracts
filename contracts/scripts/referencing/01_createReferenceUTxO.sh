@@ -18,16 +18,9 @@ deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 # asset to trade
 asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
-min_utxo=$(${cli} transaction calculate-min-required-utxo \
-    --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
-    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
-    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
-
-script_address_out="${script_address} + ${min_utxo} + ${asset}"
+script_address_out="${script_address} + 5000000 + ${asset}"
 echo "Script OUTPUT: "${script_address_out}
 #
-# exit
 #
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 # get utxo

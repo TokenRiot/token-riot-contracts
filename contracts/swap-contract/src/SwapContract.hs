@@ -27,22 +27,20 @@
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module SwapContract
   ( swapContractScript
-  , swapContractScriptShortBs
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import           Codec.Serialise
-import           Cardano.Api.Shelley                             ( PlutusScript (..), PlutusScriptV2 )
-import qualified Data.ByteString.Lazy                            as LBS
-import qualified Data.ByteString.Short                           as SBS
-import qualified Plutus.V1.Ledger.Value                          as Value
-import qualified Plutus.V1.Ledger.Scripts                        as Scripts
-import qualified Plutus.V2.Ledger.Api                            as V2
-import           Plutus.Script.Utils.V2.Typed.Scripts.Validators as Utils
+import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
+import qualified Data.ByteString.Lazy   as LBS
+import qualified Data.ByteString.Short  as SBS
+import qualified Plutus.V1.Ledger.Value as Value
+import qualified Plutus.V2.Ledger.Api   as V2
 import           SwappableDataType
 import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
+import           Plutonomy
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -59,11 +57,11 @@ lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
 -- reference hash
 referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [130, 167, 86, 164, 46, 233, 133, 242, 116, 159, 109, 83, 8, 100, 133, 154, 41, 49, 115, 206, 25, 195, 166, 245, 6, 157, 252, 168]
+referenceHash = V2.ValidatorHash $ createBuiltinByteString [213, 30, 112, 122, 99, 141, 177, 50, 203, 8, 75, 7, 240, 96, 194, 13, 233, 195, 149, 192, 128, 234, 140, 50, 201, 228, 148, 15]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
-calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
+calculateServiceFee (Swappable _ pd _) (Reference _ sf _ _) =
   if (pPid pd == Value.adaSymbol) && (pTkn pd == Value.adaToken)
   then if percentFee > sFee then percentFee else sFee
   else sFee
@@ -73,7 +71,7 @@ calculateServiceFee (Swappable _ pd _) (Reference _ sf _) =
 
     sFee :: Integer
     sFee = serviceFee sf
-calculateServiceFee _ (Reference _ sf _) = serviceFee sf
+calculateServiceFee _ (Reference _ sf _ _) = serviceFee sf
 
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
@@ -551,7 +549,7 @@ mkValidator datum redeemer context =
           }
     
     checkCancellationFeePayout :: ReferenceDatum -> Bool
-    checkCancellationFeePayout (Reference ca sf _) = (findPayout txOutputs cashAddr feeValue)
+    checkCancellationFeePayout (Reference ca sf _ _) = (findPayout txOutputs cashAddr feeValue)
        where
         
         cashAddr :: V2.Address
@@ -565,7 +563,7 @@ mkValidator datum redeemer context =
       where
         
         cashAddr :: ReferenceDatum -> V2.Address
-        cashAddr (Reference ca _ _) = createAddress (caPkh ca) (caSc ca)
+        cashAddr (Reference ca _ _ _) = createAddress (caPkh ca) (caSc ca)
       
         feeValue :: V2.Value
         feeValue = Value.singleton Value.adaSymbol Value.adaToken (calculateServiceFee d r)
@@ -626,22 +624,35 @@ mkValidator datum redeemer context =
             Nothing     -> traceError "Bad Data On TxId"
             Just inline -> PlutusTx.unsafeFromBuiltinData @CustomDatumType inline
 
--------------------------------------------------------------------------------
--- | Now we need to compile the Validator.
--------------------------------------------------------------------------------
-validator' :: V2.Validator
-validator' = V2.mkValidatorScript
-    $$(PlutusTx.compile [|| wrap ||])
- where
-    wrap = Utils.mkUntypedValidator mkValidator
--------------------------------------------------------------------------------
--- | The code below is required for the plutus script compile.
--------------------------------------------------------------------------------
-script :: Scripts.Script
-script = Scripts.unValidatorScript validator'
+-- -------------------------------------------------------------------------------
+-- -- | Now we need to compile the Validator.
+-- -------------------------------------------------------------------------------
+-- validator' :: V2.Validator
+-- validator' = V2.mkValidatorScript
+--     $$(PlutusTx.compile [|| wrap ||])
+--  where
+--     wrap = Utils.mkTypedValidator mkValidator
+-- -------------------------------------------------------------------------------
+-- -- | The code below is required for the plutus script compile.
+-- -------------------------------------------------------------------------------
+-- script :: Scripts.Script
+-- script = Scripts.unValidatorScript validator'
 
-swapContractScriptShortBs :: SBS.ShortByteString
-swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+-- swapContractScriptShortBs :: SBS.ShortByteString
+-- swapContractScriptShortBs = SBS.toShort . LBS.toStrict $ serialise script
+
+-- swapContractScript :: PlutusScript PlutusScriptV2
+-- swapContractScript = PlutusScriptSerialised swapContractScriptShortBs
+
+-------------------------------------------------------------------------------
+-- | Now we need to compile the validator.
+-------------------------------------------------------------------------------
+wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+wrappedValidator x y z = check (mkValidator (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
+
+validator :: V2.Validator
+validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+-- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
 swapContractScript :: PlutusScript PlutusScriptV2
-swapContractScript = PlutusScriptSerialised swapContractScriptShortBs
+swapContractScript = PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise $ validator
