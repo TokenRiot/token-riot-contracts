@@ -27,6 +27,7 @@
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module SwapContract
   ( swapContractScript
+  , ScriptParameters(..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -45,6 +46,20 @@ import           Plutonomy
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+-------------------------------------------------------------------------------
+-- | Starter NFT Contract Parameterization
+-------------------------------------------------------------------------------
+data ScriptParameters = ScriptParameters
+  { lockPid   :: V2.CurrencySymbol
+  -- ^ The locking token's policy id.
+  , lockTkn   :: V2.TokenName
+  -- ^ The locking token's token name
+  , refHash   :: V2.ValidatorHash
+  -- ^ The validator hash of the data reference contract
+  }
+PlutusTx.makeLift ''ScriptParameters
+-------------------------------------------------------------------------------
+
 lockPid :: V2.CurrencySymbol
 lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [141, 247, 22, 50, 179, 201, 219, 80, 209, 158, 199, 167, 4, 87, 114, 65, 136, 239, 89, 190, 122, 59, 59, 176, 202, 187, 186, 153] }
 
