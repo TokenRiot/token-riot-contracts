@@ -8,6 +8,7 @@ echo
 
 reference_script_path="contracts/reference-contract.plutus"
 spo_addr=$(cat ${ROOT}/addresses/payment3.addr)
+seller_address=$(cat ${ROOT}/addresses/seller.addr)
 echo spo $spo_addr
 script_address=$(${cli} address build --payment-script-file ${reference_script_path} ${network})
 echo script $script_address
@@ -30,13 +31,17 @@ minter_pkh=$(${cli} address key-hash --payment-verification-key-file ${ROOT}/add
 policy_id=$(cat policy/policy.id)
 token_name="5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 mint_asset="1 ${policy_id}.${token_name}"
+total_mint_asset="2 ${policy_id}.${token_name}"
 
 echo "Starter Token: ${mint_asset}"
 
-script_address_out="${script_address} + 5000000 + ${mint_asset}"
-
+seller_address_out="${seller_address} + 5000000 + ${mint_asset}"
 script_address_out="${script_address} + 5000000 + ${mint_asset}"
 bad_script_address_out="${script_address} + 5000000"
+
+echo "Seller Out" $seller_address_out
+echo "Script Out" $script_address_out
+echo "Bad Script Out" $bad_script_address_out
 
 # exit
 echo -e "\033[0;36m Building Tx \033[0m"
@@ -46,12 +51,13 @@ FEE=$(${cli} transaction build \
     --out-file ${ROOT}/tmp/tx.draft \
     --change-address ${spo_addr} \
     --tx-in ${spo_tx_in} \
+    --tx-out="${seller_address_out}" \
     --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file data/referencing/reference-datum.json  \
     --tx-out="${bad_script_address_out}" \
     --tx-out-inline-datum-file data/referencing/reference-datum.json  \
     --mint-script-file policy/policy.script \
-    --mint="${mint_asset}" \
+    --mint="${total_mint_asset}" \
     --required-signer-hash ${minter_pkh} \
     ${network})
 
