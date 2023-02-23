@@ -6,7 +6,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # stake address
-stake_address=$(cat ../../stake-contract/stake.addr)
+stake_address=$(cat ../../swap-contract/stake.addr)
 echo stake_address: $stake_address
 
 # collat
@@ -16,8 +16,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 # seller
 payee_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
-
-reward_address="addr_test1qrupt9d9ug2ufnrrajp2q7gwvmrtzzgr80p5ug7q8nt4d66hu0s5mnhxh2853wtsgn9gdz6wuqtaqnkv0yk78p474d6qudapqh"
+# reward_address="addr_test1qrupt9d9ug2ufnrrajp2q7gwvmrtzzgr80p5ug7q8nt4d66hu0s5mnhxh2853wtsgn9gdz6wuqtaqnkv0yk78p474d6qudapqh"
+reward_address=payee_address
 # find rewards
 rewardBalance=$(${cli} query stake-address-info \
     --testnet-magic ${testnet_magic} \
@@ -42,15 +42,15 @@ echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
     --address ${payee_address} \
-    --out-file ../tmp/seller_utxo.json
+    --out-file ../tmp/payee_utxo.json
 
-TXNS=$(jq length ../tmp/seller_utxo.json)
+TXNS=$(jq length ../tmp/payee_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
    echo -e "\n \033[0;31m NO UTxOs Found At ${payee_address} \033[0m \n";
    exit;
 fi
 alltxin=""
-TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/seller_utxo.json)
+TXIN=$(jq -r --arg alltxin "" 'to_entries[] | select(.value.value | length < 2) | .key | . + $alltxin + " --tx-in"' ../tmp/payee_utxo.json)
 seller_tx_in=${TXIN::-8}
 
 # collat info
@@ -68,6 +68,7 @@ fi
 collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
 script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/stake-reference-utxo.signed)
+data_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/referenceable-tx.signed )
 
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
@@ -75,12 +76,13 @@ FEE=$(${cli} transaction build \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${payee_address} \
+    --read-only-tx-in-reference="${data_ref_utxo}#0" \
     --tx-in-collateral="${collat_utxo}" \
     --tx-in ${seller_tx_in} \
     --withdrawal ${withdrawalString} \
     --withdrawal-tx-in-reference="${script_ref_utxo}#1" \
     --withdrawal-plutus-script-v2 \
-    --withdrawal-reference-tx-in-redeemer-file ../data/redeemers/withdraw-redeemer.json \
+    --withdrawal-reference-tx-in-redeemer-file ../data/staking/withdraw-redeemer.json \
     --tx-out="${reward_address}+${rewardBalance}" \
     --required-signer-hash ${collat_pkh} \
     --testnet-magic ${testnet_magic})
