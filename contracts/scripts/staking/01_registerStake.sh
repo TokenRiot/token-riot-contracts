@@ -10,7 +10,7 @@ ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../
 
 # scripts
 script_path="../../swap-contract/swap-contract.plutus"
-stake_path="../../stake-contract/stake-contract.plutus"
+stake_path="../../swap-contract/stake-contract.plutus"
 staker_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 
