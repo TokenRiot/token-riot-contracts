@@ -30,15 +30,15 @@ FEE=$(${cli} transaction build \
     --out-file ${ROOT}/tmp/tx.draft \
     --change-address ${spo_addr} \
     --tx-in ${spo_tx_in} \
-    --tx-out="$(cat ${ROOT}/addresses/newm.addr) + 1000000000" \
-    --tx-out="$(cat ${ROOT}/addresses/artist.addr) + 1000000000" \
+    --tx-out="$(cat ${ROOT}/addresses/seller.addr) + 1000000000" \
+    --tx-out="$(cat ${ROOT}/addresses/buyer.addr) + 1000000000" \
     --tx-out="$(cat ${ROOT}/addresses/attacker.addr) + 1000000000" \
-    --tx-out-inline-datum-file data/start_tokenized_datum.json  \
     --tx-out="$(cat ${ROOT}/addresses/collat.addr) + 1000000000" \
     --tx-out="$(cat ${ROOT}/addresses/reference.addr) + 1000000000" \
     --tx-out="$(cat ${ROOT}/addresses/multisig1.addr) + 1000000000" \
     --tx-out="$(cat ${ROOT}/addresses/multisig2.addr) + 1000000000" \
     --tx-out="$(cat ${ROOT}/addresses/multisig3.addr) + 1000000000" \
+    --tx-out="$(cat ${ROOT}/addresses/minter.addr) + 1000000000" \
     ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"

@@ -5,17 +5,13 @@ source .node.env
 
 echo -e "\033[1;35m Creating Contract Reference UTxOs \033[0m" 
 
-nft_lock_script_path="contracts/nft-locking-contract.plutus"
-nft_mint_script_path="contracts/nft-minting-contract.plutus"
-
-lock_script_path="contracts/locking-contract.plutus"
-mint_script_path="contracts/minting-contract.plutus"
+swap_script_path="contracts/swap-contract.plutus"
+reference_script_path="contracts/reference-contract.plutus"
+stake_script_path="contracts/stake-contract.plutus"
 
 # save the script addresses into the address folder
-echo -n $(${cli} address build --payment-script-file ${nft_lock_script_path} ${network}) > ${ROOT}/addresses/nftLock.addr
-echo -n $(${cli} address build --payment-script-file ${nft_mint_script_path} ${network}) > ${ROOT}/addresses/nftMint.addr
-echo -n $(${cli} address build --payment-script-file ${lock_script_path} ${network}) > ${ROOT}/addresses/ftLock.addr
-echo -n $(${cli} address build --payment-script-file ${mint_script_path} ${network}) > ${ROOT}/addresses/ftMint.addr
+echo -n $(${cli} address build --payment-script-file ${swap_script_path} --stake-script-file ${stake_script_path} ${network}) > ${ROOT}/addresses/swap.addr
+echo -n $(${cli} address build --payment-script-file ${reference_script_path} ${network}) > ${ROOT}/addresses/reference-contract.addr
 
 spo_addr=$(cat ${ROOT}/addresses/payment2.addr)
 reference_address=$(cat ${ROOT}/addresses/reference.addr)
@@ -32,43 +28,30 @@ spo_tx_in=${TXIN::-8}
 echo "SPO TxIn: $spo_tx_in"
 
 echo -e "\033[0;36m Calculating Reference ADA \033[0m"
-lock_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+swap_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
-    --tx-out-reference-script-file ${nft_lock_script_path} \
+    --tx-out-reference-script-file ${swap_script_path} \
     --tx-out="${reference_address} + 5000000" | tr -dc '0-9')
-echo "NFT Locking Min Fee" ${lock_min_utxo}
+echo "Swap Contract Min ADA" ${swap_min_utxo}
 
-mint_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+reference_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
-    --tx-out-reference-script-file ${nft_mint_script_path} \
+    --tx-out-reference-script-file ${reference_script_path} \
     --tx-out="${reference_address} + 5000000" | tr -dc '0-9')
-echo "NFT Minting Min Fee" ${mint_min_utxo}
+echo "Reference Contract Min ADA" ${reference_min_utxo}
 
-nft_mint_value=$mint_min_utxo
-nft_lock_value=$lock_min_utxo
-nft_lock_script_reference_utxo="${reference_address} + ${nft_lock_value}"
-nft_mint_script_reference_utxo="${reference_address} + ${nft_mint_value}"
-
-lock_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+stake_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
-    --tx-out-reference-script-file ${lock_script_path} \
+    --tx-out-reference-script-file ${stake_script_path} \
     --tx-out="${reference_address} + 5000000" | tr -dc '0-9')
-echo "FT Locking Min Fee" ${lock_min_utxo}
+echo "Stake Contract Min ADA" ${stake_min_utxo}
 
-mint_min_utxo=$(${cli} transaction calculate-min-required-utxo \
-    --babbage-era \
-    --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
-    --tx-out-reference-script-file ${mint_script_path} \
-    --tx-out="${reference_address} + 5000000" | tr -dc '0-9')
-echo "FT Minting Min Fee" ${mint_min_utxo}
-
-mint_value=$mint_min_utxo
-lock_value=$lock_min_utxo
-lock_script_reference_utxo="${reference_address} + ${lock_value}"
-mint_script_reference_utxo="${reference_address} + ${mint_value}"
+swap_script_reference_utxo="${reference_address} + ${swap_min_utxo}"
+reference_script_reference_utxo="${reference_address} + ${reference_min_utxo}"
+stake_script_reference_utxo="${reference_address} + ${stake_min_utxo}"
 
 # chain second set of reference scripts to the first
 echo -e "\033[0;36m Building Tx \033[0m"
@@ -81,17 +64,15 @@ ${cli} transaction build-raw \
     --out-file ${ROOT}/tmp/tx.draft \
     --tx-in ${spo_tx_in} \
     --tx-out="${spo_addr} + ${starting_spo_lovelace}" \
-    --tx-out="${nft_lock_script_reference_utxo}" \
-    --tx-out-reference-script-file ${nft_lock_script_path} \
-    --tx-out="${nft_mint_script_reference_utxo}" \
-    --tx-out-reference-script-file ${nft_mint_script_path} \
+    --tx-out="${swap_script_reference_utxo}" \
+    --tx-out-reference-script-file ${swap_script_path} \
     --fee 900000
 FEE=$(${cli} transaction calculate-min-fee --tx-body-file ${ROOT}/tmp/tx.draft ${network} --protocol-params-file ${ROOT}/tmp/protocol-parameters.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
 # echo $FEE
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 # echo $fee
 # exit
-firstReturn=$((${starting_spo_lovelace} - ${nft_mint_value} - ${nft_lock_value} - ${fee}))
+firstReturn=$((${starting_spo_lovelace} - ${swap_min_utxo} - ${fee}))
 # echo $firstReturn
 # exit
 ${cli} transaction build-raw \
@@ -100,10 +81,8 @@ ${cli} transaction build-raw \
     --out-file ${ROOT}/tmp/tx.draft \
     --tx-in ${spo_tx_in} \
     --tx-out="${spo_addr} + ${firstReturn}" \
-    --tx-out="${nft_lock_script_reference_utxo}" \
-    --tx-out-reference-script-file ${nft_lock_script_path} \
-    --tx-out="${nft_mint_script_reference_utxo}" \
-    --tx-out-reference-script-file ${nft_mint_script_path} \
+    --tx-out="${swap_script_reference_utxo}" \
+    --tx-out-reference-script-file ${swap_script_path} \
     --fee ${fee}
 
 echo -e "\033[0;36m Signing \033[0m"
@@ -115,7 +94,6 @@ ${cli} transaction sign \
 
 nextUTxO=$(${cli} transaction txid --tx-body-file ${ROOT}/tmp/tx.draft)
 echo "First in the tx chain" $nextUTxO
-
 #
 # exit
 #
@@ -126,10 +104,8 @@ ${cli} transaction build-raw \
     --out-file ${ROOT}/tmp/tx.draft \
     --tx-in="${nextUTxO}#0" \
     --tx-out="${spo_addr} + ${firstReturn}" \
-    --tx-out="${lock_script_reference_utxo}" \
-    --tx-out-reference-script-file ${lock_script_path} \
-    --tx-out="${mint_script_reference_utxo}" \
-    --tx-out-reference-script-file ${mint_script_path} \
+    --tx-out="${reference_script_reference_utxo}" \
+    --tx-out-reference-script-file ${reference_script_path} \
     --fee 900000
 
 FEE=$(${cli} transaction calculate-min-fee --tx-body-file ${ROOT}/tmp/tx.draft ${network} --protocol-params-file ${ROOT}/tmp/protocol-parameters.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
@@ -137,8 +113,7 @@ FEE=$(${cli} transaction calculate-min-fee --tx-body-file ${ROOT}/tmp/tx.draft $
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 # echo $fee
 # exit
-secondReturn=$((${firstReturn} - ${mint_value} - ${lock_value} - ${fee}))
-
+secondReturn=$((${firstReturn} - ${reference_min_utxo} - ${fee}))
 
 ${cli} transaction build-raw \
     --babbage-era \
@@ -146,10 +121,8 @@ ${cli} transaction build-raw \
     --out-file ${ROOT}/tmp/tx.draft \
     --tx-in="${nextUTxO}#0" \
     --tx-out="${spo_addr} + ${secondReturn}" \
-    --tx-out="${lock_script_reference_utxo}" \
-    --tx-out-reference-script-file ${lock_script_path} \
-    --tx-out="${mint_script_reference_utxo}" \
-    --tx-out-reference-script-file ${mint_script_path} \
+    --tx-out="${reference_script_reference_utxo}" \
+    --tx-out-reference-script-file ${reference_script_path} \
     --fee ${fee}
 #
 # exit
@@ -160,6 +133,48 @@ ${cli} transaction sign \
     --tx-body-file ${ROOT}/tmp/tx.draft \
     --out-file ${ROOT}/tmp/tx-2.signed \
     ${network}
+
+
+nextUTxO=$(${cli} transaction txid --tx-body-file ${ROOT}/tmp/tx.draft)
+echo "First in the tx chain" $nextUTxO
+
+echo -e "\033[0;36m Building Tx \033[0m"
+${cli} transaction build-raw \
+    --babbage-era \
+    --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
+    --out-file ${ROOT}/tmp/tx.draft \
+    --tx-in="${nextUTxO}#0" \
+    --tx-out="${spo_addr} + ${secondReturn}" \
+    --tx-out="${stake_script_reference_utxo}" \
+    --tx-out-reference-script-file ${stake_script_path} \
+    --fee 900000
+
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ${ROOT}/tmp/tx.draft ${network} --protocol-params-file ${ROOT}/tmp/protocol-parameters.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+# echo $FEE
+fee=$(echo $FEE | rev | cut -c 9- | rev)
+# echo $fee
+# exit
+thirdReturn=$((${secondReturn} - ${stake_min_utxo} - ${fee}))
+
+${cli} transaction build-raw \
+    --babbage-era \
+    --protocol-params-file ${ROOT}/tmp/protocol-parameters.json \
+    --out-file ${ROOT}/tmp/tx.draft \
+    --tx-in="${nextUTxO}#0" \
+    --tx-out="${spo_addr} + ${thirdReturn}" \
+    --tx-out="${stake_script_reference_utxo}" \
+    --tx-out-reference-script-file ${stake_script_path} \
+    --fee ${fee}
+#
+# exit
+#
+echo -e "\033[0;36m Signing \033[0m"
+${cli} transaction sign \
+    --signing-key-file ${ROOT}/stake-delegator-keys/payment2.skey \
+    --tx-body-file ${ROOT}/tmp/tx.draft \
+    --out-file ${ROOT}/tmp/tx-3.signed \
+    ${network}
+
 #
 # exit
 #
@@ -172,5 +187,10 @@ ${cli} transaction submit \
     ${network} \
     --tx-file ${ROOT}/tmp/tx-2.signed
 
-cp ${ROOT}/tmp/tx-1.signed ${ROOT}/tmp/tx-tokenized-utxo.signed
-cp ${ROOT}/tmp/tx-2.signed ${ROOT}/tmp/tx-fractions-utxo.signed
+${cli} transaction submit \
+    ${network} \
+    --tx-file ${ROOT}/tmp/tx-3.signed
+
+cp ${ROOT}/tmp/tx-1.signed ${ROOT}/tmp/tx-swap-utxo.signed
+cp ${ROOT}/tmp/tx-2.signed ${ROOT}/tmp/tx-reference-utxo.signed
+cp ${ROOT}/tmp/tx-3.signed ${ROOT}/tmp/tx-stake-utxo.signed

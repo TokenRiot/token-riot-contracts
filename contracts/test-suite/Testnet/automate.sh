@@ -97,8 +97,7 @@ protocol_version=$( cardano-cli query protocol-parameters --testnet-magic 42 | j
 echo "Nodes are running in era: $current_era, major protocol version: $protocol_version"
 echo
 echo "\033[1;35mCongrats! Your network is ready for use! \033[0m"
-
-# ./prep_testnet_for_testing.sh
+echo
 
 ${SCRIPT_PATH}/create_wallets.sh
 ${SCRIPT_PATH}/fund_wallets.sh

@@ -17,8 +17,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 deleg_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/delegator-wallet/payment.vkey)
 
-seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
-buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/buyer-wallet/payment.vkey)
+multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig1.vkey)
+multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
 
 # asset to trade
 asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
@@ -92,9 +92,9 @@ FEE=$(${cli} transaction build \
     --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
     --required-signer-hash ${deleg_pkh} \
-    --required-signer-hash ${seller_pkh} \
-    --required-signer-hash ${buyer_pkh} \
     --required-signer-hash ${collat_pkh} \
+    --required-signer-hash ${multisig1_pkh} \
+    --required-signer-hash ${multisig2_pkh} \
     --testnet-magic ${testnet_magic})
 
 
@@ -109,8 +109,8 @@ echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
     --signing-key-file ../wallets/delegator-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
-    --signing-key-file ../wallets/seller-wallet/payment.skey \
-    --signing-key-file ../wallets/buyer-wallet/payment.skey \
+    --signing-key-file ../wallets/multisig-wallet/multisig1.skey \
+    --signing-key-file ../wallets/multisig-wallet/multisig2.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/referenceable-tx.signed \
     --testnet-magic ${testnet_magic}
