@@ -13,6 +13,7 @@
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeApplications      #-}
@@ -59,20 +60,6 @@ data ScriptParameters = ScriptParameters
   }
 PlutusTx.makeLift ''ScriptParameters
 -------------------------------------------------------------------------------
-
-lockPid :: V2.CurrencySymbol
-lockPid = V2.CurrencySymbol {V2.unCurrencySymbol = createBuiltinByteString [141, 247, 22, 50, 179, 201, 219, 80, 209, 158, 199, 167, 4, 87, 114, 65, 136, 239, 89, 190, 122, 59, 59, 176, 202, 187, 186, 153] }
-
-lockTkn :: V2.TokenName
-lockTkn = V2.TokenName {V2.unTokenName = createBuiltinByteString [84, 104, 105, 115, 73, 115, 79, 110, 101, 83, 116, 97, 114, 116, 101, 114, 84, 111, 107, 101, 110, 70, 111, 114, 84, 101, 115, 116, 105, 110, 103, 52] }
-
--- check for nft here
-lockValue :: V2.Value
-lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
-
--- reference hash
-referenceHash :: V2.ValidatorHash
-referenceHash = V2.ValidatorHash $ createBuiltinByteString [213, 30, 112, 122, 99, 141, 177, 50, 203, 8, 75, 7, 240, 96, 194, 13, 233, 195, 149, 192, 128, 234, 140, 50, 201, 228, 148, 15]
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
@@ -136,8 +123,8 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,     0 )
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
-mkValidator :: CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
-mkValidator datum redeemer context =
+mkValidator :: ScriptParameters -> CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
+mkValidator ScriptParameters {..} datum redeemer context =
   case datum of
     {- | Swappable State
 
@@ -231,7 +218,7 @@ mkValidator datum redeemer context =
         -- | A trader may cancel their timelock by paying a fee.
         CTimeLock ->
           let !refTxIns = V2.txInfoReferenceInputs info
-              !refTxOut = getReferenceInput refTxIns referenceHash
+              !refTxOut = getReferenceInput refTxIns refHash
               !refDatum = getReferenceDatum refTxOut
               !refValue = V2.txOutValue refTxOut
           in traceIfFalse "Sign" (signedBy txSigners walletPkh)                               -- seller must sign it
@@ -246,7 +233,7 @@ mkValidator datum redeemer context =
           let !incomingValue = thisValue + adaValue (adaInc aid)
               !thisTkn       = getTokenName pd st
               !refTxIns      = V2.txInfoReferenceInputs info
-              !refTxOut      = getReferenceInput refTxIns referenceHash
+              !refTxOut      = getReferenceInput refTxIns refHash
               !refDatum      = getReferenceDatum refTxOut
               !refValue      = V2.txOutValue refTxOut
           in case getOutboundDatumByValue contTxOutputs incomingValue of
@@ -271,7 +258,7 @@ mkValidator datum redeemer context =
               !buyerAddr = createAddress buyerPkh (ptSc ptd')
               !thisTkn   = getTokenName pd st
               !refTxIns  = V2.txInfoReferenceInputs info
-              !refTxOut  = getReferenceInput refTxIns referenceHash
+              !refTxOut  = getReferenceInput refTxIns refHash
               !refDatum  = getReferenceDatum refTxOut
               !refValue  = V2.txOutValue refTxOut
           in traceIfFalse "Signer" (signedBy txSigners buyerPkh)                                      -- seller must sign it
@@ -376,7 +363,7 @@ mkValidator datum redeemer context =
               let !sellerPkh  = ptPkh ptd'
                   !sellerAddr = createAddress sellerPkh (ptSc ptd')
                   !refTxIns  = V2.txInfoReferenceInputs info
-                  !refTxOut  = getReferenceInput refTxIns referenceHash
+                  !refTxOut  = getReferenceInput refTxIns refHash
                   !refDatum  = getReferenceDatum refTxOut
                   !refValue  = V2.txOutValue refTxOut
               in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                          -- seller must sign it
@@ -515,7 +502,7 @@ mkValidator datum redeemer context =
                   !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
                   !txValidityRange     = V2.txInfoValidRange info
                   !refTxIns            = V2.txInfoReferenceInputs info
-                  !refTxOut            = getReferenceInput refTxIns referenceHash
+                  !refTxOut            = getReferenceInput refTxIns refHash
                   !refDatum            = getReferenceDatum refTxOut
                   !refValue            = V2.txOutValue refTxOut
               in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                            -- seller must sign it
@@ -553,6 +540,9 @@ mkValidator datum redeemer context =
 
     contTxOutputs :: [V2.TxOut]
     contTxOutputs = getScriptOutputs txOutputs scriptAddr
+
+    lockValue :: V2.Value
+    lockValue = Value.singleton lockPid lockTkn (1 :: Integer)
 
     createTxOutRef :: V2.BuiltinByteString -> Integer -> V2.TxOutRef
     createTxOutRef txHash index = txId
@@ -662,12 +652,15 @@ mkValidator datum redeemer context =
 -------------------------------------------------------------------------------
 -- | Now we need to compile the validator.
 -------------------------------------------------------------------------------
-wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
-wrappedValidator x y z = check (mkValidator (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
+wrappedValidator :: ScriptParameters -> BuiltinData -> BuiltinData -> BuiltinData -> ()
+wrappedValidator s x y z = check (mkValidator s (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
 
-validator :: V2.Validator
-validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+validator :: ScriptParameters -> V2.Validator
+validator sp = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+  $$(PlutusTx.compile [|| wrappedValidator ||])
+  `PlutusTx.applyCode`
+  PlutusTx.liftCode sp
 -- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
-swapContractScript :: PlutusScript PlutusScriptV2
-swapContractScript = PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise $ validator
+swapContractScript :: ScriptParameters -> PlutusScript PlutusScriptV2
+swapContractScript = PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . validator

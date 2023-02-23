@@ -65,6 +65,18 @@ jq \
 ' \
 ../scripts/data/referencing/reference-datum.json | sponge ../scripts/data/referencing/reference-datum.json
 
+pid=$(python3 -c "import binascii;a='$(jq -r '.pid' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
+tkn=$(python3 -c "import binascii;a='$(jq -r '.tkn' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
+valid=$(python3 -c "import binascii;a='$(cat reference.hash)';s=binascii.unhexlify(a);print([x for x in s])")
+jq \
+--argjson pid "$pid" \
+--argjson tkn "$tkn" \
+--argjson valid "$valid" \
+'.pid=$pid | 
+.tkn=$tkn | 
+.valid=$valid
+' \
+reference_info.json | sponge reference_info.json
 
 echo -e "\033[1;35m Run Swap Contract \033[0m"
 
@@ -95,20 +107,6 @@ python3 -c "import binascii;a='$(cat validator.hash)';s=binascii.unhexlify(a);pr
 echo -e "\nValidator Bytes:" $(cat validator.bytes)
 
 echo -e "\033[1;35m Run Stake Contract \033[0m"
-
-pid=$(python3 -c "import binascii;a='$(jq -r '.pid' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
-tkn=$(python3 -c "import binascii;a='$(jq -r '.tkn' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
-valid=$(python3 -c "import binascii;a='$(cat reference.hash)';s=binascii.unhexlify(a);print([x for x in s])")
-jq \
---argjson pid "$pid" \
---argjson tkn "$tkn" \
---argjson valid "$valid" \
-'.pid=$pid | 
-.tkn=$tkn | 
-.valid=$valid
-' \
-staking_info.json | sponge staking_info.json
-
 
 cabal run stake-contract
 

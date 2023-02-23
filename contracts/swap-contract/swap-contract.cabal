@@ -76,6 +76,11 @@ executable swap-contract
 
   build-depends:        cardano-api
                       , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
 
 executable reference-contract
   import:               base, project-config

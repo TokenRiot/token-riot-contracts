@@ -35,7 +35,7 @@ parseJson = decode
 
 main :: IO ()
 main = do
-  let filePath = "staking_info.json"
+  let filePath = "reference_info.json"
   cwd <- getCurrentDirectory
   putStrLn $ "Current working directory: " ++ cwd
   putStrLn $ "Reading file: " ++ filePath
