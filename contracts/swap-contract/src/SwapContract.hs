@@ -693,9 +693,10 @@ mkValidator ScriptParameters {..} datum redeemer context =
             
         -- anything else fails
         _ -> traceIfFalse "Bidding:Complete:Undefined Datum" False
-    
+--DEBUG------------------------------------------------------------------------
     -- DEBUG
-    (_, _) -> False
+    (_, _) -> traceIfFalse "Undefined State" False
+--Functions--------------------------------------------------------------------
   where
     createTxOutRef :: V2.BuiltinByteString -> Integer -> V2.TxOutRef
     createTxOutRef txHash index = txId
