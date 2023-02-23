@@ -726,8 +726,8 @@ mkValidator ScriptParameters {..} datum redeemer context =
           if V2.txOutValue x == val -- strict value continue
             then
               case V2.txOutDatum x of
-                V2.NoOutputDatum       -> getOutboundDatumByValue' xs val -- skip datumless
-                (V2.OutputDatumHash _) -> traceError "Embedded Datum"
+                V2.NoOutputDatum              -> getOutboundDatumByValue' xs val -- skip datumless
+                (V2.OutputDatumHash _)        -> traceError "Embedded Datum"
                 (V2.OutputDatum (V2.Datum d)) -> 
                   case PlutusTx.fromBuiltinData d of
                     Nothing     -> traceError "Bad Data"
