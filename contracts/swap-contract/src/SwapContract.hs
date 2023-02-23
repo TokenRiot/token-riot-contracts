@@ -430,89 +430,103 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -}
 
     -- | Remove the UTxO from the contract.
-    (Offering ptd mod ofd, Remove) -> True
+    (Offering ptd _ _, Remove) ->
+      let !walletPkh        = ptPkh ptd
+          !walletAddr       = createAddress walletPkh (ptSc ptd)
+          !info             = V2.scriptContextTxInfo context
+          !txInputs         = V2.txInfoInputs info
+          !txOutputs        = V2.txInfoOutputs info
+          !txSigners        = V2.txInfoSignatories info
+          !validatingInput  = ownInput context
+          !thisValue        = V2.txOutValue validatingInput
+          !scriptAddr       = V2.txOutAddress validatingInput
+      in traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
+      && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue) -- seller must get the UTxO
+      && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)             -- single tx going in, no continue
 
     -- | Transform the make offer tx ref info
-    (Offering ptd mod ofd, Transform) -> True
+    (Offering ptd _ _, Transform) ->
+      let !walletPkh       = ptPkh ptd
+          !info            = V2.scriptContextTxInfo context
+          !txInputs        = V2.txInfoInputs info
+          !txOutputs       = V2.txInfoOutputs info
+          !txSigners       = V2.txInfoSignatories info
+          !validatingInput = ownInput context
+          !scriptAddr      = V2.txOutAddress validatingInput
+          !contTxOutputs   = getScriptOutputs txOutputs scriptAddr
+      in case getOutboundDatum contTxOutputs of
+        -- offering only
+        (Offering ptd' _ _) -> 
+             traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
+          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
+          && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
+          && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
+
+        -- offer into a swappable
+        (Swappable ptd' _ td') -> 
+             traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
+          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
+          && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
+          && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
+          && traceIfFalse "Auct" (checkValidTimeData td')        -- valid auction time lock
+        
+        -- other endpoints fail
+        _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
 
     -- | Complete an offer with a specific swappable UTxO.
-    (Offering ptd mod ofd, Complete) -> True
+    (Offering ptd mod ofd, Complete) ->
+      let !txId            = createTxOutRef (moTx mod) (moIdx mod)
+          !info            = V2.scriptContextTxInfo context
+          !txInputs        = V2.txInfoInputs info
+          !txOutputs       = V2.txInfoOutputs info
+          !txSigners       = V2.txInfoSignatories info
+          !validatingInput = ownInput context
+          !thisValue       = V2.txOutValue validatingInput
+          !scriptAddr      = V2.txOutAddress validatingInput
+          !lockValue       = Value.singleton lockPid lockTkn (1 :: Integer)
+          !refTxIns        = V2.txInfoReferenceInputs info
+          !refTxOut        = getReferenceInput refTxIns refHash
+          !refDatum        = getReferenceDatum refTxOut
+          !refValue        = V2.txOutValue refTxOut
+      in case getDatumByTxId txId txInputs of
+        -- swappable only
+        (Swappable ptd' _ _) -> 
+          let !sellerPkh  = ptPkh ptd'
+              !sellerAddr = createAddress sellerPkh (ptSc ptd')
+          in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                                    -- seller must sign it
+          && traceIfFalse "oldo" (ptd /= ptd')                                                     -- cant sell this to self
+          && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)                       -- seller must get the UTxO
+          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                                   -- double tx going in
+          && traceIfFalse "val"  (Value.geq refValue lockValue)                                    -- check if correct reference
+          && traceIfFalse "fee"  (checkServiceFeePayout (Offering ptd mod ofd) refDatum txOutputs) -- check if paying fee
+        
+        -- anything else fails
+        _ -> traceIfFalse "Offering:Complete:Undefined Datum" False
+-------------------------------------------------------------------------------
+    {- | Auctioning State
+      
+      Allows a UTxO to be auctioned for some amount of time. Successful auctions are
+      placed back into the swappable state as the auction state is a time lock. Similarly 
+      to the swappable state, auctions remain in the contract after completion.
 
+      The auction start time and end time are set in the same fashion as the time locking state.
 
+      echo `expr $(echo $(date +%s%3N)) + $(echo 0)`
+      # 1659817471786
+
+      A five (5) minute window would be 5 * 60 * 1000  = 300,000.
+      
+      echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
+      # 1659817771786
+
+    -}
+
+    -- | Remove the UTxO from the contract before the auction starts or after a failed auction.
+
+    
     -- DEBUG
     (_, _) -> True
 
-  --   (Offering ptd mod ofd) ->
-  --     let !walletPkh  = ptPkh ptd
-  --         !walletAddr = createAddress walletPkh (ptSc ptd)
-  --         !txSigners  = V2.txInfoSignatories info
-  --     in case redeemer of
-  --       -- | Remove the UTxO from the contract.
-  --       Remove -> traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
-  --              && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue) -- seller must get the UTxO
-  --              && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)             -- single tx going in, no continue
-        
-  --       -- | Transform the make offer tx ref info
-  --       Transform -> 
-  --         case getOutboundDatum contTxOutputs of
-  --           -- offering only
-  --           (Offering ptd' _ _) -> traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
-  --                               && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
-  --                               && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
-  --                               && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
-
-  --           -- offer into a swappable
-  --           (Swappable ptd' _ td') -> traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
-  --                                  && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
-  --                                  && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
-  --                                  && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
-  --                                  && traceIfFalse "Auct" (checkValidTimeData td')        -- valid auction time lock
-            
-  --           -- other endpoints fail
-  --           _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
-        
-  --       -- | Complete an offer with a specific swappable UTxO.
-  --       Complete ->
-  --         let !txId = createTxOutRef (moTx mod) (moIdx mod)
-  --         in case getDatumByTxId txId of
-  --           -- swappable only
-  --           (Swappable ptd' _ _) -> 
-  --             let !sellerPkh  = ptPkh ptd'
-  --                 !sellerAddr = createAddress sellerPkh (ptSc ptd')
-  --                 !refTxIns  = V2.txInfoReferenceInputs info
-  --                 !refTxOut  = getReferenceInput refTxIns refHash
-  --                 !refDatum  = getReferenceDatum refTxOut
-  --                 !refValue  = V2.txOutValue refTxOut
-  --             in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                          -- seller must sign it
-  --             && traceIfFalse "oldo" (ptd /= ptd')                                           -- cant sell this to self
-  --             && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)             -- seller must get the UTxO
-  --             && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                         -- double tx going in
-  --             && traceIfFalse "val"  (Value.geq refValue lockValue)                          -- check if correct reference
-  --             && traceIfFalse "fee"  (checkServiceFeePayout (Offering ptd mod ofd) refDatum) -- check if paying fee
-            
-  --           -- anything else fails
-  --           _ -> traceIfFalse "Offering:Complete:Undefined Datum" False
-        
-  --       -- | Other Offering endpoints fail
-  --       _ -> traceIfFalse "Offering:Undefined Redeemer" False
-
-  --   {- | Auctioning State
-      
-  --     Allows a UTxO to be auctioned for some amount of time. Successful auctions are
-  --     placed back into the swappable state as the auction state is a time lock. Similarly 
-  --     to the swappable state, auctions remain in the contract after completion.
-
-  --     The auction start time and end time are set in the same fashion as the time locking state.
-
-  --     echo `expr $(echo $(date +%s%3N)) + $(echo 0)`
-  --     # 1659817471786
-
-  --     A five (5) minute window would be 5 * 60 * 1000  = 300,000.
-      
-  --     echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
-  --     # 1659817771786
-
-  --   -}
   --   (Auctioning ptd atd gtd) -> 
   --     let !walletPkh           = ptPkh ptd
   --         !walletAddr          = createAddress walletPkh (ptSc ptd)
