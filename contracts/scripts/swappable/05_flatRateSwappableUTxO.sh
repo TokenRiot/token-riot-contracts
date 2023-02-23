@@ -24,8 +24,8 @@ buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/b
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
-#
-selling_asset="1 5cb840dd5094cc8219d01a997ba9656fd8020945d373c37f97b6a7b6.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+# asset to trade
+selling_asset="1 c207ba811698592da25d7c2d0c41476baacce5dcf53f3084be116d68.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
 seller_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -55,8 +55,16 @@ else
 fi
 
 script_address_out="${script_address} + ${min_utxo} + ${selling_asset}"
-seller_address_out="${seller_address} + 12345678" # new flat payment
-service_address_out="${deleg_address} + 2000000"
+
+price=$(jq -r '.fields[1].fields[2].int' ../data/swappable/seller-swappable-datum.json)
+feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
+serviceFee=$(expr $price / $feePerc)
+if [ "$serviceFee" -lt "2000000" ]; then
+    serviceFee=2000000
+fi
+
+seller_address_out="${seller_address} + ${price}" # new flat payment
+service_address_out="${deleg_address} + ${serviceFee}"
 echo "Script OUTPUT: "${script_address_out}
 echo "Payment OUTPUT: "${seller_address_out}
 echo "Service OUTPUT: "${service_address_out}
