@@ -165,8 +165,9 @@ python3 -c "import binascii;a='$(cat cip68.hash)';s=binascii.unhexlify(a);print(
 echo -e "\nCIP 68 Bytes:" $(cat cip68.bytes)
 
 echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
+
 # copy contracts into test-suite
-cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip ../test-suite/contracts
+cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus ../test-suite/contracts
 
 # complete
 echo "DONE"

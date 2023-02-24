@@ -6,9 +6,8 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 #
-SCRIPT_PATH="../../swap-contract/swap-contract.plutus"
-STAKE_PATH="../../swap-contract/stake-contract.plutus"
-SCRIPT_ADDRESS=$(${cli} address build --payment-script-file ${SCRIPT_PATH} --stake-script-file ${STAKE_PATH} --testnet-magic ${testnet_magic})
+SCRIPT_PATH="../../swap-contract/cip68-contract.plutus"
+SCRIPT_ADDRESS=$(${cli} address build --payment-script-file ${SCRIPT_PATH} --testnet-magic ${testnet_magic})
 #
 SELLER_ADDRESS=$(cat ../wallets/seller-wallet/payment.addr)
 BUYER_ADDRESS=$(cat ../wallets/buyer-wallet/payment.addr)
@@ -19,9 +18,17 @@ COLLAT_ADDRESS=$(cat ../wallets/collat-wallet/payment.addr)
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 ${cli} query tip --testnet-magic ${testnet_magic} | jq
 #
+echo -e "\033[1;34m CIP68 Script Address: \033[0m" 
+echo -e "\n \033[1;34m ${SCRIPT_ADDRESS} \033[0m \n";
+${cli} query utxo --address ${SCRIPT_ADDRESS} --testnet-magic ${testnet_magic}
+#
 echo -e "\033[1;34m Delegator Address: \033[0m" 
 echo -e "\n \033[1;34m ${DELEGATOR_ADDRESS} \033[0m \n";
 ${cli} query utxo --address ${DELEGATOR_ADDRESS} --testnet-magic ${testnet_magic}
+#
+echo -e "\033[1;34m Reference Address: \033[0m" 
+echo -e "\n \033[1;34m ${REFERENCE_ADDRESS} \033[0m \n";
+${cli} query utxo --address ${REFERENCE_ADDRESS} --testnet-magic ${testnet_magic}
 #
 echo -e "\033[1;34m Collateral Address: \033[0m" 
 echo -e "\n \033[1;34m ${COLLAT_ADDRESS} \033[0m \n";

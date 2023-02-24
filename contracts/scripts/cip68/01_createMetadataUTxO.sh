@@ -9,19 +9,25 @@ testnet_magic=$(cat ../data/testnet.magic)
 ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
 
 # staked smart contract address
-script_path="../../swap-contract/reference-contract.plutus"
+script_path="../../swap-contract/cip68-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
 
 # seller info
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
 # asset to trade
-asset="1 63f6afd581552aafaeac88179a27cfce1c0bde46f639f309ff7891da.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+asset="1 c8e9790b2989b87ba8ef0a4b0fc38d2535bd616194af8b886f1f9422.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
+current_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out-inline-datum-file ../data/cip68/metadata-datum.json \
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-script_address_out="${script_address} + 5000000 + ${asset}"
+script_address_out="${script_address} + ${current_min_utxo} + ${asset}"
 echo "Script OUTPUT: "${script_address_out}
 #
+# exit
 #
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 # get utxo
@@ -48,7 +54,7 @@ FEE=$(${cli} transaction build \
     --change-address ${deleg_address} \
     --tx-in ${deleg_tx_in} \
     --tx-out="${script_address_out}" \
-    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
+    --tx-out-inline-datum-file ../data/cip68/metadata-datum.json \
     --testnet-magic ${testnet_magic})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
@@ -62,7 +68,7 @@ echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
     --signing-key-file ../wallets/delegator-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
-    --out-file ../tmp/referenceable-tx.signed \
+    --out-file ../tmp/tx.signed \
     --testnet-magic ${testnet_magic}
 #
 # exit
@@ -70,4 +76,4 @@ ${cli} transaction sign \
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
-    --tx-file ../tmp/referenceable-tx.signed
+    --tx-file ../tmp/tx.signed
