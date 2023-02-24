@@ -98,7 +98,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !lockValue            = Value.singleton lockPid lockTkn (1 :: Integer)
       in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)  -- single tx going in
       && traceIfFalse "sig" (signedBy txSigners hotPkh)      -- hot key must sign
-      && traceIfFalse "out" (nOutputs contTxOutputs 0)       -- single going out
+      && traceIfFalse "out" (nOutputs contTxOutputs 0)       -- nothing going out
       && traceIfFalse "val" (Value.geq refValue lockValue)   -- check if correct reference
 
     -- Allows the reference data hot key to update entries
