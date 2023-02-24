@@ -137,6 +137,9 @@ def build(cli, tmp, network, tx_object):
         '--tx-in-collateral',
         tx_object['collat_utxo'],
     ]
+    #
+    if len(tx_object['reference_utxos']) != 0:
+        func += tx_object['reference_utxos']
     # This needs to end with the script input
     func += tx_object['utxo_in']
 
@@ -149,12 +152,12 @@ def build(cli, tmp, network, tx_object):
     # signer sutff
     func += required_signers(tx_object['signers'])
     
-    # mint script stuff
-    func += minting_script(tx_object['mint_asset'], tx_object['mint_ref'], tx_object['policy_id'], tx_object['mint_redeemer'])
+    # # mint script stuff
+    # func += minting_script(tx_object['mint_asset'], tx_object['mint_ref'], tx_object['policy_id'], tx_object['mint_redeemer'])
     
-    # metadata stuff
-    if 'metadata' in tx_object.keys():
-        func += ['--metadata-json-file', tx_object['metadata']]
+    # # metadata stuff
+    # if 'metadata' in tx_object.keys():
+    #     func += ['--metadata-json-file', tx_object['metadata']]
 
     # network
     func += network.split(" ")

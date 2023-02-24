@@ -30,7 +30,7 @@ def run(test_group):
     """
     Run all the test trees inside a test group and count how many failures exist. Print out some helpful text.
     """
-    print("\033[96m\nThe Cardano Python Test Suite For NEWM\n\033[0m")
+    print("\033[96m\nThe Cardano Python Test Suite For Token Riot\n\033[0m")
 
     start_time = time.time()
     # Run all the tests here
