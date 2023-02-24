@@ -17,8 +17,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 deleg_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/delegator-wallet/payment.vkey)
 
-seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
-buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/buyer-wallet/payment.vkey)
+multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig1.vkey)
+multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
 
 # asset to trade
 asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"

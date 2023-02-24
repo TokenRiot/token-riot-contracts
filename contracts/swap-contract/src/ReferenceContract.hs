@@ -118,7 +118,7 @@ mkValidator datum redeemer context =
           !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                    = mPkhs sd
           !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -140,7 +140,7 @@ mkValidator datum redeemer context =
           !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                    = mPkhs sd
           !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs thisValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
