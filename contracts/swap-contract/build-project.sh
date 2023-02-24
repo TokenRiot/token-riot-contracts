@@ -49,5 +49,19 @@ poolId=$(jq -r '.poolId' start_info.json)
 cardano-cli stake-address delegation-certificate --stake-script-file stake-contract.plutus --stake-pool-id ${poolId} --out-file deleg.cert
 echo -e "\nDeleg Cert";cat deleg.cert | jq
 
+cabal run cip68-contract
+
+# Get script address
+cardano-cli address build --payment-script-file swap-contract.plutus --testnet-magic 1097911063 --out-file cip68.addr
+echo -e "\nCIP 68 Testnet Address:" $(cat cip68.addr)
+
+# Get plutus cip68 hash
+cardano-cli transaction policyid --script-file swap-contract.plutus > cip68.hash
+echo -e "\nCIP 68 Hash:" $(cat cip68.hash)
+
+# Get plutus cip68 byte representation
+python3 -c "import binascii;a='$(cat cip68.hash)';s=binascii.unhexlify(a);print([x for x in s])" > cip68.bytes
+echo -e "\nCIP 68 Bytes:" $(cat cip68.bytes)
+
 # complete
 echo "DONE"
