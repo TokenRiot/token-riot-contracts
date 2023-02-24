@@ -2,11 +2,13 @@
 """
 Define test groups as list of test trees. A test group tuple has the form (statement, test_tree).
 """
-from TestSuite.Tests.test_tree import data_reference_tree, example_tree, example_tree_with_failures
+from TestSuite.Tests.example_test_tree import example_tree, example_tree_with_failures
+from TestSuite.Tests.Reference.reference_test_tree import reference_test_tree
+
 
 # main test group
 test_group = [
-    ("Data Reference Contract Test Tree", data_reference_tree),
+    ("Data Reference Contract Test Tree", reference_test_tree),
 ]
 
 example_test_group = [
