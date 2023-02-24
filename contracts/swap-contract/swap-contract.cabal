@@ -48,6 +48,7 @@ library
   exposed-modules:      SwapContract
                         ReferenceContract
                         StakeContract
+                        CIP68Contract
                         SwappableDataType
                         ReferenceDataType
                         ReducedFunctions
@@ -113,3 +114,20 @@ executable stake-contract
                       , useful-funcs
                       , directory
 
+executable cip68-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              cip68-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory

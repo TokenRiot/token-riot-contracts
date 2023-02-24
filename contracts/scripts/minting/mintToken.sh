@@ -14,15 +14,16 @@ mint_path="policy/policy.script"
 # collat, seller, reference
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
+minter_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/minter-wallet/minter.vkey)
 
 out_address="addr_test1vrdhhl7yrfpufkwrzdpw8l29wsy6adqrq249ypvd7d6fzwc6x00av"
 
 # pid and tkn
 policy_id=$(cat policy/policy.id)
-token_name=$(echo -n "ThisIsOneStarterTokenForTesting9" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
-
+# token_name=$(echo -n "ThisIsOneStarterTokenForTesting9" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
+token_name="5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 # assets
-mint_asset="12345 ${policy_id}.${token_name}"
+mint_asset="1 ${policy_id}.${token_name}"
 
 # mint utxo
 utxo_value=$(${cli} transaction calculate-min-required-utxo \
@@ -31,7 +32,7 @@ utxo_value=$(${cli} transaction calculate-min-required-utxo \
     --tx-out="${seller_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
 
 seller_address_out="${seller_address} + ${utxo_value} + ${mint_asset}"
-seller_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
+# seller_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
 echo "Mint OUTPUT: "${seller_address_out}
 #
 # exit
@@ -61,6 +62,7 @@ FEE=$(${cli} transaction build \
     --tx-in ${seller_tx_in} \
     --tx-out="${seller_address_out}" \
     --required-signer-hash ${seller_pkh} \
+    --required-signer-hash ${seller_pkh} \
     --mint-script-file policy/policy.script \
     --mint="${mint_asset}" \
     --testnet-magic ${testnet_magic})
@@ -75,6 +77,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
     --signing-key-file ../wallets/seller-wallet/payment.skey \
+    --signing-key-file ../wallets/minter-wallet/minter.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
     --testnet-magic ${testnet_magic}

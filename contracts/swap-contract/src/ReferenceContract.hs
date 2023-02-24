@@ -147,7 +147,7 @@ mkValidator datum redeemer context =
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
-      && traceIfFalse "hot" (changeHotKeyOnly sd sd')                        -- hot key change only
+      && traceIfFalse "hot" (changeHotKeyOnly sd sd')                     -- hot key change only
     
     -- | Update stake pool info
     (Reference pd sf sd _, UpdatePool) ->

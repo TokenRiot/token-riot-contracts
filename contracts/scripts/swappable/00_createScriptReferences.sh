@@ -12,6 +12,7 @@ ${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../
 swap_script_path="../../swap-contract/swap-contract.plutus"
 stake_script_path="../../swap-contract/stake-contract.plutus"
 refer_script_path="../../swap-contract/reference-contract.plutus"
+cip68_script_path="../../swap-contract/cip68-contract.plutus"
 
 # Addresses
 reference_address=$(cat ../wallets/reference-wallet/payment.addr)
@@ -45,9 +46,19 @@ ref_min_utxo=$(${cli} transaction calculate-min-required-utxo \
 ref_value=$((${ref_min_utxo}))
 ref_script_reference_utxo="${script_reference_address} + ${ref_value}"
 
+cip68_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out-reference-script-file ${cip68_script_path} \
+    --tx-out="${script_reference_address} + 1000000" | tr -dc '0-9')
+
+cip68_value=$((${cip68_min_utxo}))
+cip68_script_reference_utxo="${script_reference_address} + ${cip68_value}"
+
 echo -e "Creating Swap Script:\n" ${swap_script_reference_utxo}
 echo -e "Creating Stake Script:\n" ${stake_script_reference_utxo}
 echo -e "Creating Refer Script:\n" ${ref_script_reference_utxo}
+echo -e "Creating CIP68 Script:\n" ${cip68_script_reference_utxo}
 #
 # exit
 #
@@ -181,6 +192,44 @@ ${cli} transaction sign \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-3.signed \
     --testnet-magic ${testnet_magic}
+
+nextUTxO=$(${cli} transaction txid --tx-body-file ../tmp/tx.draft)
+echo "Third in the tx chain" $nextUTxO
+
+echo -e "\033[0;36m Building Tx \033[0m"
+${cli} transaction build-raw \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --out-file ../tmp/tx.draft \
+    --tx-in="${nextUTxO}#0" \
+    --tx-out="${reference_address} + ${thirdReturn}" \
+    --tx-out="${cip68_script_reference_utxo}" \
+    --tx-out-reference-script-file ${cip68_script_path} \
+    --fee 900000
+
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft ${network} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+echo $FEE
+fee=$(echo $FEE | rev | cut -c 9- | rev)
+
+fourthReturn=$((${thirdReturn} - ${cip68_value} - ${fee}))
+
+${cli} transaction build-raw \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --out-file ../tmp/tx.draft \
+    --tx-in="${nextUTxO}#0" \
+    --tx-out="${reference_address} + ${fourthReturn}" \
+    --tx-out="${cip68_script_reference_utxo}" \
+    --tx-out-reference-script-file ${cip68_script_path} \
+    --fee ${fee}
+
+echo -e "\033[0;36m Signing \033[0m"
+${cli} transaction sign \
+    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --tx-body-file ../tmp/tx.draft \
+    --out-file ../tmp/tx-4.signed \
+    --testnet-magic ${testnet_magic}
+
 #
 # exit
 #
@@ -197,7 +246,12 @@ ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
     --tx-file ../tmp/tx-3.signed
 
+${cli} transaction submit \
+    --testnet-magic ${testnet_magic} \
+    --tx-file ../tmp/tx-4.signed
+
 cp ../tmp/tx-1.signed ../tmp/swap-reference-utxo.signed
 cp ../tmp/tx-2.signed ../tmp/stake-reference-utxo.signed 
 cp ../tmp/tx-3.signed ../tmp/data-reference-utxo.signed 
+cp ../tmp/tx-4.signed ../tmp/cip68-reference-utxo.signed 
 

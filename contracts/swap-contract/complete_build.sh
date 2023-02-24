@@ -144,8 +144,30 @@ jq \
 '.fields[0].fields[0].bytes=$stakeHash' \
 ../scripts/data/staking/withdraw-redeemer.json | sponge ../scripts/data/staking/withdraw-redeemer.json
 
+echo -e "\033[1;35m Run CIP68 Contract \033[0m"
+
+rm cip68.addr
+rm cip68.hash
+rm cip68.bytes
+
+cabal run cip68-contract
+
+# Get script address
+cardano-cli address build --payment-script-file cip68-contract.plutus --testnet-magic 1 --out-file cip68.addr
+echo -e "\nCIP 68 Testnet Address:" $(cat cip68.addr)
+
+# Get plutus cip68 hash
+cardano-cli transaction policyid --script-file cip68-contract.plutus > cip68.hash
+echo -e "\nCIP 68 Hash:" $(cat cip68.hash)
+
+# Get plutus cip68 byte representation
+python3 -c "import binascii;a='$(cat cip68.hash)';s=binascii.unhexlify(a);print([x for x in s])" > cip68.bytes
+echo -e "\nCIP 68 Bytes:" $(cat cip68.bytes)
+
+echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
+
 # copy contracts into test-suite
-cp swap-contract.plutus reference-contract.plutus stake-contract.plutus ../test-suite/contracts
+cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus ../test-suite/contracts
 
 # complete
 echo "DONE"

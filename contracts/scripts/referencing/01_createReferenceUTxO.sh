@@ -16,7 +16,8 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --tes
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
 # asset to trade
-asset="1 8df71632b3c9db50d19ec7a70457724188ef59be7a3b3bb0cabbba99.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+asset="1 63f6afd581552aafaeac88179a27cfce1c0bde46f639f309ff7891da.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+
 
 script_address_out="${script_address} + 5000000 + ${asset}"
 echo "Script OUTPUT: "${script_address_out}
