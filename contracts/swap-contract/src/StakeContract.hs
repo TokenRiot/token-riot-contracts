@@ -33,16 +33,17 @@ module StakeContract
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import           Codec.Serialise
-import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
-import qualified Data.ByteString.Lazy   as LBS
-import qualified Data.ByteString.Short  as SBS
-import qualified PlutusTx.AssocMap      as AM
-import qualified Plutus.V1.Ledger.Value as Value
-import qualified Plutus.V2.Ledger.Api   as V2
-import           UsefulFuncs            ( adaValue, createAddress )
+import           Cardano.Api.Shelley     ( PlutusScript (..), PlutusScriptV2 )
+import qualified Data.ByteString.Lazy    as LBS
+import qualified Data.ByteString.Short   as SBS
+import qualified PlutusTx.AssocMap       as AM
+import qualified Plutus.V1.Ledger.Value  as Value
+import qualified Plutus.V2.Ledger.Api    as V2
+import           UsefulFuncs             ( adaValue, createAddress )
+import           OptimizerOptions        ( theOptimizerOptions )
+import           Plutonomy
 import           ReferenceDataType
 import           ReducedFunctions
-import           Plutonomy
 -------------------------------------------------------------------------------
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
@@ -168,4 +169,4 @@ policy sp = V2.mkStakeValidatorScript $
 
 stakingPlutusScript :: ScriptParameters -> PlutusScript PlutusScriptV2
 stakingPlutusScript sp = PlutusScriptSerialised . SBS.toShort $ LBS.toStrict $ serialise $ 
-  Plutonomy.optimizeUPLC $ V2.Validator $ V2.unStakeValidatorScript (policy sp)
+  Plutonomy.optimizeUPLCWith theOptimizerOptions $ V2.Validator $ V2.unStakeValidatorScript (policy sp)

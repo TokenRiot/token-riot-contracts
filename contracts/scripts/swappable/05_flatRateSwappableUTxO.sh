@@ -25,7 +25,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 c207ba811698592da25d7c2d0c41476baacce5dcf53f3084be116d68.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+selling_asset="1234567890 c34332d539bb554707a2d8826f2057bc628ac433a779c2f43d4a5b5c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
 
 seller_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -40,6 +40,9 @@ buyer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out="${script_address} + 5000000 + ${selling_asset}" | tr -dc '0-9')
 
 difference=$((${buyer_min_utxo} - ${seller_min_utxo}))
+
+echo $difference
+echo $seller_min_utxo
 
 if [ "$difference" -lt "0" ]; then
     min_utxo=${seller_min_utxo}
@@ -56,14 +59,32 @@ fi
 
 script_address_out="${script_address} + ${min_utxo} + ${selling_asset}"
 
+payment_pid="$(jq -r '.fields[1].fields[0].bytes' ../data/swappable/seller-swappable-datum.json)"
+payment_tkn="$(jq -r '.fields[1].fields[1].bytes' ../data/swappable/seller-swappable-datum.json)"
 price=$(jq -r '.fields[1].fields[2].int' ../data/swappable/seller-swappable-datum.json)
-feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
-serviceFee=$(expr $price / $feePerc)
-if [ "$serviceFee" -lt "2000000" ]; then
+
+if [ -z "$payment_pid" ]
+then
+    seller_address_out="${seller_address} + ${price}" # new flat payment
+
+    feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
+    serviceFee=$(expr $price / $feePerc)
+    if [ "$serviceFee" -lt "2000000" ]; then
+        serviceFee=2000000
+    fi
+else
+    payment_asset="${price} ${payment_pid}.${payment_tkn}"
+    echo $payment_asset
+    payment_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out="${seller_address} + 5000000 + ${payment_asset}" | tr -dc '0-9')
+
+    seller_address_out="${seller_address} + ${payment_min_utxo} + ${payment_asset}" # new flat payment
+
     serviceFee=2000000
 fi
 
-seller_address_out="${seller_address} + ${price}" # new flat payment
 service_address_out="${deleg_address} + ${serviceFee}"
 echo "Script OUTPUT: "${script_address_out}
 echo "Payment OUTPUT: "${seller_address_out}

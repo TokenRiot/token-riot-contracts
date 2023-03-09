@@ -31,13 +31,14 @@ module ReferenceContract
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import           Codec.Serialise
-import           Cardano.Api.Shelley   ( PlutusScript (..), PlutusScriptV2 )
-import qualified Data.ByteString.Lazy  as LBS
-import qualified Data.ByteString.Short as SBS
-import qualified Plutus.V2.Ledger.Api  as V2
+import           Cardano.Api.Shelley     ( PlutusScript (..), PlutusScriptV2 )
+import qualified Data.ByteString.Lazy    as LBS
+import qualified Data.ByteString.Short   as SBS
+import qualified Plutus.V2.Ledger.Api    as V2
+import           Plutonomy
 import           ReferenceDataType
 import           ReducedFunctions
-import           Plutonomy
+import           OptimizerOptions        ( theOptimizerOptions )
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -51,13 +52,13 @@ data CustomRedeemerType
   | UpdateMultisig
   | UpdateHotKey
   | UpdatePool
-  | Debug
+  | Debug -- Remove at production
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ('UpdateCashier,  0)
                                                 , ('UpdateFee,      1)
                                                 , ('UpdateMultisig, 2)
                                                 , ('UpdateHotKey,   3)
                                                 , ('UpdatePool,     4)
-                                                , ('Debug,          5)
+                                                , ('Debug,          5) -- remove at production
                                                 ]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
@@ -169,7 +170,7 @@ mkValidator datum redeemer context =
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
     
-    -- | Debug for testing; set to false or remove at prod
+    -- | Debug for testing; REMOVE AT PROD
     (Reference _ _ _ _, Debug) -> True
   where
     -- | get the datum by searching the tx outputs by the validating value
@@ -196,7 +197,8 @@ wrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
 wrappedValidator x y z = check (mkValidator (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
 
 validator :: V2.Validator
-validator = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+validator = Plutonomy.optimizeUPLCWith theOptimizerOptions $ 
+  Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
   $$(PlutusTx.compile [|| wrappedValidator ||])
 
 referenceContractScriptShortBs :: SBS.ShortByteString

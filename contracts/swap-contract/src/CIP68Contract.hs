@@ -38,11 +38,12 @@ import qualified Data.ByteString.Lazy   as LBS
 import qualified Data.ByteString.Short  as SBS
 import qualified Plutus.V1.Ledger.Value as Value
 import qualified Plutus.V2.Ledger.Api   as V2
+import           OptimizerOptions       ( theOptimizerOptions )
+import           Plutonomy
 import           SwappableDataType
 import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
-import           Plutonomy
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -159,11 +160,10 @@ wrappedValidator :: ScriptParameters -> BuiltinData -> BuiltinData -> BuiltinDat
 wrappedValidator s x y z = check (mkValidator s (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
 
 validator :: ScriptParameters -> V2.Validator
-validator sp = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+validator sp = Plutonomy.optimizeUPLCWith theOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
   $$(PlutusTx.compile [|| wrappedValidator ||])
   `PlutusTx.applyCode`
   PlutusTx.liftCode sp
--- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
 cip68ContractScript :: ScriptParameters -> PlutusScript PlutusScriptV2
 cip68ContractScript = PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . validator

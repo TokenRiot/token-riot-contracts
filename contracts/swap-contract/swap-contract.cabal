@@ -52,6 +52,7 @@ library
                         SwappableDataType
                         ReferenceDataType
                         ReducedFunctions
+                        OptimizerOptions
 
   build-depends:        bytestring
                       , cardano-api

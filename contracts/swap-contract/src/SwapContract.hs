@@ -38,11 +38,13 @@ import qualified Data.ByteString.Lazy   as LBS
 import qualified Data.ByteString.Short  as SBS
 import qualified Plutus.V1.Ledger.Value as Value
 import qualified Plutus.V2.Ledger.Api   as V2
+import           OptimizerOptions       ( theOptimizerOptions )
 import           SwappableDataType
 import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
 import           Plutonomy
+
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -113,31 +115,23 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
 -------------------------------------------------------------------------------
 data CustomRedeemerType 
   = Remove
-  | FlatRate  PayToData ADAIncData SpecificToken
-  | Offer     ADAIncData MakeOfferData
-  | SwapUTxO  ADAIncData MakeOfferData
-  | Update    ADAIncData
-  | Bid
+  | FlatRate PayToData ADAIncData SpecificToken
+  | AcceptOffer ADAIncData MakeOfferData
+  | Update ADAIncData
   | Complete
-  | OrderBook
   | Transform
-  | FRRemove  PayToData SpecificToken
-  | ORemove   MakeOfferData
-  | CTimeLock
-  | Debug
-PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,     0 )
-                                                , ( 'FlatRate,   1 )
-                                                , ( 'Offer,      2 )
-                                                , ( 'SwapUTxO,   3 )
-                                                , ( 'Update,     4 )
-                                                , ( 'Bid,        5 )
-                                                , ( 'Complete,   6 )
-                                                , ( 'OrderBook,  7 )
-                                                , ( 'Transform,  8 )
-                                                , ( 'FRRemove,   9 )
-                                                , ( 'ORemove,   10 )
-                                                , ( 'CTimeLock, 11 )
-                                                , ( 'Debug,     12 )
+  | FlatRateRemove PayToData SpecificToken
+  | AcceptOfferRemove MakeOfferData
+  | CancelTimeLock
+PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,            0 )
+                                                , ( 'FlatRate,          1 )
+                                                , ( 'AcceptOffer,       2 )
+                                                , ( 'Update,            3 )
+                                                , ( 'Complete,          4 )
+                                                , ( 'Transform,         5 )
+                                                , ( 'FlatRateRemove,    6 )
+                                                , ( 'AcceptOfferRemove, 7 )
+                                                , ( 'CancelTimeLock,    8 )
                                                 ]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
@@ -268,7 +262,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
     -- | A trader may cancel their timelock by paying a fee.
-    (Swappable ptd _ td, CTimeLock) ->
+    (Swappable ptd _ td, CancelTimeLock) ->
       let !walletPkh        = ptPkh ptd
           !walletAddr       = createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
@@ -328,7 +322,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
     
     -- | Flat rate purchase into buyer wallet of UTxO for an predefined amount of a single token.
-    (Swappable ptd pd td, FRRemove ptd' st) ->
+    (Swappable ptd pd td, FlatRateRemove ptd' st) ->
       let !walletAddr       = createAddress (ptPkh ptd) (ptSc ptd)
           !buyerPkh         = ptPkh ptd'
           !buyerAddr        = createAddress buyerPkh (ptSc ptd')
@@ -356,8 +350,8 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "val"    (Value.geq refValue lockValue)                                     -- check if correct reference
       && traceIfFalse "fee"    (checkServiceFeePayout (Swappable ptd pd td) refDatum txOutputs)   -- check if paying fee
     
-    -- | Offer to change walletship of UTxO for some amount of a single token + extras.
-    (Swappable ptd _ td, Offer aid mod) ->
+    -- | AcceptOffer to change walletship of UTxO for some amount of a single token + extras.
+    (Swappable ptd _ td, AcceptOffer aid mod) ->
       let !txId            = createTxOutRef (moTx mod) (moIdx mod)
           !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
@@ -391,7 +385,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Swappable:Offer:Undefined Datum" False
 
     -- | Offer but remove it to a the buyer's wallet
-    (Swappable ptd _ td, ORemove mod) ->
+    (Swappable ptd _ td, AcceptOfferRemove mod) ->
       let !txId            = createTxOutRef (moTx mod) (moIdx mod)
           !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
@@ -570,7 +564,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Auctioning:Update:Undefined Datum" False
     
     -- | Offer the auction for some selected bid
-    (Auctioning ptd atd gtd, Offer aid mod) ->
+    (Auctioning ptd atd gtd, AcceptOffer aid mod) ->
       let !txId                = createTxOutRef (moTx mod) (moIdx mod)
           !info                = V2.scriptContextTxInfo context
           !walletPkh           = ptPkh ptd
@@ -600,7 +594,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
               && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
 
             -- other datums fail
-            _ -> traceIfFalse "Auctioning:Offer:Undefined Datum" False
+            _ -> traceIfFalse "Auctioning:AcceptOffer:Undefined Datum" False
         
         -- anything else fails
         _ -> traceIfFalse "Auctioning:Offering:Undefined Datum" False
@@ -765,12 +759,13 @@ mkValidator ScriptParameters {..} datum redeemer context =
 wrappedValidator :: ScriptParameters -> BuiltinData -> BuiltinData -> BuiltinData -> ()
 wrappedValidator s x y z = check (mkValidator s (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
 
+-- change optimizer options to global at production
 validator :: ScriptParameters -> V2.Validator
-validator sp = Plutonomy.optimizeUPLC $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+validator sp = Plutonomy.optimizeUPLCWith theOptimizerOptions $ 
+  Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
   $$(PlutusTx.compile [|| wrappedValidator ||])
   `PlutusTx.applyCode`
   PlutusTx.liftCode sp
--- validator = Plutonomy.optimizeUPLCWith Plutonomy.aggressiveOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
 
 swapContractScript :: ScriptParameters -> PlutusScript PlutusScriptV2
 swapContractScript = PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . validator
