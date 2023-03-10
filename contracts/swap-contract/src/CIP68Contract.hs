@@ -96,11 +96,10 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !(Reference _ _ sd _) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
           !hotPkh               = mHot sd
-          !lockValue            = Value.singleton lockPid lockTkn (1 :: Integer)
-      in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)  -- single tx going in
-      && traceIfFalse "sig" (signedBy txSigners hotPkh)      -- hot key must sign
-      && traceIfFalse "out" (nOutputs contTxOutputs 0)       -- nothing going out
-      && traceIfFalse "val" (Value.geq refValue lockValue)   -- check if correct reference
+      in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)                -- single tx going in
+      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
+      && traceIfFalse "out" (nOutputs contTxOutputs 0)                     -- nothing going out
+      && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
 
     -- Allows the reference data hot key to update entries
     (Update aid) ->
@@ -117,13 +116,12 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !(Reference _ _ sd _) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
           !hotPkh               = mHot sd
-          !lockValue            = Value.singleton lockPid lockTkn (1 :: Integer)
           !incomingValue        = thisValue + adaValue (adaInc aid)
-      in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)           -- single tx going in
-      && traceIfFalse "sig" (signedBy txSigners hotPkh)               -- hot key must sign
-      && traceIfFalse "out" (nOutputs contTxOutputs 1)                -- single going out
-      && traceIfFalse "val" (Value.geq refValue lockValue)            -- check if correct reference
-      && traceIfFalse "dat" (isValueCont contTxOutputs incomingValue) -- check if value is continue by datum
+      in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)                -- single tx going in
+      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                     -- single going out
+      && traceIfFalse "dat" (isValueCont contTxOutputs incomingValue)      -- check if value is continue by datum
+      && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
 --Functions--------------------------------------------------------------------
   where
     getReferenceDatum :: V2.TxOut -> ReferenceDatum

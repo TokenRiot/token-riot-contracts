@@ -63,7 +63,8 @@ data StakeData = StakeData
   { stakeCred :: V2.ValidatorHash
   -- ^ The staking credential of the script.
   }
-PlutusTx.unstableMakeIsData ''StakeData
+PlutusTx.makeIsDataIndexed ''StakeData [('StakeData, 0)]
+
 -------------------------------------------------------------------------------
 -- | Create the redeemer type.
 -------------------------------------------------------------------------------
@@ -90,9 +91,8 @@ mkPolicy ScriptParameters {..} redeemer' context =
           !(Reference _ _ _ sp) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
           !payoutAddr           = createAddress (rewardPkh sp) (rewardSc sp)
-          !lockValue            = Value.singleton lockPid lockTkn (1 :: Integer)
-      in traceIfFalse "withdrawal" (checkTheWithdrawal rewardWithdrawal stakingCred txOutputs payoutAddr) -- check if correct withdrawal
-      && traceIfFalse "lock value" (Value.geq refValue lockValue)                                         -- check if correct reference
+      in traceIfFalse "wit" (checkTheWithdrawal rewardWithdrawal stakingCred txOutputs payoutAddr)  -- check if correct withdrawal
+      && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)                           -- check if correct reference
     
     -- | This handles the pool delegation.
     (Delegate sd) ->
@@ -104,9 +104,8 @@ mkPolicy ScriptParameters {..} redeemer' context =
           !(Reference _ _ _ sp) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
           !pool                 = (poolId sp)
-          !lockValue            = Value.singleton lockPid lockTkn (1 :: Integer)
-      in traceIfFalse "delegate"   (checkTheCerts dCerts stakingCred pool) -- check if correct delegation
-      && traceIfFalse "lock value" (Value.geq refValue lockValue)          -- check if correct reference
+      in traceIfFalse "del" (checkTheCerts dCerts stakingCred pool)        -- check if correct delegation
+      && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
   where
     redeemer :: CustomRedeemerType
     redeemer = PlutusTx.unsafeFromBuiltinData @CustomRedeemerType redeemer'

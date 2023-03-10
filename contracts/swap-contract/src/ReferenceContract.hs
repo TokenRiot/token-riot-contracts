@@ -167,8 +167,8 @@ mkValidator datum redeemer context =
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
-      && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
+      && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
     
     -- | Debug for testing; REMOVE AT PROD
     (Reference _ _ _ _, Debug) -> True
