@@ -37,6 +37,8 @@ module SwappableDataType
   , SpecificToken (..)
   , getTokenName
   , OfferFlagData (..)
+  , RoyaltyPaymentData (..)
+  , checkRoyaltyLength
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
@@ -183,3 +185,37 @@ data OfferFlagData = OfferFlagData
   }
 PlutusTx.makeIsDataIndexed ''OfferFlagData [('OfferFlagData, 0)]
 
+
+-------------------------------------------------------------------------------
+-- | Royalty Payment Data
+-------------------------------------------------------------------------------
+data RoyaltyPaymentData = RoyaltyPaymentData
+  { pkhs :: [PlutusV2.PubKeyHash]
+  , scs  :: [PlutusV2.PubKeyHash]
+  , amts :: [Integer]
+  }
+PlutusTx.makeIsDataIndexed ''RoyaltyPaymentData [('RoyaltyPaymentData, 0)]
+
+instance Eq RoyaltyPaymentData where
+  {-# INLINABLE (==) #-}
+  a == b = ( pkhs a == pkhs b ) &&
+           ( scs  a == scs  b ) &&
+           ( amts a == amts b )
+
+checkRoyaltyLength :: RoyaltyPaymentData -> Bool
+checkRoyaltyLength rpd = (leftSide == True) && (rightSide == True)
+  where
+    leftSide :: Bool
+    leftSide = pkhsLength == scsLength
+
+    rightSide :: Bool    
+    rightSide = scsLength == amtsLength
+
+    pkhsLength :: Integer
+    pkhsLength = length $ pkhs rpd
+
+    scsLength :: Integer
+    scsLength  = length $ scs rpd
+
+    amtsLength :: Integer
+    amtsLength = length $ amts rpd

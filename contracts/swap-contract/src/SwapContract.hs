@@ -65,7 +65,7 @@ PlutusTx.makeLift ''ScriptParameters
 
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
-calculateServiceFee (Swappable _ pd _) (Reference _ sf _ _) =
+calculateServiceFee (Swappable _ pd _ _) (Reference _ sf _ _) =
   if (pPid pd == Value.adaSymbol) && (pTkn pd == Value.adaToken)
   then if percentFee > sFee then percentFee else sFee
   else sFee
@@ -96,12 +96,31 @@ checkCancellationFeePayout (Reference ca sf _ _) txOutputs = (findPayout txOutpu
   
     feeValue :: V2.Value
     feeValue = Value.singleton Value.adaSymbol Value.adaToken (cancellationFee sf)
+-------------------------------------------------------------------------------
+checkRoyaltyPayouts :: RoyaltyPaymentData -> [V2.TxOut] -> Bool
+checkRoyaltyPayouts rpd outs = checkRoyaltyPayouts' compressedRoyaltyPayment
+  where
+    compressedRoyaltyPayment :: [(V2.PubKeyHash, V2.PubKeyHash, Integer)]
+    compressedRoyaltyPayment = zip3 (pkhs rpd) (scs rpd) (amts rpd)
+
+    checkRoyaltyPayouts' :: [(V2.PubKeyHash, V2.PubKeyHash, Integer)] -> Bool
+    checkRoyaltyPayouts' []                  = True
+    checkRoyaltyPayouts' ((pkh,sc,amt):crps) =
+      if (findPayout outs addr val) == True
+        then checkRoyaltyPayouts' crps
+        else False
+      where
+        addr :: V2.Address
+        addr = createAddress pkh sc
+
+        val :: V2.Value
+        val = adaValue amt
 
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
 data CustomDatumType
-  = Swappable  PayToData PaymentData   TimeData
+  = Swappable  PayToData PaymentData   TimeData RoyaltyPaymentData
   | Auctioning PayToData TimeData      TimeData
   | Offering   PayToData MakeOfferData OfferFlagData
   | Bidding    PayToData MakeOfferData
@@ -163,7 +182,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -}
     
     -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
-    (Swappable ptd _ td, Transform) ->
+    (Swappable ptd _ td _, Transform) ->
       let !walletPkh        = ptPkh ptd
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
@@ -176,11 +195,12 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !contTxOutputs    = getScriptOutputs txOutputs scriptAddr
       in case getOutboundDatum contTxOutputs of
         -- transform a swappable utxo
-        (Swappable ptd' _ td') -> 
+        (Swappable ptd' _ td' rpd') -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)                         -- seller must sign it
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
           && traceIfFalse "owns" (ptd == ptd')                                          -- seller cant change
+          && traceIfFalse "owns" (rpd' == rpd')                                         -- seller cant change
           && traceIfFalse "time" (checkValidTimeLock td td')                            -- valid time lock
           && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
@@ -211,7 +231,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
     
     -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
-    (Swappable ptd _ td, Update aid) ->
+    (Swappable ptd _ td rpd, Update aid) ->
       let !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
           !txInputs        = V2.txInfoInputs info
@@ -224,9 +244,10 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !incomingValue   = thisValue + adaValue (adaInc aid)
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- update the payment data on a swappable state
-        (Swappable ptd' _ td') -> 
+        (Swappable ptd' _ td' rpd') -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
           && traceIfFalse "Datu" (ptd == ptd')                   -- seller and time can't change
+          && traceIfFalse "Datu" (rpd == rpd')                   -- seller and time can't change
           && traceIfFalse "Time" (td == td')                     -- seller and time can't change
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, single going out
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)      -- single tx going in, single going out
@@ -244,7 +265,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Swappable:Update:Undefined Datum" False
     
     -- | A trader may remove their UTxO if not currently being timelocked.
-    (Swappable ptd _ td, Remove) ->
+    (Swappable ptd _ td _, Remove) ->
       let !walletPkh        = ptPkh ptd
           !walletAddr       = createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
@@ -262,7 +283,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
     -- | A trader may cancel their timelock by paying a fee.
-    (Swappable ptd _ td, CancelTimeLock) ->
+    (Swappable ptd _ td _, CancelTimeLock) ->
       let !walletPkh        = ptPkh ptd
           !walletAddr       = createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
@@ -286,7 +307,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                -- check if correct reference
     
     -- | Flat rate swap of UTxO for an predefined amount of a single token.
-    (Swappable ptd pd td, FlatRate ptd' aid st) ->
+    (Swappable ptd pd td rpd, FlatRate ptd' aid st) ->
       let !walletAddr      = createAddress (ptPkh ptd) (ptSc ptd)
           !info            = V2.scriptContextTxInfo context
           !txInputs        = V2.txInfoInputs info
@@ -304,23 +325,24 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !thisTkn         = getTokenName pd st
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- swappable only
-        (Swappable ptd'' _ td') -> 
-             traceIfFalse "Pays" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
-          && traceIfFalse "oldo" (ptd /= ptd'')                                                     -- cant sell this
-          && traceIfFalse "newo" (ptd' == ptd'')                                                    -- new owner must own it
-          && traceIfFalse "time" (td == td')                                                        -- time data must remain
-          && traceIfFalse "Empt" (pAmt pd /= 0)                                                     -- seller must define price
-          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                                    -- single tx going in
-          && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                         -- single going out
-          && traceIfFalse "sign" (signedBy txSigners (ptPkh ptd'))                                  -- buyer must sign
-          && traceIfFalse "fee"  (checkServiceFeePayout (Swappable ptd pd td) refDatum txOutputs)   -- check if paying fee
-          && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                      -- check if correct reference
+        (Swappable ptd'' _ td' _) -> 
+             traceIfFalse "Pays" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd))    -- seller must be paid
+          && traceIfFalse "oldo" (ptd /= ptd'')                                                        -- cant sell this
+          && traceIfFalse "newo" (ptd' == ptd'')                                                       -- new owner must own it
+          && traceIfFalse "time" (td == td')                                                           -- time data must remain
+          && traceIfFalse "Empt" (pAmt pd /= 0)                                                        -- seller must define price
+          && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                                       -- single tx going in
+          && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                            -- single going out
+          && traceIfFalse "sign" (signedBy txSigners (ptPkh ptd'))                                     -- buyer must sign
+          && traceIfFalse "fee"  (checkServiceFeePayout (Swappable ptd pd td rpd) refDatum txOutputs)  -- check if paying fee
+          && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                         -- check if correct reference
+          && traceIfFalse "roy"  (checkRoyaltyPayouts rpd txOutputs)                                   -- All royalty payments
 
         -- other datums fail
         _ -> traceIfFalse "Swappable:FlatRate:Undefined Datum" False
     
     -- | Flat rate purchase into buyer wallet of UTxO for an predefined amount of a single token.
-    (Swappable ptd pd td, FlatRateRemove ptd' st) ->
+    (Swappable ptd pd td rpd, FlatRateRemove ptd' st) ->
       let !walletAddr       = createAddress (ptPkh ptd) (ptSc ptd)
           !buyerPkh         = ptPkh ptd'
           !buyerAddr        = createAddress buyerPkh (ptSc ptd')
@@ -338,17 +360,19 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refDatum         = getReferenceDatum refTxOut
           !refValue         = V2.txOutValue refTxOut
           !thisTkn          = getTokenName pd st
-      in traceIfFalse "Signer" (signedBy txSigners buyerPkh)                                      -- seller must sign it
-      && traceIfFalse "Tokens" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd)) -- seller must be paid
-      && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                         -- buyer must be paid
-      && traceIfFalse "Empty"  (pAmt pd /= 0)                                                     -- seller must define price
-      && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                    -- single tx going in
-      && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
-      && traceIfFalse "fee"    (checkServiceFeePayout (Swappable ptd pd td) refDatum txOutputs)   -- check if paying fee
-      && traceIfFalse "val"    (Value.valueOf refValue lockPid lockTkn == 1)                      -- check if correct reference
+      in traceIfFalse "Signer" (signedBy txSigners buyerPkh)                                        -- seller must sign it
+      && traceIfFalse "Tokens" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd))   -- seller must be paid
+      && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                           -- buyer must be paid
+      && traceIfFalse "Empty"  (pAmt pd /= 0)                                                       -- seller must define price
+      && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                      -- single tx going in
+      && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)               -- seller can unlock it
+      && traceIfFalse "fee"    (checkServiceFeePayout (Swappable ptd pd td rpd) refDatum txOutputs) -- check if paying fee
+      && traceIfFalse "val"    (Value.valueOf refValue lockPid lockTkn == 1)                        -- check if correct reference
+      && traceIfFalse "roy"    (checkRoyaltyPayouts rpd txOutputs)                                  -- All royalty payments
+
     
     -- | AcceptOffer to change walletship of UTxO for some amount of a single token + extras.
-    (Swappable ptd _ td, AcceptOffer aid mod) ->
+    (Swappable ptd _ td _, AcceptOffer aid mod) ->
       let !txId            = createTxOutRef (moTx mod) (moIdx mod)
           !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
@@ -365,7 +389,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         (Offering ptd' _ ofd) ->
           case getOutboundDatumByValue contTxOutputs incomingValue of
             -- cont into swappable only
-            (Swappable ptd'' pd' td') -> 
+            (Swappable ptd'' pd' td' _) -> 
                  traceIfFalse "sign" (signedBy txSigners walletPkh)  -- seller must sign
               && traceIfFalse "oldo" (ptd /= ptd'')                  -- cant sell this to self
               && traceIfFalse "newo" (ptd' == ptd'')                 -- new owner must own it
@@ -382,7 +406,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Swappable:Offer:Undefined Datum" False
 
     -- | Offer but remove it to a the buyer's wallet
-    (Swappable ptd _ td, AcceptOfferRemove mod) ->
+    (Swappable ptd _ td _, AcceptOfferRemove mod) ->
       let !txId            = createTxOutRef (moTx mod) (moIdx mod)
           !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
@@ -455,7 +479,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
 
         -- offer into a swappable
-        (Swappable ptd' _ td') -> 
+        (Swappable ptd' _ td' _) -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
           && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
@@ -481,7 +505,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refValue        = V2.txOutValue refTxOut
       in case getDatumByTxId txId txInputs of
         -- swappable only
-        (Swappable ptd' _ _) -> 
+        (Swappable ptd' _ _ rpd') -> 
           let !sellerPkh  = ptPkh ptd'
               !sellerAddr = createAddress sellerPkh (ptSc ptd')
           in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                                    -- seller must sign it
@@ -490,6 +514,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                                   -- double tx going in
           && traceIfFalse "fee"  (checkServiceFeePayout (Offering ptd mod ofd) refDatum txOutputs) -- check if paying fee
           && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                     -- check if correct reference
+          && traceIfFalse "roy"  (checkRoyaltyPayouts rpd' txOutputs)                              -- All royalty payments
         
         -- anything else fails
         _ -> traceIfFalse "Offering:Complete:Undefined Datum" False
@@ -548,7 +573,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !incomingValue       = thisValue + adaValue (adaInc aid)
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- go back to the swap state
-        (Swappable ptd' _ gtd') -> 
+        (Swappable ptd' _ gtd' _) -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)                            -- seller must sign it
           && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
           && traceIfFalse "newo" (ptd == ptd')                                             -- new owner must own it
@@ -579,7 +604,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         (Bidding ptd' _) ->
           case getOutboundDatumByValue contTxOutputs incomingValue of
             -- cont into swappable only
-            (Swappable ptd'' pd' td') -> 
+            (Swappable ptd'' pd' td' _) -> 
                  traceIfFalse "sign" (signedBy txSigners walletPkh)                            -- seller must sign
               && traceIfFalse "oldo" (ptd /= ptd'')                                            -- cant sell this to self
               && traceIfFalse "newo" (ptd' == ptd'')                                           -- new owner must own it
@@ -639,7 +664,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
 
         -- offer into a swappable
-        (Swappable ptd' _ td') -> 
+        (Swappable ptd' _ td' _) -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
           && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
@@ -679,7 +704,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange)    -- seller can unlock it
           && traceIfFalse "fee"  (checkServiceFeePayout (Bidding ptd mod) refDatum txOutputs) -- check if paying fee
           && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                -- check if correct reference
-            
+          
         -- anything else fails
         _ -> traceIfFalse "Bidding:Complete:Undefined Datum" False
 --DEBUG------------------------------------------------------------------------

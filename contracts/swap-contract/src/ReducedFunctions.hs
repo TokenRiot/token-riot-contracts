@@ -37,6 +37,7 @@ module ReducedFunctions
   , getScriptOutputs
   , getReferenceInput
   , ownInput
+  , zip3
   ) where
 import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api      as V2
@@ -184,3 +185,11 @@ nRedeemers redeemers number = nRedeemers' redeemers 0
     nRedeemers' :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
     nRedeemers' []     counter = counter == number
     nRedeemers' ((_, _):xs) counter = nRedeemers' xs ( counter + 1 )
+  
+
+{-# INLINABLE zip3 #-}
+zip3 :: [a] -> [b] -> [c] -> [(a,b,c)]
+zip3 []     _bs    _cs    = []
+zip3 _as    []     _cs    = []
+zip3 _as    _bs    []     = []
+zip3 (a:as) (b:bs) (c:cs) = (a,b,c) : zip3 as bs cs
