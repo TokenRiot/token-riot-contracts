@@ -1,65 +1,9 @@
 {
-    "4ea9392782f58cb96d18b33765b3c28cd7a71367114ff7561443d987e30545f1#0": {
+    "f25289dff9b6ca819514fbeb5edee6dc3c115014d0e44a3fdee19d1a963a30b3#2": {
         "address": "addr_test1xpflrhzshsnr2l0vemkj3grl725hxsxk3n6gkhe9atkyd6sxc5xr4zpxwhky99ndqkcd7hga8u60mkvwurxss8yw4cgq7d3g2n",
         "datum": null,
         "inlineDatum": {
             "constructor": 0,
-            "fields": [
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "bytes": "a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439"
-                        },
-                        {
-                            "bytes": ""
-                        }
-                    ]
-                },
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "bytes": "0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52"
-                        },
-                        {
-                            "bytes": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
-                        },
-                        {
-                            "int": 987654321
-                        },
-                        {
-                            "int": 0
-                        }
-                    ]
-                },
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "int": 0
-                        },
-                        {
-                            "int": 0
-                        }
-                    ]
-                }
-            ]
-        },
-        "inlineDatumhash": "c1747fbc95a48e74cd4fbbabbb7022f15839b1bc1b85569960960aaf3b670542",
-        "referenceScript": null,
-        "value": {
-            "dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c": {
-                "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730": 1
-            },
-            "lovelace": 1814510
-        }
-    },
-    "dedb0bc266e87b2036f526834399602c9bdae11fd62cfeaefaa3cbf94544cf65#0": {
-        "address": "addr_test1xpflrhzshsnr2l0vemkj3grl725hxsxk3n6gkhe9atkyd6sxc5xr4zpxwhky99ndqkcd7hga8u60mkvwurxss8yw4cgq7d3g2n",
-        "datum": null,
-        "inlineDatum": {
-            "constructor": 2,
             "fields": [
                 {
                     "constructor": 0,
@@ -76,7 +20,13 @@
                     "constructor": 0,
                     "fields": [
                         {
-                            "bytes": "4ea9392782f58cb96d18b33765b3c28cd7a71367114ff7561443d987e30545f1"
+                            "bytes": ""
+                        },
+                        {
+                            "bytes": ""
+                        },
+                        {
+                            "int": 0
                         },
                         {
                             "int": 0
@@ -86,20 +36,6 @@
                 {
                     "constructor": 0,
                     "fields": [
-                        {
-                            "int": 0
-                        }
-                    ]
-                },
-                {
-                    "constructor": 0,
-                    "fields": [
-                        {
-                            "bytes": ""
-                        },
-                        {
-                            "bytes": ""
-                        },
                         {
                             "int": 0
                         },
@@ -110,10 +46,13 @@
                 }
             ]
         },
-        "inlineDatumhash": "994efb913c533efabc00d0e84aa467acc7c1f14c64479fb5614498a6ed25ebb1",
+        "inlineDatumhash": "fed0de881c20af15249980a42a58de2b929e0ecb529cbd5dbd0f8e8ac1921d02",
         "referenceScript": null,
         "value": {
-            "lovelace": 123456789
+            "dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c": {
+                "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730": 1
+            },
+            "lovelace": 1814510
         }
     }
 }
