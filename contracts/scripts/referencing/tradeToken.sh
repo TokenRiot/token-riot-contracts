@@ -7,7 +7,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
-sender_address=$(cat ../wallets/seller-wallet/payment.addr)
+sender_address=$(cat ../wallets/buyer-wallet/payment.addr)
 # receiver_address=$(cat ../wallets/delegator-wallet/payment.addr)
 receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
@@ -16,9 +16,9 @@ asset=""
 return_asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 # asset to trade
-asset="1 c207ba811698592da25d7c2d0c41476baacce5dcf53f3084be116d68.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+asset="654321 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734 + 123456 c34332d539bb554707a2d8826f2057bc628ac433a779c2f43d4a5b5c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731 + 1 dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 e20c67759540c2c4e5dfe7d7e93ed1b6692ebf2cfded8865f0e2d403.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730 + 1 f48ed78c4c268158ef11ce050a96de452679e33a316acae2e9efdd7e.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
-min_utxo=2000000
+min_utxo=3000000
 
 token_to_be_traded="${receiver_address} + 2500000000"
 token_to_be_changed="${receiver_address} + ${min_utxo} + ${asset}"
@@ -63,7 +63,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/seller-wallet/payment.skey \
+    --signing-key-file ../wallets/buyer-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
     --testnet-magic ${testnet_magic}

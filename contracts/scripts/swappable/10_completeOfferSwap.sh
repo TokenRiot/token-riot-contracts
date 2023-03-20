@@ -26,7 +26,7 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 
 # asset to trade
-seller_asset="1 5cb840dd5094cc8219d01a997ba9656fd8020945d373c37f97b6a7b6.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+seller_asset="1 dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
 
 # asset to trade
 offer_asset="1 53e4deacc6f8cd78f3490d64d199467df7a5893363d964b1cdba1a5d.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
@@ -65,7 +65,8 @@ offer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out="${script_address} + 5000000 + ${offer_asset}" | tr -dc '0-9')
 
 script_address_out="${script_address} + ${min_utxo} + ${seller_asset}"
-seller_address_out="${seller_address} + ${offer_min_utxo} + ${offer_asset}"
+# seller_address_out="${seller_address} + ${offer_min_utxo} + ${offer_asset}"
+seller_address_out="${seller_address} + 123456789"
 service_address_out="${deleg_address} + 2000000"
 echo "Script OUTPUT: "${script_address_out}
 echo "Offer OUTPUT: "${seller_address_out}
@@ -165,7 +166,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 # echo TOTAL MEMORY
 # jq -r  '[.[].executionUnits.memory] | add' ../tmp/tx.cost
 #
-exit
+# exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
