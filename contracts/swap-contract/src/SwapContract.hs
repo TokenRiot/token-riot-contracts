@@ -103,7 +103,7 @@ checkCancellationFeePayout (Reference ca sf _ _) txOutputs = (findPayout txOutpu
 data CustomDatumType
   = Swappable  PayToData PaymentData   TimeData
   | Auctioning PayToData TimeData      TimeData
-  | Offering   PayToData MakeOfferData OfferFlagData
+  | Offering   PayToData MakeOfferData OfferFlagData PaymentData
   | Bidding    PayToData MakeOfferData PaymentData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
@@ -185,7 +185,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
         -- transform utxo into an offer
-        (Offering ptd' _ _) -> 
+        (Offering ptd' _ _ _) -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)                         -- seller must sign it
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
@@ -362,17 +362,18 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !incomingValue   = thisValue + adaValue (adaInc aid)
       in case getDatumByTxId txId txInputs of
         -- offering only
-        (Offering ptd' _ ofd) ->
+        (Offering ptd' _ ofd pd') ->
           case getOutboundDatumByValue contTxOutputs incomingValue of
             -- cont into swappable only
-            (Swappable ptd'' pd' td') -> 
+            (Swappable ptd'' pd'' td') -> 
                  traceIfFalse "sign" (signedBy txSigners walletPkh)  -- seller must sign
               && traceIfFalse "oldo" (ptd /= ptd'')                  -- cant sell this to self
               && traceIfFalse "newo" (ptd' == ptd'')                 -- new owner must own it
               && traceIfFalse "time" (td == td')                     -- time data must remain
               && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2) -- single tx going in
               && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
-              && traceIfFalse "PayD" (pd' == defaultPayment)         -- payment data must be default
+              && traceIfFalse "PayD" (pd' == pd'')                   -- payment data must be default
+              -- && traceIfFalse "PayD" (pd' == defaultPayment)         -- payment data must be default
               && traceIfFalse "Flag" (oFlag ofd == 0)                -- Offer stays in contract
 
             -- other datums fail
@@ -396,7 +397,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !txValidityRange  = V2.txInfoValidRange info
       in case getDatumByTxId txId txInputs of
         -- offering only
-        (Offering ptd' _ ofd) -> 
+        (Offering ptd' _ ofd _) -> 
           let !buyerAddr = createAddress (ptPkh ptd') (ptSc ptd')
           in traceIfFalse "sign" (signedBy txSigners walletPkh)                         -- seller must sign
           && traceIfFalse "oldo" (ptd /= ptd')                                          -- cant sell this to self
@@ -422,7 +423,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -}
 
     -- | Remove the UTxO from the contract.
-    (Offering ptd _ _, Remove) ->
+    (Offering ptd _ _ _, Remove) ->
       let !walletPkh        = ptPkh ptd
           !walletAddr       = createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
@@ -437,7 +438,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)             -- single tx going in, no continue
 
     -- | Transform the make offer tx ref info
-    (Offering ptd _ _, Transform) ->
+    (Offering ptd _ _ _, Transform) ->
       let !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context
           !txInputs        = V2.txInfoInputs info
@@ -448,7 +449,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !contTxOutputs   = getScriptOutputs txOutputs scriptAddr
       in case getOutboundDatum contTxOutputs of
         -- offering only
-        (Offering ptd' _ _) -> 
+        (Offering ptd' _ _ _) -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)  -- seller must sign it
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1) -- single tx going in, no continue
           && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out
@@ -466,7 +467,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         _ -> traceIfFalse "Offering:Transform:Undefined Datum" False
 
     -- | Complete an offer with a specific swappable UTxO.
-    (Offering ptd mod ofd, Complete) ->
+    (Offering ptd mod ofd pd, Complete) ->
       let !txId            = createTxOutRef (moTx mod) (moIdx mod)
           !info            = V2.scriptContextTxInfo context
           !txInputs        = V2.txInfoInputs info
@@ -481,14 +482,14 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refValue        = V2.txOutValue refTxOut
       in case getDatumByTxId txId txInputs of
         -- swappable only
-        (Swappable ptd' _ _) -> 
+        (Swappable ptd' _ _) ->
           let !sellerPkh  = ptPkh ptd'
               !sellerAddr = createAddress sellerPkh (ptSc ptd')
           in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                                    -- seller must sign it
           && traceIfFalse "oldo" (ptd /= ptd')                                                     -- cant sell this to self
           && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)                       -- seller must get the UTxO
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                                   -- double tx going in
-          && traceIfFalse "fee"  (checkServiceFeePayout (Offering ptd mod ofd) refDatum txOutputs) -- check if paying fee
+          && traceIfFalse "fee"  (checkServiceFeePayout (Offering ptd mod ofd pd) refDatum txOutputs) -- check if paying fee
           && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                     -- check if correct reference
         
         -- anything else fails
@@ -587,7 +588,6 @@ mkValidator ScriptParameters {..} datum redeemer context =
               && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2)                           -- double tx going in
               && traceIfFalse "Out"  (nOutputs contTxOutputs 1)                                -- single going out
               && traceIfFalse "PayD" (pd' == pd'')                                             -- payment data must be default
-              -- && traceIfFalse "PayD" (pd' == defaultPayment)                                   -- payment data must be default
               && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
 
             -- other datums fail

@@ -27,7 +27,8 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-script_address_out="${script_address} + ${min_utxo} + ${asset}"
+# script_address_out="${script_address} + ${min_utxo} + ${asset}"
+script_address_out="${script_address} + 123456789"
 echo "Offer OUTPUT: "${script_address_out}
 #
 # exit
@@ -75,7 +76,8 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-script_address_out="${script_address} + ${min_utxo} + ${asset}"
+# script_address_out="${script_address} + ${min_utxo} + ${asset}"
+script_address_out="${script_address} + 123456789"
 
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \

@@ -27,7 +27,8 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out-inline-datum-file ../data/offerable/buyer-offerable-datum.json \
     --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-buyer_address_out="${buyer_address} + ${min_utxo} + ${asset}"
+# buyer_address_out="${buyer_address} + ${min_utxo} + ${asset}"
+buyer_address_out="${buyer_address} + 123456789"
 echo "Return OUTPUT: "${buyer_address_out}
 #
 # exit
