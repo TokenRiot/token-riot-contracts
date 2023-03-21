@@ -44,7 +44,6 @@ import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
 import           Plutonomy
-
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -62,7 +61,6 @@ data ScriptParameters = ScriptParameters
   }
 PlutusTx.makeLift ''ScriptParameters
 -------------------------------------------------------------------------------
-
 {-# INLINABLE calculateServiceFee #-}
 calculateServiceFee :: CustomDatumType -> ReferenceDatum -> Integer
 calculateServiceFee (Swappable _ pd _) (Reference _ sf _ _) =
@@ -96,7 +94,6 @@ checkCancellationFeePayout (Reference ca sf _ _) txOutputs = (findPayout txOutpu
   
     feeValue :: V2.Value
     feeValue = Value.singleton Value.adaSymbol Value.adaToken (cancellationFee sf)
-
 -------------------------------------------------------------------------------
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------

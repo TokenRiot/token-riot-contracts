@@ -44,6 +44,10 @@ import           OptimizerOptions        ( theOptimizerOptions )
 import           Plutonomy
 import           ReferenceDataType
 import           ReducedFunctions
+{- |
+  Author   : The Ancient Kraken
+  Copyright: 2023
+-}
 -------------------------------------------------------------------------------
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
