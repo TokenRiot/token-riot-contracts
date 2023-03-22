@@ -44,7 +44,6 @@ import           ReferenceDataType
 import           UsefulFuncs
 import           ReducedFunctions
 import           Plutonomy
-
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
