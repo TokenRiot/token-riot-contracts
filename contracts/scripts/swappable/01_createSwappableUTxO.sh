@@ -17,7 +17,7 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 
 # asset to trade
-asset="1 dc283b01a369c0b4ca7b19d23602230f5e5d15dd86a870a55e70bb8c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313831"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \

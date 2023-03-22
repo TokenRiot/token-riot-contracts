@@ -7,7 +7,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
-sender_address=$(cat ../wallets/buyer-wallet/payment.addr)
+sender_address=$(cat ../wallets/collat-wallet/payment.addr)
 receiver_address=$(cat ../wallets/seller-wallet/payment.addr)
 # receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
@@ -50,9 +50,9 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${sender_address} \
     --tx-in ${HEXTXIN} \
-    --tx-out="${token_to_be_changed}" \
     --testnet-magic ${testnet_magic})
 
+    # --tx-out="${token_to_be_changed}" \
     # --tx-out="${token_to_be_traded}" \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -63,7 +63,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/buyer-wallet/payment.skey \
+    --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
     --testnet-magic ${testnet_magic}
