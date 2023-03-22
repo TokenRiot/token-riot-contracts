@@ -28,9 +28,9 @@
 module OptimizerOptions
   ( theOptimizerOptions
   ) where
-import PlutusTx.Prelude
-import Plutonomy.Raw.Transform as Options
 import Plutonomy
+import Plutonomy.Raw.Transform as Options
+import PlutusTx.Prelude
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023

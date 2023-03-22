@@ -30,20 +30,20 @@ module StakeContract
   ( stakingPlutusScript
   , ScriptParameters(..)
   ) where
-import qualified PlutusTx
-import           PlutusTx.Prelude
-import           Codec.Serialise
 import           Cardano.Api.Shelley     ( PlutusScript (..), PlutusScriptV2 )
+import           Codec.Serialise
 import qualified Data.ByteString.Lazy    as LBS
 import qualified Data.ByteString.Short   as SBS
+import           OptimizerOptions        ( theOptimizerOptions )
+import           Plutonomy
+import qualified PlutusTx
+import           PlutusTx.Prelude
 import qualified PlutusTx.AssocMap       as AM
 import qualified Plutus.V1.Ledger.Value  as Value
 import qualified Plutus.V2.Ledger.Api    as V2
-import           UsefulFuncs             ( adaValue, createAddress )
-import           OptimizerOptions        ( theOptimizerOptions )
-import           Plutonomy
-import           ReferenceDataType
 import           ReducedFunctions
+import           ReferenceDataType
+import           UsefulFuncs             ( adaValue, createAddress )
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
