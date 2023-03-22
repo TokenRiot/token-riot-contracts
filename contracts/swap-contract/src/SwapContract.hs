@@ -100,10 +100,10 @@ checkCancellationFeePayout (Reference ca sf _ _) txOutputs = (findPayout txOutpu
 -- | Create the datum parameters data object.
 -------------------------------------------------------------------------------
 data CustomDatumType
-  = Swappable  PayToData PaymentData   TimeData
-  | Auctioning PayToData TimeData      TimeData
-  | Offering   PayToData MakeOfferData OfferFlagData PaymentData
-  | Bidding    PayToData MakeOfferData PaymentData
+  = Swappable PayToData PaymentData TimeData
+  | Auctioning PayToData TimeData TimeData
+  | Offering PayToData MakeOfferData OfferFlagData PaymentData
+  | Bidding PayToData MakeOfferData PaymentData
 PlutusTx.makeIsDataIndexed ''CustomDatumType  [ ( 'Swappable,  0 )
                                               , ( 'Auctioning, 1 )
                                               , ( 'Offering,   2 )

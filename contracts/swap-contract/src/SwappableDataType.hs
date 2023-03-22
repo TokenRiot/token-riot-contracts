@@ -28,7 +28,6 @@
 module SwappableDataType
   ( PayToData (..)
   , PaymentData (..)
-  , defaultPayment
   , TimeData (..)
   , checkValidTimeLock
   , checkValidTimeData
@@ -71,7 +70,6 @@ instance Eq PayToData where
 -- Holds the data for the payment to be accepted for some UTxO. If the pAny flag
 -- is zero then the token name to be used inside the tx is pTkn else the token
 -- name is supplied in the SpecificToken Data object.
---
 -------------------------------------------------------------------------------
 data PaymentData = PaymentData
   { pPid :: PlutusV2.CurrencySymbol
@@ -92,14 +90,6 @@ instance Eq PaymentData where
            ( pAmt a == pAmt b ) &&
            ( pAny a == pAny b )
 
--- The default payment is 0 ADA and the any flag set to zero. A unsendable amount.
-defaultPayment :: PaymentData
-defaultPayment = PaymentData
-  { pPid = PlutusV2.CurrencySymbol { PlutusV2.unCurrencySymbol = emptyByteString }
-  , pTkn = PlutusV2.TokenName      { PlutusV2.unTokenName      = emptyByteString }
-  , pAmt = 0
-  , pAny = 0
-  }
 -------------------------------------------------------------------------------
 -- | Time Data Object
 --
@@ -136,7 +126,6 @@ checkValidTimeData a = ( tStart a <= tEnd a )
 -- Holds the integer amount of lovelace that will be added to some UTxO. This is
 -- useful for transactions where the datum requires more minimum ada. It is supposed
 -- to be created by the spender and placed into a redeemer.
---
 -------------------------------------------------------------------------------
 data ADAIncData = ADAIncData 
   { adaInc :: Integer
