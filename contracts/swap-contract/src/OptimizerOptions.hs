@@ -31,8 +31,10 @@ module OptimizerOptions
 import PlutusTx.Prelude
 import Plutonomy.Raw.Transform as Options
 import Plutonomy
-
-
+{- |
+  Author   : The Ancient Kraken
+  Copyright: 2023
+-}
 -- | custom optimizer options; change as needed
 theOptimizerOptions :: Plutonomy.OptimizerOptions
 theOptimizerOptions = Plutonomy.OptimizerOptions

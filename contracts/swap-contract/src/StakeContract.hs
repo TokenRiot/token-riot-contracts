@@ -44,6 +44,10 @@ import           OptimizerOptions        ( theOptimizerOptions )
 import           Plutonomy
 import           ReferenceDataType
 import           ReducedFunctions
+{- |
+  Author   : The Ancient Kraken
+  Copyright: 2023
+-}
 -------------------------------------------------------------------------------
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
@@ -64,7 +68,6 @@ data StakeData = StakeData
   -- ^ The staking credential of the script.
   }
 PlutusTx.makeIsDataIndexed ''StakeData [('StakeData, 0)]
-
 -------------------------------------------------------------------------------
 -- | Create the redeemer type.
 -------------------------------------------------------------------------------
