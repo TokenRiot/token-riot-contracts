@@ -21,10 +21,39 @@ multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../walle
 multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
 
 # asset to trade
-asset="1 63f6afd581552aafaeac88179a27cfce1c0bde46f639f309ff7891da.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+pid=$(jq -r '.pid' ../../swap-contract/start_info.json)
+tkn=$(jq -r '.tkn' ../../swap-contract/start_info.json)
+asset="1 ${pid}.${tkn}"
 
-script_address_out="${script_address} + 5000000 + ${asset}"
-echo "Update OUTPUT: "${script_address_out}
+current_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+
+updated_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out-inline-datum-file ../data/referencing/updated-reference-datum.json \
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+
+difference=$((${updated_min_utxo} - ${current_min_utxo}))
+
+if [ "$difference" -le "0" ]; then
+    min_utxo=${current_min_utxo}
+    # update the increase ada in the redeemer
+    variable=0; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/referencing/update-fee-redeemer.json > ../data/referencing/update-fee-redeemer-new.json
+    mv ../data/referencing/update-fee-redeemer-new.json ../data/referencing/update-fee-redeemer.json
+else
+    echo "Increase Min ADA by" ${difference}
+    min_utxo=${updated_min_utxo}
+    # update the increase ada in the redeemer
+    variable=${difference}; jq --argjson variable "$variable" '.fields[0].fields[0].int=$variable' ../data/referencing/update-fee-redeemer.json > ../data/referencing/update-fee-redeemer-new.json
+    mv ../data/referencing/update-fee-redeemer-new.json ../data/referencing/update-fee-redeemer.json
+fi
+
+script_address_out="${script_address} + ${min_utxo} + ${asset}"
+echo "Update FEE OUTPUT: "${script_address_out}
 #
 # exit
 #
@@ -90,13 +119,12 @@ FEE=$(${cli} transaction build \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/referencing/update-fee-redeemer.json \
     --tx-out="${script_address_out}" \
-    --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
+    --tx-out-inline-datum-file ../data/referencing/updated-reference-datum.json \
     --required-signer-hash ${deleg_pkh} \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${multisig1_pkh} \
     --required-signer-hash ${multisig2_pkh} \
     --testnet-magic ${testnet_magic})
-
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -122,3 +150,4 @@ ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
     --tx-file ../tmp/referenceable-tx.signed
 
+cp ../data/referencing/updated-reference-datum.json ../data/referencing/reference-datum.json

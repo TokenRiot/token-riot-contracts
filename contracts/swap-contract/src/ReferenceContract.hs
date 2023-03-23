@@ -28,17 +28,19 @@
 module ReferenceContract
   ( referenceContractScript
   ) where
-import           Cardano.Api.Shelley     ( PlutusScript (..), PlutusScriptV2 )
+import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
 import           Codec.Serialise
-import qualified Data.ByteString.Lazy    as LBS
-import qualified Data.ByteString.Short   as SBS
-import           OptimizerOptions        ( theOptimizerOptions )
+import qualified Data.ByteString.Lazy   as LBS
+import qualified Data.ByteString.Short  as SBS
+import           OptimizerOptions       ( theOptimizerOptions )
 import           Plutonomy
 import qualified PlutusTx
 import           PlutusTx.Prelude
-import qualified Plutus.V2.Ledger.Api    as V2
+import qualified Plutus.V2.Ledger.Api   as V2
 import           ReducedFunctions
 import           ReferenceDataType
+import qualified UsefulFuncs            as UF
+
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -47,11 +49,11 @@ import           ReferenceDataType
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
 data CustomRedeemerType
-  = UpdateCashier
-  | UpdateFee
-  | UpdateMultisig
-  | UpdateHotKey
-  | UpdatePool
+  = UpdateCashier IncreaseData
+  | UpdateFee IncreaseData
+  | UpdateMultisig IncreaseData
+  | UpdateHotKey IncreaseData
+  | UpdatePool IncreaseData
   | Debug -- Remove at production
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ('UpdateCashier,  0)
                                                 , ('UpdateFee,      1)
@@ -68,18 +70,19 @@ mkValidator :: ReferenceDatum -> CustomRedeemerType -> V2.ScriptContext -> Bool
 mkValidator datum redeemer context =
   case (datum, redeemer) of
     -- | Update the cashier address
-    (Reference _ sf sd sp, UpdateCashier) ->
+    (Reference _ sf sd sp, UpdateCashier aid) ->
       let !info                      = V2.scriptContextTxInfo context
           !txSigners                 = V2.txInfoSignatories info
           !txInputs                  = V2.txInfoInputs info
           !txOutputs                 = V2.txInfoOutputs info
           !validatingInput           = ownInput context
           !thisValue                 = V2.txOutValue validatingInput
+          !incomingValue             = thisValue + UF.adaValue (idADA aid)
           !scriptAddr                = V2.txOutAddress validatingInput
           !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                 = mPkhs sd
           !threshold                 = mThres sd
-          !(Reference _ sf' sd' sp') = getOutboundDatumByValue txOutputs thisValue
+          !(Reference _ sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -88,18 +91,19 @@ mkValidator datum redeemer context =
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
     
     -- | Update the service fee
-    (Reference pd _ sd sp, UpdateFee) ->
+    (Reference pd _ sd sp, UpdateFee aid) ->
       let !info                      = V2.scriptContextTxInfo context
           !txSigners                 = V2.txInfoSignatories info
           !txInputs                  = V2.txInfoInputs info
           !txOutputs                 = V2.txInfoOutputs info
           !validatingInput           = ownInput context
           !thisValue                 = V2.txOutValue validatingInput
+          !incomingValue             = thisValue + UF.adaValue (idADA aid)
           !scriptAddr                = V2.txOutAddress validatingInput
           !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                 = mPkhs sd
           !threshold                 = mThres sd
-          !(Reference pd' _ sd' sp') = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' _ sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -108,18 +112,19 @@ mkValidator datum redeemer context =
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
 
     -- | Update the multisig
-    (Reference pd sf sd sp, UpdateMultisig) ->
+    (Reference pd sf sd sp, UpdateMultisig aid) ->
       let !info                         = V2.scriptContextTxInfo context
           !txSigners                    = V2.txInfoSignatories info
           !txInputs                     = V2.txInfoInputs info
           !txOutputs                    = V2.txInfoOutputs info
           !validatingInput              = ownInput context
           !thisValue                    = V2.txOutValue validatingInput
+          !incomingValue             = thisValue + UF.adaValue (idADA aid)
           !scriptAddr                   = V2.txOutAddress validatingInput
           !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                    = mPkhs sd
           !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -130,18 +135,19 @@ mkValidator datum redeemer context =
       && traceIfFalse "hot" (mHot sd == mHot sd')                         -- hot key cant change
     
     -- | Update the hotkey
-    (Reference pd sf sd sp, UpdateHotKey) ->
+    (Reference pd sf sd sp, UpdateHotKey aid) ->
       let !info                         = V2.scriptContextTxInfo context
           !txSigners                    = V2.txInfoSignatories info
           !txInputs                     = V2.txInfoInputs info
           !txOutputs                    = V2.txInfoOutputs info
           !validatingInput              = ownInput context
           !thisValue                    = V2.txOutValue validatingInput
+          !incomingValue             = thisValue + UF.adaValue (idADA aid)
           !scriptAddr                   = V2.txOutAddress validatingInput
           !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                    = mPkhs sd
           !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -151,18 +157,19 @@ mkValidator datum redeemer context =
       && traceIfFalse "hot" (changeHotKeyOnly sd sd')                     -- hot key change only
     
     -- | Update stake pool info
-    (Reference pd sf sd _, UpdatePool) ->
+    (Reference pd sf sd _, UpdatePool aid) ->
       let !info                      = V2.scriptContextTxInfo context
           !txSigners                 = V2.txInfoSignatories info
           !txInputs                  = V2.txInfoInputs info
           !txOutputs                 = V2.txInfoOutputs info
           !validatingInput           = ownInput context
           !thisValue                 = V2.txOutValue validatingInput
+          !incomingValue             = thisValue + UF.adaValue (idADA aid)
           !scriptAddr                = V2.txOutAddress validatingInput
           !contTxOutputs             = getScriptOutputs txOutputs scriptAddr
           !listOfPkh                 = mPkhs sd
           !threshold                 = mThres sd
-          !(Reference pd' sf' sd' _) = getOutboundDatumByValue txOutputs thisValue
+          !(Reference pd' sf' sd' _) = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out

@@ -43,7 +43,7 @@ import qualified Plutus.V2.Ledger.Api   as V2
 import           ReducedFunctions
 import           ReferenceDataType
 import           SwappableDataType
-import           UsefulFuncs
+import qualified UsefulFuncs            as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -116,7 +116,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !(Reference _ _ sd _) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
           !hotPkh               = mHot sd
-          !incomingValue        = thisValue + adaValue (adaInc aid)
+          !incomingValue        = thisValue + UF.adaValue (adaInc aid)
       in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)                -- single tx going in
       && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "out" (nOutputs contTxOutputs 1)                     -- single going out

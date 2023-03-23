@@ -43,7 +43,7 @@ import qualified Plutus.V2.Ledger.Api   as V2
 import           ReducedFunctions
 import           ReferenceDataType
 import           SwappableDataType
-import           UsefulFuncs
+import qualified UsefulFuncs            as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -81,17 +81,17 @@ checkServiceFeePayout :: CustomDatumType -> ReferenceDatum -> [V2.TxOut] -> Bool
 checkServiceFeePayout d r txOutputs = (findPayout txOutputs (cashAddr r) feeValue)
   where
     cashAddr :: ReferenceDatum -> V2.Address
-    cashAddr (Reference ca _ _ _) = createAddress (caPkh ca) (caSc ca)
+    cashAddr (Reference ca _ _ _) = UF.createAddress (caPkh ca) (caSc ca)
   
     feeValue :: V2.Value
-    feeValue = adaValue (calculateServiceFee d r)
+    feeValue = UF.adaValue (calculateServiceFee d r)
 
 {-# INLINABLE checkCancellationFeePayout #-}
 checkCancellationFeePayout :: ReferenceDatum -> [V2.TxOut] -> Bool
 checkCancellationFeePayout (Reference ca sf _ _) txOutputs = (findPayout txOutputs cashAddr feeValue)
   where
     cashAddr :: V2.Address
-    cashAddr = createAddress (caPkh ca) (caSc ca)
+    cashAddr = UF.createAddress (caPkh ca) (caSc ca)
   
     feeValue :: V2.Value
     feeValue = Value.singleton Value.adaSymbol Value.adaToken (cancellationFee sf)
@@ -167,7 +167,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
           !txOutputs        = V2.txInfoOutputs info
-          !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+          !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
           !txSigners        = V2.txInfoSignatories info
           !validatingInput  = ownInput context
@@ -181,7 +181,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
           && traceIfFalse "owns" (ptd == ptd')                                          -- seller cant change
           && traceIfFalse "time" (checkValidTimeLock td td')                            -- valid time lock
-          && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
         -- transform utxo into an offer
         (Offering ptd' _ _ _) -> 
@@ -189,7 +189,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
           && traceIfFalse "owns" (ptd == ptd')                                          -- seller cant change
-          && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
         
         -- transform a swappable state into the auctioning state
         (Auctioning ptd' atd td') -> 
@@ -199,7 +199,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
           && traceIfFalse "Auct" (checkValidTimeData atd)                               -- valid auction time lock
           && traceIfFalse "time" (checkValidTimeLock td td')                            -- valid time lock
-          && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
         
         -- transform a swappable state into a bid
         (Bidding ptd' _ _) -> 
@@ -207,7 +207,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)                             -- single going out
           && traceIfFalse "owns" (ptd == ptd')                                          -- seller cant change
-          && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
     
     -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
     (Swappable ptd _ td, Update aid) ->
@@ -220,7 +220,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !thisValue       = V2.txOutValue validatingInput
           !scriptAddr      = V2.txOutAddress validatingInput
           !contTxOutputs   = getScriptOutputs txOutputs scriptAddr
-          !incomingValue   = thisValue + adaValue (adaInc aid)
+          !incomingValue   = thisValue + UF.adaValue (adaInc aid)
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- update the payment data on a swappable state
         (Swappable ptd' _ td') -> 
@@ -245,7 +245,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -- | A trader may remove their UTxO if not currently being timelocked.
     (Swappable ptd _ td, Remove) ->
       let !walletPkh        = ptPkh ptd
-          !walletAddr       = createAddress walletPkh (ptSc ptd)
+          !walletAddr       = UF.createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
           !txOutputs        = V2.txInfoOutputs info
@@ -253,17 +253,17 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !validatingInput  = ownInput context
           !thisValue        = V2.txOutValue validatingInput
           !scriptAddr       = V2.txOutAddress validatingInput
-          !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+          !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
       in traceIfFalse "Sign" (signedBy txSigners walletPkh)                         -- seller must sign it
       && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue)            -- seller must get the UTxO
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                        -- single tx going in, no continue
-      && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+      && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
     -- | A trader may cancel their timelock by paying a fee.
     (Swappable ptd _ td, CancelTimeLock) ->
       let !walletPkh        = ptPkh ptd
-          !walletAddr       = createAddress walletPkh (ptSc ptd)
+          !walletAddr       = UF.createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
           !txOutputs        = V2.txInfoOutputs info
@@ -271,7 +271,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !validatingInput  = ownInput context
           !thisValue        = V2.txOutValue validatingInput
           !scriptAddr       = V2.txOutAddress validatingInput
-          !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+          !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
           !refTxIns         = V2.txInfoReferenceInputs info
           !refTxOut         = getReferenceInput refTxIns refHash
@@ -280,13 +280,13 @@ mkValidator ScriptParameters {..} datum redeemer context =
       in traceIfFalse "Sign" (signedBy txSigners walletPkh)                               -- seller must sign it
       && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue)                  -- seller must get the UTxO
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                              -- single tx going in, no continue
-      && traceIfFalse "Lock" (not $ isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+      && traceIfFalse "Lock" (not $ UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
       && traceIfFalse "fee"  (checkCancellationFeePayout refDatum txOutputs)              -- check if paying fee
       && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                -- check if correct reference
     
     -- | Flat rate swap of UTxO for an predefined amount of a single token.
     (Swappable ptd pd td, FlatRate ptd' aid st) ->
-      let !walletAddr      = createAddress (ptPkh ptd) (ptSc ptd)
+      let !walletAddr      = UF.createAddress (ptPkh ptd) (ptSc ptd)
           !info            = V2.scriptContextTxInfo context
           !txInputs        = V2.txInfoInputs info
           !txOutputs       = V2.txInfoOutputs info
@@ -299,7 +299,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refTxOut        = getReferenceInput refTxIns refHash
           !refDatum        = getReferenceDatum refTxOut
           !refValue        = V2.txOutValue refTxOut
-          !incomingValue   = thisValue + adaValue (adaInc aid)
+          !incomingValue   = thisValue + UF.adaValue (adaInc aid)
           !thisTkn         = getTokenName pd st
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- swappable only
@@ -320,9 +320,9 @@ mkValidator ScriptParameters {..} datum redeemer context =
     
     -- | Flat rate purchase into buyer wallet of UTxO for an predefined amount of a single token.
     (Swappable ptd pd td, FlatRateRemove ptd' st) ->
-      let !walletAddr       = createAddress (ptPkh ptd) (ptSc ptd)
+      let !walletAddr       = UF.createAddress (ptPkh ptd) (ptSc ptd)
           !buyerPkh         = ptPkh ptd'
-          !buyerAddr        = createAddress buyerPkh (ptSc ptd')
+          !buyerAddr        = UF.createAddress buyerPkh (ptSc ptd')
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
           !txOutputs        = V2.txInfoOutputs info
@@ -330,7 +330,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !validatingInput  = ownInput context
           !thisValue        = V2.txOutValue validatingInput
           !scriptAddr       = V2.txOutAddress validatingInput
-          !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+          !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
           !refTxIns         = V2.txInfoReferenceInputs info
           !refTxOut         = getReferenceInput refTxIns refHash
@@ -342,7 +342,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "Pays"   (findPayout txOutputs buyerAddr thisValue)                         -- buyer must be paid
       && traceIfFalse "Empty"  (pAmt pd /= 0)                                                     -- seller must define price
       && traceIfFalse "Ins"    (nInputs txInputs scriptAddr 1)                                    -- single tx going in
-      && traceIfFalse "Lock"   (isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
+      && traceIfFalse "Lock"   (UF.isTxOutsideInterval lockTimeInterval txValidityRange)             -- seller can unlock it
       && traceIfFalse "fee"    (checkServiceFeePayout (Swappable ptd pd td) refDatum txOutputs)   -- check if paying fee
       && traceIfFalse "val"    (Value.valueOf refValue lockPid lockTkn == 1)                      -- check if correct reference
     
@@ -358,7 +358,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !thisValue       = V2.txOutValue validatingInput
           !scriptAddr      = V2.txOutAddress validatingInput
           !contTxOutputs   = getScriptOutputs txOutputs scriptAddr
-          !incomingValue   = thisValue + adaValue (adaInc aid)
+          !incomingValue   = thisValue + UF.adaValue (adaInc aid)
       in case getDatumByTxId txId txInputs of
         -- offering only
         (Offering ptd' _ ofd pd') ->
@@ -391,17 +391,17 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !validatingInput = ownInput context
           !thisValue       = V2.txOutValue validatingInput
           !scriptAddr      = V2.txOutAddress validatingInput
-          !lockTimeInterval = lockBetweenTimeInterval (tStart td) (tEnd td)
+          !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
       in case getDatumByTxId txId txInputs of
         -- offering only
         (Offering ptd' _ ofd _) -> 
-          let !buyerAddr = createAddress (ptPkh ptd') (ptSc ptd')
+          let !buyerAddr = UF.createAddress (ptPkh ptd') (ptSc ptd')
           in traceIfFalse "sign" (signedBy txSigners walletPkh)                         -- seller must sign
           && traceIfFalse "oldo" (ptd /= ptd')                                          -- cant sell this to self
           && traceIfFalse "Pays" (findPayout txOutputs buyerAddr thisValue)             -- buyer must be paid
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2)                        -- double tx going in
-          && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
           && traceIfFalse "Flag" (oFlag ofd /= 0)                                       -- Offer stays in contract
         
         -- anything else fails
@@ -423,7 +423,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -- | Remove the UTxO from the contract.
     (Offering ptd _ _ _, Remove) ->
       let !walletPkh        = ptPkh ptd
-          !walletAddr       = createAddress walletPkh (ptSc ptd)
+          !walletAddr       = UF.createAddress walletPkh (ptSc ptd)
           !info             = V2.scriptContextTxInfo context
           !txInputs         = V2.txInfoInputs info
           !txOutputs        = V2.txInfoOutputs info
@@ -482,7 +482,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
         -- swappable only
         (Swappable ptd' _ _) ->
           let !sellerPkh  = ptPkh ptd'
-              !sellerAddr = createAddress sellerPkh (ptSc ptd')
+              !sellerAddr = UF.createAddress sellerPkh (ptSc ptd')
           in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                                       -- seller must sign it
           && traceIfFalse "oldo" (ptd /= ptd')                                                        -- cant sell this to self
           && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)                          -- seller must get the UTxO
@@ -514,9 +514,9 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -- | Remove the UTxO from the contract before the auction starts or after a failed auction.
     (Auctioning ptd atd gtd, Remove) ->
       let !walletPkh           = ptPkh ptd
-          !walletAddr          = createAddress walletPkh (ptSc ptd)
-          !lockTimeInterval    = lockBetweenTimeInterval (tStart gtd) (tEnd gtd)
-          !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
+          !walletAddr          = UF.createAddress walletPkh (ptSc ptd)
+          !lockTimeInterval    = UF.lockBetweenTimeInterval (tStart gtd) (tEnd gtd)
+          !auctionTimeInterval = UF.lockBetweenTimeInterval (tStart atd) (tEnd atd)
           !info                = V2.scriptContextTxInfo context
           !txValidityRange     = V2.txInfoValidRange info
           !txSigners           = V2.txInfoSignatories info
@@ -527,15 +527,15 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !scriptAddr          = V2.txOutAddress validatingInput
       in traceIfFalse "Sign" (signedBy txSigners walletPkh)                            -- seller must sign it
       && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue)               -- seller must get the UTxO
-      && traceIfFalse "Lock" (isTxOutsideInterval lockTimeInterval txValidityRange)    -- seller can unlock it
-      && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
+      && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange)    -- seller can unlock it
+      && traceIfFalse "Auct" (UF.isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                           -- single tx going in, no continue
 
     -- | Update the auction back into the swappable state.
     (Auctioning ptd atd gtd, Update aid) ->
       let !walletPkh           = ptPkh ptd
           !info                = V2.scriptContextTxInfo context
-          !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
+          !auctionTimeInterval = UF.lockBetweenTimeInterval (tStart atd) (tEnd atd)
           !txValidityRange     = V2.txInfoValidRange info
           !txSigners           = V2.txInfoSignatories info
           !txInputs            = V2.txInfoInputs info
@@ -544,12 +544,12 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !thisValue           = V2.txOutValue validatingInput
           !scriptAddr          = V2.txOutAddress validatingInput
           !contTxOutputs       = getScriptOutputs txOutputs scriptAddr
-          !incomingValue       = thisValue + adaValue (adaInc aid)
+          !incomingValue       = thisValue + UF.adaValue (adaInc aid)
       in case getOutboundDatumByValue contTxOutputs incomingValue of
         -- go back to the swap state
         (Swappable ptd' _ gtd') -> 
              traceIfFalse "Sign" (signedBy txSigners walletPkh)                            -- seller must sign it
-          && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
+          && traceIfFalse "Auct" (UF.isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
           && traceIfFalse "newo" (ptd == ptd')                                             -- new owner must own it
           && traceIfFalse "time" (gtd == gtd')                                             -- time data must remain
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                           -- single tx going in, no continue
@@ -563,7 +563,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       let !txId                = createTxOutRef (moTx mod) (moIdx mod)
           !info                = V2.scriptContextTxInfo context
           !walletPkh           = ptPkh ptd
-          !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
+          !auctionTimeInterval = UF.lockBetweenTimeInterval (tStart atd) (tEnd atd)
           !txValidityRange     = V2.txInfoValidRange info
           !txSigners           = V2.txInfoSignatories info
           !txInputs            = V2.txInfoInputs info
@@ -572,7 +572,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !thisValue           = V2.txOutValue validatingInput
           !scriptAddr          = V2.txOutAddress validatingInput
           !contTxOutputs       = getScriptOutputs txOutputs scriptAddr
-          !incomingValue       = thisValue + adaValue (adaInc aid)
+          !incomingValue       = thisValue + UF.adaValue (adaInc aid)
       in case getDatumByTxId txId txInputs of
         -- offering only
         (Bidding ptd' _ pd') ->
@@ -586,7 +586,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
               && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2)                           -- double tx going in
               && traceIfFalse "Out"  (nOutputs contTxOutputs 1)                                -- single going out
               && traceIfFalse "PayD" (pd' == pd'')                                             -- payment data must be from bid
-              && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
+              && traceIfFalse "Auct" (UF.isTxOutsideInterval auctionTimeInterval txValidityRange) -- seller can unlock it
 
             -- other datums fail
             _ -> traceIfFalse "Auctioning:AcceptOffer:Undefined Datum" False
@@ -607,7 +607,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -- | Remove the UTxO from the contract.
     (Bidding ptd _ _, Remove) ->
       let !walletPkh           = ptPkh ptd
-          !walletAddr          = createAddress walletPkh (ptSc ptd)
+          !walletAddr          = UF.createAddress walletPkh (ptSc ptd)
           !info                = V2.scriptContextTxInfo context
           !txSigners           = V2.txInfoSignatories info
           !txInputs            = V2.txInfoInputs info
@@ -667,15 +667,15 @@ mkValidator ScriptParameters {..} datum redeemer context =
         -- swappable only
         (Auctioning ptd' atd _) -> 
           let !sellerPkh           = ptPkh ptd'
-              !sellerAddr          = createAddress sellerPkh (ptSc ptd')
-              !auctionTimeInterval = lockBetweenTimeInterval (tStart atd) (tEnd atd)
+              !sellerAddr          = UF.createAddress sellerPkh (ptSc ptd')
+              !auctionTimeInterval = UF.lockBetweenTimeInterval (tStart atd) (tEnd atd)
               !txValidityRange     = V2.txInfoValidRange info
           in traceIfFalse "Sign" (signedBy txSigners sellerPkh)                                  -- seller must sign it
           && traceIfFalse "pays" (findPayout txOutputs sellerAddr thisValue)                     -- seller must get the UTxO
           && traceIfFalse "oldo" (ptd /= ptd')                                                   -- cant sell this to self
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 2)                                 -- double tx going in
           && traceIfFalse "Out"  (nOutputs contTxOutputs 1)                                      -- single going out
-          && traceIfFalse "Auct" (isTxOutsideInterval auctionTimeInterval txValidityRange)       -- seller can unlock it
+          && traceIfFalse "Auct" (UF.isTxOutsideInterval auctionTimeInterval txValidityRange)       -- seller can unlock it
           && traceIfFalse "fee"  (checkServiceFeePayout (Bidding ptd mod pd) refDatum txOutputs) -- check if paying fee
           && traceIfFalse "val"  (Value.valueOf refValue lockPid lockTkn == 1)                   -- check if correct reference
             
