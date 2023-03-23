@@ -28,19 +28,18 @@
 module ReferenceContract
   ( referenceContractScript
   ) where
-import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
+import           Cardano.Api.Shelley   ( PlutusScript (..), PlutusScriptV2 )
 import           Codec.Serialise
-import qualified Data.ByteString.Lazy   as LBS
-import qualified Data.ByteString.Short  as SBS
-import           OptimizerOptions       ( theOptimizerOptions )
+import qualified Data.ByteString.Lazy  as LBS
+import qualified Data.ByteString.Short as SBS
+import           OptimizerOptions      ( theOptimizerOptions )
 import           Plutonomy
 import qualified PlutusTx
 import           PlutusTx.Prelude
-import qualified Plutus.V2.Ledger.Api   as V2
+import qualified Plutus.V2.Ledger.Api  as V2
 import           ReducedFunctions
 import           ReferenceDataType
-import qualified UsefulFuncs            as UF
-
+import qualified UsefulFuncs           as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -113,18 +112,18 @@ mkValidator datum redeemer context =
 
     -- | Update the multisig
     (Reference pd sf sd sp, UpdateMultisig aid) ->
-      let !info                         = V2.scriptContextTxInfo context
-          !txSigners                    = V2.txInfoSignatories info
-          !txInputs                     = V2.txInfoInputs info
-          !txOutputs                    = V2.txInfoOutputs info
-          !validatingInput              = ownInput context
-          !thisValue                    = V2.txOutValue validatingInput
-          !incomingValue             = thisValue + UF.adaValue (idADA aid)
-          !scriptAddr                   = V2.txOutAddress validatingInput
-          !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                    = mPkhs sd
-          !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs incomingValue
+      let !info                        = V2.scriptContextTxInfo context
+          !txSigners                   = V2.txInfoSignatories info
+          !txInputs                    = V2.txInfoInputs info
+          !txOutputs                   = V2.txInfoOutputs info
+          !validatingInput             = ownInput context
+          !thisValue                   = V2.txOutValue validatingInput
+          !incomingValue               = thisValue + UF.adaValue (idADA aid)
+          !scriptAddr                  = V2.txOutAddress validatingInput
+          !contTxOutputs               = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                   = mPkhs sd
+          !threshold                   = mThres sd
+          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
@@ -136,18 +135,18 @@ mkValidator datum redeemer context =
     
     -- | Update the hotkey
     (Reference pd sf sd sp, UpdateHotKey aid) ->
-      let !info                         = V2.scriptContextTxInfo context
-          !txSigners                    = V2.txInfoSignatories info
-          !txInputs                     = V2.txInfoInputs info
-          !txOutputs                    = V2.txInfoOutputs info
-          !validatingInput              = ownInput context
-          !thisValue                    = V2.txOutValue validatingInput
-          !incomingValue             = thisValue + UF.adaValue (idADA aid)
-          !scriptAddr                   = V2.txOutAddress validatingInput
-          !contTxOutputs                = getScriptOutputs txOutputs scriptAddr
-          !listOfPkh                    = mPkhs sd
-          !threshold                    = mThres sd
-          !(Reference pd' sf' sd' sp')  = getOutboundDatumByValue txOutputs incomingValue
+      let !info                        = V2.scriptContextTxInfo context
+          !txSigners                   = V2.txInfoSignatories info
+          !txInputs                    = V2.txInfoInputs info
+          !txOutputs                   = V2.txInfoOutputs info
+          !validatingInput             = ownInput context
+          !thisValue                   = V2.txOutValue validatingInput
+          !incomingValue               = thisValue + UF.adaValue (idADA aid)
+          !scriptAddr                  = V2.txOutAddress validatingInput
+          !contTxOutputs               = getScriptOutputs txOutputs scriptAddr
+          !listOfPkh                   = mPkhs sd
+          !threshold                   = mThres sd
+          !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
       && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
       && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out

@@ -30,20 +30,20 @@ module StakeContract
   ( stakingPlutusScript
   , ScriptParameters(..)
   ) where
-import           Cardano.Api.Shelley     ( PlutusScript (..), PlutusScriptV2 )
+import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
 import           Codec.Serialise
-import qualified Data.ByteString.Lazy    as LBS
-import qualified Data.ByteString.Short   as SBS
-import           OptimizerOptions        ( theOptimizerOptions )
+import qualified Data.ByteString.Lazy   as LBS
+import qualified Data.ByteString.Short  as SBS
+import           OptimizerOptions       ( theOptimizerOptions )
 import           Plutonomy
 import qualified PlutusTx
 import           PlutusTx.Prelude
-import qualified PlutusTx.AssocMap       as AM
-import qualified Plutus.V1.Ledger.Value  as Value
-import qualified Plutus.V2.Ledger.Api    as V2
+import qualified PlutusTx.AssocMap      as AM
+import qualified Plutus.V1.Ledger.Value as Value
+import qualified Plutus.V2.Ledger.Api   as V2
 import           ReducedFunctions
 import           ReferenceDataType
-import qualified UsefulFuncs             as UF
+import qualified UsefulFuncs            as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -52,11 +52,11 @@ import qualified UsefulFuncs             as UF
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
 data ScriptParameters = ScriptParameters
-  { lockPid   :: V2.CurrencySymbol
+  { lockPid :: V2.CurrencySymbol
   -- ^ The locking token's policy id.
-  , lockTkn   :: V2.TokenName
+  , lockTkn :: V2.TokenName
   -- ^ The locking token's token name
-  , refHash   :: V2.ValidatorHash
+  , refHash :: V2.ValidatorHash
   -- ^ The validator hash of the data reference contract
   }
 PlutusTx.makeLift ''ScriptParameters
@@ -71,8 +71,9 @@ PlutusTx.makeIsDataIndexed ''StakeData [('StakeData, 0)]
 -------------------------------------------------------------------------------
 -- | Create the redeemer type.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Withdraw StakeData |
-                          Delegate StakeData
+data CustomRedeemerType 
+  = Withdraw StakeData
+  | Delegate StakeData
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Withdraw, 0 )
                                                 , ( 'Delegate, 1 )
                                                 ]

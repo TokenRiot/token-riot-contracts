@@ -84,8 +84,8 @@ PlutusTx.makeIsDataIndexed ''ServiceFeeData [('ServiceFeeData, 0)]
 
 instance Eq ServiceFeeData where
   {-# INLINABLE (==) #-}
-  a == b = ( servicePerc a     == servicePerc     b ) &&
-           ( serviceFee  a     == serviceFee      b ) &&
+  a == b = ( servicePerc     a == servicePerc     b ) &&
+           ( serviceFee      a == serviceFee      b ) &&
            ( cancellationFee a == cancellationFee b )
 -------------------------------------------------------------------------------
 -- | Multisig Information
@@ -122,8 +122,8 @@ lengthCheck msd = lengthCheck' pkhs 0
     lengthCheck' []     !counter = counter >= thres
     lengthCheck' (_:xs) !counter =
       if counter >= thres
-        then True  -- there are enough signers
-        else lengthCheck' xs (counter + 1)
+        then True                          -- there are enough signers
+        else lengthCheck' xs (counter + 1) -- loop to the next one
 -------------------------------------------------------------------------------
 -- | Stake Pool Information
 -------------------------------------------------------------------------------
