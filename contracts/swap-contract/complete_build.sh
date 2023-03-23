@@ -193,20 +193,15 @@ echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
 cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus ../test-suite/contracts
 
 # auto build the compiled code json
-
 jq \
 --arg reference_addr "$(cat addrs/reference.addr)" \
 --arg swap_addr "$(cat addrs/validator.addr)" \
 --arg cip68_addr "$(cat addrs/cip68.addr)" \
 --arg stake_addr "$(cat addrs/stake.addr)" \
---arg start_pid "$(jq -r '.pid' start_info.json)" \
---arg start_tkn "$(jq -r '.tkn' start_info.json)" \
 '.reference_addr=$reference_addr |
 .swap_addr=$swap_addr |
 .cip68_addr=$cip68_addr |
-.stake_addr=$stake_addr |
-.start_pid=$start_pid |
-.start_tkn=$start_tkn
+.stake_addr=$stake_addr
 ' \
 compiled_code_info.json | sponge compiled_code_info.json
 # complete

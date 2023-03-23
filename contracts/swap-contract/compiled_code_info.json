@@ -2,7 +2,5 @@
   "reference_addr": "addr_test1wpq358e50d3u9vdu74gyru4mtf94geryd7ww2jm59yywrhsh32ca5",
   "swap_addr": "addr_test1xpflrhzshsnr2l0vemkj3grl725hxsxk3n6gkhe9atkyd6sxc5xr4zpxwhky99ndqkcd7hga8u60mkvwurxss8yw4cgq7d3g2n",
   "cip68_addr": "addr_test1xz3tsuavfjra7ldl9ge3meamw4e8sjquf8nuatsdwujlfdcxc5xr4zpxwhky99ndqkcd7hga8u60mkvwurxss8yw4cgq2sjg2l",
-  "stake_addr": "stake_test17qrv2rp63qn8tmzzjekstvxlt5wn7d8amx8wpnggrj82uyqvx080q",
-  "start_pid": "63f6afd581552aafaeac88179a27cfce1c0bde46f639f309ff7891da",
-  "start_tkn": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
+  "stake_addr": "stake_test17qrv2rp63qn8tmzzjekstvxlt5wn7d8amx8wpnggrj82uyqvx080q"
 }
