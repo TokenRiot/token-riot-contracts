@@ -84,8 +84,8 @@ PlutusTx.makeIsDataIndexed ''ServiceFeeData [('ServiceFeeData, 0)]
 
 instance Eq ServiceFeeData where
   {-# INLINABLE (==) #-}
-  a == b = ( servicePerc a     == servicePerc     b ) &&
-           ( serviceFee  a     == serviceFee      b ) &&
+  a == b = ( servicePerc     a == servicePerc     b ) &&
+           ( serviceFee      a == serviceFee      b ) &&
            ( cancellationFee a == cancellationFee b )
 -------------------------------------------------------------------------------
 -- | Multisig Information

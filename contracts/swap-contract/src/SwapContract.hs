@@ -52,11 +52,11 @@ import qualified UsefulFuncs            as UF
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
 data ScriptParameters = ScriptParameters
-  { lockPid   :: V2.CurrencySymbol
+  { lockPid :: V2.CurrencySymbol
   -- ^ The locking token's policy id.
-  , lockTkn   :: V2.TokenName
+  , lockTkn :: V2.TokenName
   -- ^ The locking token's token name
-  , refHash   :: V2.ValidatorHash
+  , refHash :: V2.ValidatorHash
   -- ^ The validator hash of the data reference contract
   }
 PlutusTx.makeLift ''ScriptParameters
@@ -664,7 +664,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refDatum        = getReferenceDatum refTxOut
           !refValue        = V2.txOutValue refTxOut
       in case getDatumByTxId txId txInputs of
-        -- swappable only
+        -- auctioning only
         (Auctioning ptd' atd _) -> 
           let !sellerPkh           = ptPkh ptd'
               !sellerAddr          = UF.createAddress sellerPkh (ptSc ptd')

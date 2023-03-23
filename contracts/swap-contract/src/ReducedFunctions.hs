@@ -52,11 +52,11 @@ getReferenceInput txRefs vHash = getReferenceInput' txRefs
     getReferenceInput' [] = traceError "no references"
     getReferenceInput' (x:xs)
       | checkHash x == True = V2.txInInfoResolved x
-      | otherwise = getReferenceInput' xs
+      | otherwise           = getReferenceInput' xs
     
     checkHash :: V2.TxInInfo -> Bool
     checkHash (V2.TxInInfo _ (V2.TxOut (V2.Address (V2.ScriptCredential vHash') _) _ _ _)) = vHash == vHash' 
-    checkHash _ = False
+    checkHash _                                                                            = False
 
 {-# inlinable getScriptOutputs #-}
 getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
@@ -72,7 +72,7 @@ getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
 {-# inlinable ownInput #-}
 ownInput :: V2.ScriptContext -> V2.TxOut
 ownInput (V2.ScriptContext t_info (V2.Spending o_ref)) = getScriptInput (V2.txInfoInputs t_info) o_ref
-ownInput _ = traceError "no script input"
+ownInput _                                             = traceError "no script input"
 
 -- get the validating script input
 {-# inlinable getScriptInput #-}
@@ -80,7 +80,7 @@ getScriptInput :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxOut
 getScriptInput [] _ = traceError "script input not found"
 getScriptInput ((V2.TxInInfo tref ot) : xs) o_ref
   | tref == o_ref = ot
-  | otherwise = getScriptInput xs o_ref
+  | otherwise     = getScriptInput xs o_ref
 
 {-# inlinable txInFromTxRef #-}
 txInFromTxRef :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxInInfo
@@ -99,7 +99,7 @@ signedBy list k = loop list
   where
     loop [] = False
     loop (x:xs)
-      | x == k = True
+      | x == k    = True
       | otherwise = loop xs
 
 {-# INLINABLE checkMultisig #-}
@@ -107,8 +107,8 @@ checkMultisig :: [V2.PubKeyHash] -> [V2.PubKeyHash] -> Integer -> Bool
 checkMultisig signers pkhs thres = loopSigs pkhs 0
   where
     loopSigs :: [V2.PubKeyHash] -> Integer  -> Bool
-    loopSigs []     counter = counter >= thres
-    loopSigs (x:xs) counter = 
+    loopSigs []     !counter = counter >= thres
+    loopSigs (x:xs) !counter = 
       if signedBy signers x
         then loopSigs xs (counter + 1) -- just add up the good sigs
         else loopSigs xs counter       -- toss out the bad
@@ -182,5 +182,5 @@ nRedeemers :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
 nRedeemers redeemers number = nRedeemers' redeemers 0
   where
     nRedeemers' :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
-    nRedeemers' []     counter = counter == number
+    nRedeemers' []          counter = counter == number
     nRedeemers' ((_, _):xs) counter = nRedeemers' xs ( counter + 1 )

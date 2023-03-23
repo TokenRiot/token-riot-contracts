@@ -52,11 +52,11 @@ import qualified UsefulFuncs             as UF
 -- | Starter NFT Contract Parameterization
 -------------------------------------------------------------------------------
 data ScriptParameters = ScriptParameters
-  { lockPid   :: V2.CurrencySymbol
+  { lockPid :: V2.CurrencySymbol
   -- ^ The locking token's policy id.
-  , lockTkn   :: V2.TokenName
+  , lockTkn :: V2.TokenName
   -- ^ The locking token's token name
-  , refHash   :: V2.ValidatorHash
+  , refHash :: V2.ValidatorHash
   -- ^ The validator hash of the data reference contract
   }
 PlutusTx.makeLift ''ScriptParameters
@@ -71,8 +71,9 @@ PlutusTx.makeIsDataIndexed ''StakeData [('StakeData, 0)]
 -------------------------------------------------------------------------------
 -- | Create the redeemer type.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Withdraw StakeData |
-                          Delegate StakeData
+data CustomRedeemerType 
+  = Withdraw StakeData
+  | Delegate StakeData
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Withdraw, 0 )
                                                 , ( 'Delegate, 1 )
                                                 ]
