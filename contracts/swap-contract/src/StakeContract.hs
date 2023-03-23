@@ -43,7 +43,7 @@ import qualified Plutus.V1.Ledger.Value  as Value
 import qualified Plutus.V2.Ledger.Api    as V2
 import           ReducedFunctions
 import           ReferenceDataType
-import           UsefulFuncs             ( adaValue, createAddress )
+import qualified UsefulFuncs             as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -93,7 +93,7 @@ mkPolicy ScriptParameters {..} redeemer' context =
           !refTxOut             = getReferenceInput refTxIns refHash
           !(Reference _ _ _ sp) = getReferenceDatum refTxOut
           !refValue             = V2.txOutValue refTxOut
-          !payoutAddr           = createAddress (rewardPkh sp) (rewardSc sp)
+          !payoutAddr           = UF.createAddress (rewardPkh sp) (rewardSc sp)
       in traceIfFalse "wit" (checkTheWithdrawal rewardWithdrawal stakingCred txOutputs payoutAddr)  -- check if correct withdrawal
       && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)                           -- check if correct reference
     
@@ -138,7 +138,7 @@ mkPolicy ScriptParameters {..} redeemer' context =
         rewardAmt = snd x
 
         payoutValue :: V2.Value
-        payoutValue = adaValue rewardAmt
+        payoutValue = UF.adaValue rewardAmt
 
     -- | Loop all the certs and check if the stake is going to the right staking pool.
     checkTheCerts :: [V2.DCert] -> V2.StakingCredential -> V2.PubKeyHash -> Bool
