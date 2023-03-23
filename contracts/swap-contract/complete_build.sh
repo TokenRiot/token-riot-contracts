@@ -1,32 +1,43 @@
 #!/bin/bash
 set -e
 
+# network_flag="--mainnet"
+network_flag="--testnet-magic 1"
+
 # Complete Build
-echo -e "\033[1;35m Starting... \033[0m" 
+echo -e "\033[1;35m Starting... \033[0m"
+
+mkdir -p addrs
+mkdir -p hashes
+mkdir -p bytes
+mkdir -p certs
 
 # build reference contract
 echo -e "\033[1;35m Build Contracts \033[0m" 
 cabal build -w ghc-8.10.7 -O2
 
+###############################################################################
+###############################################################################
+
 echo -e "\033[1;35m Run Reference Contract \033[0m" 
 
-rm reference.addr
-rm reference.hash
-rm reference.bytes
+rm addrs/reference.addr
+rm hashes/reference.hash
+rm bytes/reference.bytes
 
 cabal run reference-contract
 
 # Get script address
-cardano-cli address build --payment-script-file reference-contract.plutus --testnet-magic 1 --out-file reference.addr
-echo -e "\nReference Testnet Address:" $(cat reference.addr)
+cardano-cli address build --payment-script-file reference-contract.plutus ${network_flag} --out-file addrs/reference.addr
+echo -e "\nReference Testnet Address:" $(cat addrs/reference.addr)
 
 # Get plutus validator hash
-cardano-cli transaction policyid --script-file reference-contract.plutus > reference.hash
-echo -e "\nReference Hash:" $(cat reference.hash)
+cardano-cli transaction policyid --script-file reference-contract.plutus > hashes/reference.hash
+echo -e "\nReference Hash:" $(cat hashes/reference.hash)
 
 # Get plutus validator byte representation
-python3 -c "import binascii;a='$(cat reference.hash)';s=binascii.unhexlify(a);print([x for x in s])" > reference.bytes
-echo -e "\nReference Bytes:" $(cat reference.bytes)
+python3 -c "import binascii;a='$(cat hashes/reference.hash)';s=binascii.unhexlify(a);print([x for x in s])" > bytes/reference.bytes
+echo -e "\nReference Bytes:" $(cat bytes/reference.bytes)
 
 echo -e "\033[1;35m Update Reference Datum \033[0m" 
 
@@ -72,7 +83,7 @@ jq \
 
 pid=$(python3 -c "import binascii;a='$(jq -r '.pid' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
 tkn=$(python3 -c "import binascii;a='$(jq -r '.tkn' start_info.json)';s=binascii.unhexlify(a);print([x for x in s])")
-valid=$(python3 -c "import binascii;a='$(cat reference.hash)';s=binascii.unhexlify(a);print([x for x in s])")
+valid=$(python3 -c "import binascii;a='$(cat hashes/reference.hash)';s=binascii.unhexlify(a);print([x for x in s])")
 jq \
 --argjson pid "$pid" \
 --argjson tkn "$tkn" \
@@ -83,57 +94,40 @@ jq \
 ' \
 reference_info.json | sponge reference_info.json
 
-echo -e "\033[1;35m Run Swap Contract \033[0m"
-
-rm validator.addr
-rm validator.hash
-rm validator.bytes
-
-cabal run swap-contract
-
-# Get script address
-cardano-cli address build --payment-script-file swap-contract.plutus --testnet-magic 1 --out-file validator.addr
-echo -e "\nValidator Testnet Address:" $(cat validator.addr)
-
-# Get plutus validator hash
-cardano-cli transaction policyid --script-file swap-contract.plutus > validator.hash
-echo -e "\nValidator Hash:" $(cat validator.hash)
-
-# Get plutus validator byte representation
-python3 -c "import binascii;a='$(cat validator.hash)';s=binascii.unhexlify(a);print([x for x in s])" > validator.bytes
-echo -e "\nValidator Bytes:" $(cat validator.bytes)
+###############################################################################
+###############################################################################
 
 echo -e "\033[1;35m Run Stake Contract \033[0m"
 
-rm stake.addr
-rm stake.hash
-rm stake.bytes
-rm stake.cert
-rm destake.cert
-rm deleg.cert
+rm addrs/stake.addr
+rm hashes/stake.hash
+rm bytes/stake.bytes
+rm certs/stake.cert
+rm certs/destake.cert
+rm certs/deleg.cert
 
 cabal run stake-contract
 
 # create all the required files
-cardano-cli stake-address build --stake-script-file stake-contract.plutus --testnet-magic 1 --out-file stake.addr
-echo -e "\nStake Testnet Address:" $(cat stake.addr)
+cardano-cli stake-address build --stake-script-file stake-contract.plutus ${network_flag} --out-file addrs/stake.addr
+echo -e "\nStake Testnet Address:" $(cat addrs/stake.addr)
 
-cardano-cli transaction policyid --script-file stake-contract.plutus > stake.hash
-echo -e "\nStake Hash:" $(cat stake.hash)
+cardano-cli transaction policyid --script-file stake-contract.plutus > hashes/stake.hash
+echo -e "\nStake Hash:" $(cat hashes/stake.hash)
 
-python3 -c "import binascii;a='$(cat stake.hash)';s=binascii.unhexlify(a);print([x for x in s])" > stake.bytes
-echo -e "\nStake Bytes:" $(cat stake.bytes)
+python3 -c "import binascii;a='$(cat hashes/stake.hash)';s=binascii.unhexlify(a);print([x for x in s])" > bytes/stake.bytes
+echo -e "\nStake Bytes:" $(cat bytes/stake.bytes)
 
-cardano-cli stake-address registration-certificate --stake-script-file stake-contract.plutus --out-file stake.cert
-echo -e "\nStake Cert";cat stake.cert | jq
+cardano-cli stake-address registration-certificate --stake-script-file stake-contract.plutus --out-file certs/stake.cert
+echo -e "\nStake Cert";cat certs/stake.cert | jq
 
-cardano-cli stake-address deregistration-certificate --stake-script-file stake-contract.plutus --out-file destake.cert
+cardano-cli stake-address deregistration-certificate --stake-script-file stake-contract.plutus --out-file certs/destake.cert
 
 poolId=$(jq -r '.poolId' start_info.json)
-cardano-cli stake-address delegation-certificate --stake-script-file stake-contract.plutus --stake-pool-id ${poolId} --out-file deleg.cert
-echo -e "\nDeleg Cert";cat deleg.cert | jq
+cardano-cli stake-address delegation-certificate --stake-script-file stake-contract.plutus --stake-pool-id ${poolId} --out-file certs/deleg.cert
+echo -e "\nDeleg Cert";cat certs/deleg.cert | jq
 
-stakeHash=$(cat stake.hash)
+stakeHash=$(cat hashes/stake.hash)
 jq \
 --arg stakeHash "$stakeHash" \
 '.fields[0].fields[0].bytes=$stakeHash' \
@@ -144,30 +138,76 @@ jq \
 '.fields[0].fields[0].bytes=$stakeHash' \
 ../scripts/data/staking/withdraw-redeemer.json | sponge ../scripts/data/staking/withdraw-redeemer.json
 
+###############################################################################
+###############################################################################
+
+echo -e "\033[1;35m Run Swap Contract \033[0m"
+
+rm addrs/validator.addr
+rm hashes/validator.hash
+rm bytes/validator.bytes
+
+cabal run swap-contract
+
+# Get script address
+cardano-cli address build --payment-script-file swap-contract.plutus --stake-script-file stake-contract.plutus ${network_flag} --out-file addrs/validator.addr
+echo -e "\nValidator Testnet Address:" $(cat addrs/validator.addr)
+
+# Get plutus validator hash
+cardano-cli transaction policyid --script-file swap-contract.plutus > hashes/validator.hash
+echo -e "\nValidator Hash:" $(cat hashes/validator.hash)
+
+# Get plutus validator byte representation
+python3 -c "import binascii;a='$(cat hashes/validator.hash)';s=binascii.unhexlify(a);print([x for x in s])" > bytes/validator.bytes
+echo -e "\nValidator Bytes:" $(cat bytes/validator.bytes)
+
+###############################################################################
+###############################################################################
+
 echo -e "\033[1;35m Run CIP68 Contract \033[0m"
 
-rm cip68.addr
-rm cip68.hash
-rm cip68.bytes
+rm addrs/cip68.addr
+rm hashes/cip68.hash
+rm bytes/cip68.bytes
 
 cabal run cip68-contract
 
 # Get script address
-cardano-cli address build --payment-script-file cip68-contract.plutus --testnet-magic 1 --out-file cip68.addr
-echo -e "\nCIP 68 Testnet Address:" $(cat cip68.addr)
+cardano-cli address build --payment-script-file cip68-contract.plutus --stake-script-file stake-contract.plutus ${network_flag} --out-file addrs/cip68.addr
+echo -e "\nCIP 68 Testnet Address:" $(cat addrs/cip68.addr)
 
 # Get plutus cip68 hash
-cardano-cli transaction policyid --script-file cip68-contract.plutus > cip68.hash
-echo -e "\nCIP 68 Hash:" $(cat cip68.hash)
+cardano-cli transaction policyid --script-file cip68-contract.plutus > hashes/cip68.hash
+echo -e "\nCIP 68 Hash:" $(cat hashes/cip68.hash)
 
 # Get plutus cip68 byte representation
-python3 -c "import binascii;a='$(cat cip68.hash)';s=binascii.unhexlify(a);print([x for x in s])" > cip68.bytes
-echo -e "\nCIP 68 Bytes:" $(cat cip68.bytes)
+python3 -c "import binascii;a='$(cat hashes/cip68.hash)';s=binascii.unhexlify(a);print([x for x in s])" > bytes/cip68.bytes
+echo -e "\nCIP 68 Bytes:" $(cat bytes/cip68.bytes)
+
+###############################################################################
+###############################################################################
 
 echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
 
 # copy contracts into test-suite
 cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus ../test-suite/contracts
 
+# auto build the compiled code json
+
+jq \
+--arg reference_addr "$(cat addrs/reference.addr)" \
+--arg swap_addr "$(cat addrs/validator.addr)" \
+--arg cip68_addr "$(cat addrs/cip68.addr)" \
+--arg stake_addr "$(cat addrs/stake.addr)" \
+--arg start_pid "$(jq -r '.pid' start_info.json)" \
+--arg start_tkn "$(jq -r '.tkn' start_info.json)" \
+'.reference_addr=$reference_addr |
+.swap_addr=$swap_addr |
+.cip68_addr=$cip68_addr |
+.stake_addr=$stake_addr |
+.start_pid=$start_pid |
+.start_tkn=$start_tkn
+' \
+compiled_code_info.json | sponge compiled_code_info.json
 # complete
 echo "DONE"

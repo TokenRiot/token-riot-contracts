@@ -26,7 +26,8 @@
 {-# OPTIONS_GHC -fno-specialise               #-}
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module ReferenceDataType
-  ( CashierAddressData (..)
+  ( IncreaseData (..) 
+  , CashierAddressData (..)
   , ServiceFeeData (..)
   , SigningData (..)
   , changeHotKeyOnly
@@ -41,6 +42,18 @@ import qualified Plutus.V2.Ledger.Api as V2
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+-------------------------------------------------------------------------------
+-- | ADA Increase Data Object
+--
+-- Holds the integer amount of lovelace that will be added to some UTxO. This is
+-- useful for transactions where the datum requires more minimum ada. It is supposed
+-- to be created by the spender and placed into a redeemer.
+-------------------------------------------------------------------------------
+data IncreaseData = IncreaseData 
+  { idADA :: Integer
+  -- ^ An increase to the ADA on a UTxO.
+  }
+PlutusTx.makeIsDataIndexed ''IncreaseData [('IncreaseData, 0)]
 -------------------------------------------------------------------------------
 -- | Cashier Payment Info
 -------------------------------------------------------------------------------
