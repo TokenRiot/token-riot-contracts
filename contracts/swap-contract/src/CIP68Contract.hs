@@ -140,7 +140,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
         isValueCont' :: [V2.TxOut] -> V2.Value -> Bool
         isValueCont' []     _   = traceError "Nothing Found"
         isValueCont' (x:xs) val =
-          if V2.txOutValue x == val -- strict value continue
+          if V2.txOutValue x == val                                  -- strict value continue
             then
               case V2.txOutDatum x of
                 V2.NoOutputDatum              -> isValueCont' xs val -- skip datumless
@@ -158,7 +158,8 @@ wrappedValidator :: ScriptParameters -> BuiltinData -> BuiltinData -> BuiltinDat
 wrappedValidator s x y z = check (mkValidator s (V2.unsafeFromBuiltinData x) (V2.unsafeFromBuiltinData y) (V2.unsafeFromBuiltinData z))
 
 validator :: ScriptParameters -> V2.Validator
-validator sp = Plutonomy.optimizeUPLCWith theOptimizerOptions $ Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
+validator sp = Plutonomy.optimizeUPLCWith theOptimizerOptions $ 
+  Plutonomy.validatorToPlutus $ Plutonomy.mkValidatorScript $
   $$(PlutusTx.compile [|| wrappedValidator ||])
   `PlutusTx.applyCode`
   PlutusTx.liftCode sp

@@ -122,8 +122,8 @@ lengthCheck msd = lengthCheck' pkhs 0
     lengthCheck' []     !counter = counter >= thres
     lengthCheck' (_:xs) !counter =
       if counter >= thres
-        then True  -- there are enough signers
-        else lengthCheck' xs (counter + 1)
+        then True                          -- there are enough signers
+        else lengthCheck' xs (counter + 1) -- loop to the next one
 -------------------------------------------------------------------------------
 -- | Stake Pool Information
 -------------------------------------------------------------------------------
