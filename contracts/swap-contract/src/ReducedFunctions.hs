@@ -39,8 +39,8 @@ module ReducedFunctions
   , ownInput
   ) where
 import           PlutusTx.Prelude
-import qualified Plutus.V2.Ledger.Api      as V2
-import qualified Plutus.V1.Ledger.Value    as Value
+import qualified Plutus.V2.Ledger.Api   as V2
+import qualified Plutus.V1.Ledger.Value as Value
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023

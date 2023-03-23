@@ -422,15 +422,15 @@ mkValidator ScriptParameters {..} datum redeemer context =
 
     -- | Remove the UTxO from the contract.
     (Offering ptd _ _ _, Remove) ->
-      let !walletPkh        = ptPkh ptd
-          !walletAddr       = UF.createAddress walletPkh (ptSc ptd)
-          !info             = V2.scriptContextTxInfo context
-          !txInputs         = V2.txInfoInputs info
-          !txOutputs        = V2.txInfoOutputs info
-          !txSigners        = V2.txInfoSignatories info
-          !validatingInput  = ownInput context
-          !thisValue        = V2.txOutValue validatingInput
-          !scriptAddr       = V2.txOutAddress validatingInput
+      let !walletPkh       = ptPkh ptd
+          !walletAddr      = UF.createAddress walletPkh (ptSc ptd)
+          !info            = V2.scriptContextTxInfo context
+          !txInputs        = V2.txInfoInputs info
+          !txOutputs       = V2.txInfoOutputs info
+          !txSigners       = V2.txInfoSignatories info
+          !validatingInput = ownInput context
+          !thisValue       = V2.txOutValue validatingInput
+          !scriptAddr      = V2.txOutAddress validatingInput
       in traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
       && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue) -- seller must get the UTxO
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)             -- single tx going in, no continue
@@ -606,15 +606,15 @@ mkValidator ScriptParameters {..} datum redeemer context =
     
     -- | Remove the UTxO from the contract.
     (Bidding ptd _ _, Remove) ->
-      let !walletPkh           = ptPkh ptd
-          !walletAddr          = UF.createAddress walletPkh (ptSc ptd)
-          !info                = V2.scriptContextTxInfo context
-          !txSigners           = V2.txInfoSignatories info
-          !txInputs            = V2.txInfoInputs info
-          !txOutputs           = V2.txInfoOutputs info
-          !validatingInput     = ownInput context
-          !thisValue           = V2.txOutValue validatingInput
-          !scriptAddr          = V2.txOutAddress validatingInput
+      let !walletPkh       = ptPkh ptd
+          !walletAddr      = UF.createAddress walletPkh (ptSc ptd)
+          !info            = V2.scriptContextTxInfo context
+          !txSigners       = V2.txInfoSignatories info
+          !txInputs        = V2.txInfoInputs info
+          !txOutputs       = V2.txInfoOutputs info
+          !validatingInput = ownInput context
+          !thisValue       = V2.txOutValue validatingInput
+          !scriptAddr      = V2.txOutAddress validatingInput
       in traceIfFalse "Sign" (signedBy txSigners walletPkh)              -- seller must sign it
       && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue) -- seller must get the UTxO
       && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)             -- single tx going in, no continue

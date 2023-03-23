@@ -28,18 +28,18 @@
 module ReferenceContract
   ( referenceContractScript
   ) where
-import           Cardano.Api.Shelley    ( PlutusScript (..), PlutusScriptV2 )
+import           Cardano.Api.Shelley   ( PlutusScript (..), PlutusScriptV2 )
 import           Codec.Serialise
-import qualified Data.ByteString.Lazy   as LBS
-import qualified Data.ByteString.Short  as SBS
-import           OptimizerOptions       ( theOptimizerOptions )
+import qualified Data.ByteString.Lazy  as LBS
+import qualified Data.ByteString.Short as SBS
+import           OptimizerOptions      ( theOptimizerOptions )
 import           Plutonomy
 import qualified PlutusTx
 import           PlutusTx.Prelude
-import qualified Plutus.V2.Ledger.Api   as V2
+import qualified Plutus.V2.Ledger.Api  as V2
 import           ReducedFunctions
 import           ReferenceDataType
-import qualified UsefulFuncs            as UF
+import qualified UsefulFuncs           as UF
 {- |
   Author   : The Ancient Kraken
   Copyright: 2023

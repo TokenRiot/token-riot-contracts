@@ -73,7 +73,9 @@ PlutusTx.makeIsDataIndexed ''CustomDatumType  [('CustomDatumType, 0)]
 -------------------------------------------------------------------------------
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
-data CustomRedeemerType = Remove | Update ADAIncData
+data CustomRedeemerType 
+  = Remove
+  | Update ADAIncData
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [('Remove, 0 ), ('Update, 1 )]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
