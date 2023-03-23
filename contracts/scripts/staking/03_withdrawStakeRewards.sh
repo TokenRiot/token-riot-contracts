@@ -6,7 +6,7 @@ cli=$(cat path_to_cli.sh)
 testnet_magic=$(cat ../data/testnet.magic)
 
 # stake address
-stake_address=$(cat ../../swap-contract/stake.addr)
+stake_address=$(cat ../../swap-contract/addrs/stake.addr)
 echo stake_address: $stake_address
 
 # collat
