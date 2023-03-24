@@ -28,9 +28,9 @@ asset="1 ${pid}.${tkn}"
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
-    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
+    --tx-out="${deleg_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-deleg_address_out="${script_address} + ${min_utxo} + ${asset}"
+deleg_address_out="${deleg_address} + ${min_utxo} + ${asset}"
 echo "Remove OUTPUT: "${deleg_address_out}
 #
 # exit

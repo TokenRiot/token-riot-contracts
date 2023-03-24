@@ -49,10 +49,10 @@ getReferenceInput :: [V2.TxInInfo] -> V2.ValidatorHash -> V2.TxOut
 getReferenceInput txRefs vHash = getReferenceInput' txRefs
   where
     getReferenceInput' :: [V2.TxInInfo] -> V2.TxOut
-    getReferenceInput' [] = traceError "no references"
+    getReferenceInput' []     = traceError "no references"
     getReferenceInput' (x:xs)
-      | checkHash x == True = V2.txInInfoResolved x
-      | otherwise           = getReferenceInput' xs
+      | checkHash x == True   = V2.txInInfoResolved x
+      | otherwise             = getReferenceInput' xs
     
     checkHash :: V2.TxInInfo -> Bool
     checkHash (V2.TxInInfo _ (V2.TxOut (V2.Address (V2.ScriptCredential vHash') _) _ _ _)) = vHash == vHash' 
@@ -63,7 +63,7 @@ getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
 getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
   where
     getScriptOutputs' :: [V2.TxOut] -> V2.Address -> [V2.TxOut] -> [V2.TxOut]
-    getScriptOutputs' [] _ contOuts = contOuts
+    getScriptOutputs' []     _    contOuts = contOuts
     getScriptOutputs' (x:xs) addr contOuts
       | V2.txOutAddress x == addr = getScriptOutputs' xs addr (x:contOuts)
       | otherwise                 = getScriptOutputs' xs addr contOuts
@@ -77,17 +77,17 @@ ownInput _                                             = traceError "no script i
 -- get the validating script input
 {-# inlinable getScriptInput #-}
 getScriptInput :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxOut
-getScriptInput [] _ = traceError "script input not found"
+getScriptInput []                           _     = traceError "script input not found"
 getScriptInput ((V2.TxInInfo tref ot) : xs) o_ref
-  | tref == o_ref = ot
-  | otherwise     = getScriptInput xs o_ref
+  | tref == o_ref                                 = ot
+  | otherwise                                     = getScriptInput xs o_ref
 
 {-# inlinable txInFromTxRef #-}
 txInFromTxRef :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxInInfo
 txInFromTxRef txIns outRef = txInFromTxRef' txIns
   where
     txInFromTxRef' :: [V2.TxInInfo] -> V2.TxInInfo
-    txInFromTxRef' [] = traceError "Cant Find Tx In"
+    txInFromTxRef' []                 = traceError "Cant Find Tx In"
     txInFromTxRef' (x:xs)
       | V2.txInInfoOutRef x == outRef = x
       | otherwise                     = txInFromTxRef' xs
@@ -97,7 +97,7 @@ txInFromTxRef txIns outRef = txInFromTxRef' txIns
 signedBy :: [V2.PubKeyHash] -> V2.PubKeyHash -> Bool
 signedBy list k = loop list
   where
-    loop [] = False
+    loop []       = False
     loop (x:xs)
       | x == k    = True
       | otherwise = loop xs
@@ -115,13 +115,13 @@ checkMultisig signers pkhs thres = loopSigs pkhs 0
 
 {-# INLINABLE findPayout #-}
 findPayout :: [V2.TxOut] -> V2.Address -> V2.Value -> Bool
-findPayout list addr val = helper list
+findPayout list addr val = isPayoutExact list
   where
-    helper :: [V2.TxOut] -> Bool
-    helper [] = False
-    helper (x:xs)
+    isPayoutExact :: [V2.TxOut] -> Bool
+    isPayoutExact []          = False
+    isPayoutExact (x:xs)
       | checkAddr && checkVal = True
-      | otherwise             = helper xs
+      | otherwise             = isPayoutExact xs
       where
         checkAddr :: Bool
         checkAddr = V2.txOutAddress x == addr
@@ -136,8 +136,8 @@ findTokenHolder list addr pid tkn val = isAddrHoldingExactlyToken' list
     isAddrHoldingExactlyToken' :: [V2.TxOut] -> Bool
     isAddrHoldingExactlyToken' []     = False
     isAddrHoldingExactlyToken' (x:xs)
-      | checkAddr && checkVal = True
-      | otherwise             = isAddrHoldingExactlyToken' xs
+      | checkAddr && checkVal         = True
+      | otherwise                     = isAddrHoldingExactlyToken' xs
       where
         checkAddr :: Bool
         checkAddr = V2.txOutAddress x == addr
@@ -153,7 +153,7 @@ nInputs utxos addr number = loopInputs utxos 0 0
     loopInputs :: [V2.TxInInfo] -> Integer -> Integer -> Bool
     loopInputs []     !dC !sC = (dC == number) && (sC == number)
     loopInputs (x:xs) !dC !sC = 
-      case V2.txOutDatum txInOut  of
+      case V2.txOutDatum txInOut of
         V2.NoOutputDatum       -> loopInputs xs dC sC
         (V2.OutputDatumHash _) -> loopInputs xs dC sC
         (V2.OutputDatum _)     -> 
@@ -182,5 +182,5 @@ nRedeemers :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
 nRedeemers redeemers number = nRedeemers' redeemers 0
   where
     nRedeemers' :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
-    nRedeemers' []          counter = counter == number
-    nRedeemers' ((_, _):xs) counter = nRedeemers' xs ( counter + 1 )
+    nRedeemers' []          !counter = counter == number
+    nRedeemers' ((_, _):xs) !counter = nRedeemers' xs ( counter + 1 )

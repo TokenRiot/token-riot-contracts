@@ -184,8 +184,8 @@ mkValidator datum redeemer context =
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
       where
         getOutboundDatumByValue' :: [V2.TxOut] -> V2.Value -> ReferenceDatum
-        getOutboundDatumByValue' []     _   = traceError "Nothing Found"
-        getOutboundDatumByValue' (x:xs) val =
+        getOutboundDatumByValue' []     _    = traceError "No Datum"
+        getOutboundDatumByValue' (x:xs) !val =
           if V2.txOutValue x == val                                            -- strict value continue
           then
             case V2.txOutDatum x of
@@ -193,7 +193,7 @@ mkValidator datum redeemer context =
               (V2.OutputDatumHash _)        -> traceError "Embedded Datum"
               (V2.OutputDatum (V2.Datum d)) ->                                 -- inline datum only
                 case PlutusTx.fromBuiltinData d of
-                  Nothing     -> traceError "Bad Data"
+                  Nothing     -> traceError "Bad Datum"
                   Just inline -> PlutusTx.unsafeFromBuiltinData @ReferenceDatum inline
           else getOutboundDatumByValue' xs val
 -------------------------------------------------------------------------------

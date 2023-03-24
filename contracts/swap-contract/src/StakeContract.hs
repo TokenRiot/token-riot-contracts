@@ -78,7 +78,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Withdraw, 0 )
                                                 , ( 'Delegate, 1 )
                                                 ]
 -------------------------------------------------------------------------------
--- | mkPolicy :: Redeemer -> Context -> Bool
+-- | mkPolicy :: Params -> Redeemer -> Context -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkPolicy #-}
 mkPolicy :: ScriptParameters -> BuiltinData -> V2.ScriptContext -> Bool
@@ -126,38 +126,28 @@ mkPolicy ScriptParameters {..} redeemer' context =
     
     -- | Check for withdraws then check if the payout address gets the reward payout.
     checkTheWithdrawal :: [(V2.StakingCredential, Integer)] -> V2.StakingCredential -> [V2.TxOut] -> V2.Address -> Bool
-    checkTheWithdrawal []     _  _      _    = False
-    checkTheWithdrawal (x:xs) sc txOuts addr =
-      if stakeCred == sc                        -- must be from this stake
-        then findPayout txOuts addr payoutValue -- send reward to payout address
-        else checkTheWithdrawal xs sc txOuts addr
+    checkTheWithdrawal xs sc txOuts addr = checkWithdraw xs
       where
-        stakeCred :: V2.StakingCredential
-        stakeCred = fst x
-
-        rewardAmt :: Integer
-        rewardAmt = snd x
-
-        payoutValue :: V2.Value
-        payoutValue = UF.adaValue rewardAmt
+        checkWithdraw :: [(V2.StakingCredential, Integer)] -> Bool
+        checkWithdraw []     = False
+        checkWithdraw (y:ys) = 
+          let !stakeCred   = fst y
+              !rewardAmt   = snd y
+              !payoutValue = UF.adaValue rewardAmt
+          in if stakeCred == sc
+            then findPayout txOuts addr payoutValue
+            else checkWithdraw ys
 
     -- | Loop all the certs and check if the stake is going to the right staking pool.
     checkTheCerts :: [V2.DCert] -> V2.StakingCredential -> V2.PubKeyHash -> Bool
-    checkTheCerts []     _  _    = False
-    checkTheCerts (x:xs) sc pool =
-      if checkCert x
-        then True                     -- correct credential and pool
-        else checkTheCerts xs sc pool -- loop all the certs
+    checkTheCerts certs sc pool = checkCerts certs
       where
-        checkCert :: V2.DCert -> Bool
-        checkCert cert = 
-          case cert of
-            -- check for a delegation to stake pool
-            (V2.DCertDelegDelegate sc' pool') -> (sc   == sc'  ) -- only this cred can be staked
-                                              && (pool == pool') -- must delegate to specific pool id
-    
-            -- any other cert fails but stake registration
-            _ -> False
+        checkCerts :: [V2.DCert] -> Bool
+        checkCerts []     = False
+        checkCerts (x:xs) =
+          case x of
+            (V2.DCertDelegDelegate sc' pool') -> (sc == sc' && pool == pool') || checkCerts xs
+            _                                 -> checkCerts xs
 -------------------------------------------------------------------------------
 -- | Compile Information
 -------------------------------------------------------------------------------

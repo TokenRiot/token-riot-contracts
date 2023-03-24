@@ -133,7 +133,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ( 'Remove,            0 )
                                                 , ( 'CancelTimeLock,    8 )
                                                 ]
 -------------------------------------------------------------------------------
--- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
+-- | mkValidator :: Params -> Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
 mkValidator :: ScriptParameters -> CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
@@ -708,8 +708,8 @@ mkValidator ScriptParameters {..} datum redeemer context =
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
       where
         getOutboundDatumByValue' :: [V2.TxOut] -> V2.Value -> CustomDatumType
-        getOutboundDatumByValue' []     _   = traceError "Nothing Found"
-        getOutboundDatumByValue' (x:xs) val =
+        getOutboundDatumByValue' []     _    = traceError "Nothing Found"
+        getOutboundDatumByValue' (x:xs) !val =
           if V2.txOutValue x == val -- strict value continue
             then
               case V2.txOutDatum x of
