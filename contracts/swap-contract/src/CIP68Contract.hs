@@ -78,7 +78,7 @@ data CustomRedeemerType
   | Update ADAIncData
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [('Remove, 0 ), ('Update, 1 )]
 -------------------------------------------------------------------------------
--- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
+-- | mkValidator :: Params -> Datum -> Redeemer -> ScriptContext -> Bool
 -------------------------------------------------------------------------------
 {-# INLINABLE mkValidator #-}
 mkValidator :: ScriptParameters -> CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
@@ -140,8 +140,8 @@ mkValidator ScriptParameters {..} _ redeemer context =
     isValueCont txOuts val' = isValueCont' txOuts val'
       where
         isValueCont' :: [V2.TxOut] -> V2.Value -> Bool
-        isValueCont' []     _   = traceError "Nothing Found"
-        isValueCont' (x:xs) val =
+        isValueCont' []     _    = traceError "Nothing Found"
+        isValueCont' (x:xs) !val =
           if V2.txOutValue x == val                                  -- strict value continue
             then
               case V2.txOutDatum x of
