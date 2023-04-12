@@ -176,7 +176,7 @@ mkValidator datum redeemer context =
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
     
-    -- | Debug for testing; REMOVE AT PROD
+    -- | Debug for testing; REMOVE AT PROD OR SET TO FALSE
     (Reference _ _ _ _, Debug) -> True
   where
     -- | get the datum by searching the tx outputs by the validating value
