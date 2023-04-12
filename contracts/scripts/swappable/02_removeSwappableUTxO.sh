@@ -19,7 +19,7 @@ seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
 
 # asset to trade
-asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313831"
+asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630363632"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -84,6 +84,7 @@ script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/swap-reference-utxo.s
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
+
 
     # --calculate-plutus-script-cost ../tmp/tx.cost \
 echo -e "\033[0;36m Building Tx \033[0m"

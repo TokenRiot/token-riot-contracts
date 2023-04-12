@@ -29,6 +29,7 @@ module SwappableDataType
   ( PayToData (..)
   , PaymentData (..)
   , TimeData (..)
+  , RoyaltyData (..)
   , checkValidTimeLock
   , checkValidTimeData
   , ADAIncData (..)
@@ -132,7 +133,6 @@ data ADAIncData = ADAIncData
   -- ^ An increase to the ADA on a UTxO.
   }
 PlutusTx.makeIsDataIndexed ''ADAIncData [('ADAIncData, 0)]
-
 -------------------------------------------------------------------------------
 -- | Make Offer Data Object
 --
@@ -147,7 +147,6 @@ data MakeOfferData = MakeOfferData
   -- ^ The index of the tx hash.
   }
 PlutusTx.makeIsDataIndexed ''MakeOfferData [('MakeOfferData, 0)]
-
 -------------------------------------------------------------------------------
 -- | Specific Token Data Object
 -------------------------------------------------------------------------------
@@ -171,4 +170,19 @@ data OfferFlagData = OfferFlagData
   -- ^ The flag to indicate if the trade should remain in the contract.
   }
 PlutusTx.makeIsDataIndexed ''OfferFlagData [('OfferFlagData, 0)]
+-------------------------------------------------------------------------------
+-- | The Royalty Data Object for the datum
+-------------------------------------------------------------------------------
+data RoyaltyData = RoyaltyData
+  { rdAddr :: [PayToData]
+  -- ^ The address information for royalty payments
+  , rdAmt  :: [Integer]
+  -- ^ The lovelace amount to be sent to the rdAddr
+  }
+PlutusTx.makeIsDataIndexed ''RoyaltyData [('RoyaltyData, 0)]
+
+instance Eq RoyaltyData where
+  {-# INLINABLE (==) #-}
+  a == b = ( rdAddr a == rdAddr b ) &&
+           ( rdAmt  a == rdAmt  b )
 
