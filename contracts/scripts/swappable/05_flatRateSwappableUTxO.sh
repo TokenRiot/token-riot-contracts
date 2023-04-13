@@ -25,7 +25,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1234567890 c34332d539bb554707a2d8826f2057bc628ac433a779c2f43d4a5b5c.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6731"
+selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630363632"
 
 seller_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -40,9 +40,6 @@ buyer_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --tx-out="${script_address} + 5000000 + ${selling_asset}" | tr -dc '0-9')
 
 difference=$((${buyer_min_utxo} - ${seller_min_utxo}))
-
-echo $difference
-echo $seller_min_utxo
 
 if [ "$difference" -lt "0" ]; then
     min_utxo=${seller_min_utxo}
@@ -84,11 +81,14 @@ else
 
     serviceFee=2000000
 fi
-
 service_address_out="${deleg_address} + ${serviceFee}"
+
+royalty_address_out=$(python3 -c "from royaltyPayout import get_royalty_payout;a='../data/swappable/seller-swappable-datum.json';s=get_royalty_payout(a);print(s)")
+
 echo "Script OUTPUT: "${script_address_out}
 echo "Payment OUTPUT: "${seller_address_out}
 echo "Service OUTPUT: "${service_address_out}
+echo "Royalty OUTPUT: "${royalty_address_out}
 #
 # exit
 #
@@ -143,7 +143,7 @@ collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
 
 echo -e "\033[0;36m Building Tx \033[0m"
-FEE=$(${cli} transaction build \
+eval "FEE=\$(${cli} transaction build \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
@@ -156,13 +156,14 @@ FEE=$(${cli} transaction build \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/flatrate-redeemer.json \
-    --tx-out="${service_address_out}" \
-    --tx-out="${seller_address_out}" \
-    --tx-out="${script_address_out}" \
+    "${royalty_address_out}" \
+    --tx-out \"${seller_address_out}\" \
+    --tx-out \"${service_address_out}\" \
+    --tx-out \"${script_address_out}\" \
     --tx-out-inline-datum-file ../data/swappable/buyer-swappable-datum.json \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${buyer_pkh} \
-    --testnet-magic ${testnet_magic})
+    --testnet-magic ${testnet_magic})"
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"

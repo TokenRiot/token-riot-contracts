@@ -39,6 +39,47 @@
           "int": 0
         }
       ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "list": [
+            {
+              "constructor": 0,
+              "fields": [
+                {
+                  "bytes": "cdb78039cda276a7e8e306109fd7be5cbbb5fb6f6b55cdb5a0e46035"
+                },
+                {
+                  "bytes": ""
+                }
+              ]
+            },
+            {
+              "constructor": 0,
+              "fields": [
+                {
+                  "bytes": "d9335ba4f8ebc0b8c9361613071cdc9e9fe92de49b8f2a4782023ef4"
+                },
+                {
+                  "bytes": "bfaa385c8eab7bbdc6c98b50413435b3d02b73de3c644e1384b801d4"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "list": [
+            {
+              "int": 1000000
+            },
+            {
+              "int": 1500000
+            }
+          ]
+        }
+      ]
     }
   ]
 }

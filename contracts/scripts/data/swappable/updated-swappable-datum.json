@@ -39,6 +39,33 @@
           "int": 0
         }
       ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "list": [
+            {
+              "constructor": 0,
+              "fields": [
+                {
+                  "bytes": "cdb78039cda276a7e8e306109fd7be5cbbb5fb6f6b55cdb5a0e46035"
+                },
+                {
+                  "bytes": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "list": [
+            {
+              "int": 1000000
+            }
+          ]
+        }
+      ]
     }
   ]
 }

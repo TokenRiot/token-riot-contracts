@@ -25,7 +25,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 c207ba811698592da25d7c2d0c41476baacce5dcf53f3084be116d68.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730"
+selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630363632"
 
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -35,20 +35,41 @@ script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
 
 buyer_address_out="${buyer_address} + ${script_min_utxo} + ${selling_asset}"
 
+payment_pid="$(jq -r '.fields[1].fields[0].bytes' ../data/swappable/seller-swappable-datum.json)"
+payment_tkn="$(jq -r '.fields[1].fields[1].bytes' ../data/swappable/seller-swappable-datum.json)"
 price=$(jq -r '.fields[1].fields[2].int' ../data/swappable/seller-swappable-datum.json)
-feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
-serviceFee=$(expr $price / $feePerc)
-if [ "$serviceFee" -lt "2000000" ]; then
+
+if [ -z "$payment_pid" ]
+then
+    seller_address_out="${seller_address} + ${price}" # new flat payment
+
+    feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
+    serviceFee=$(expr $price / $feePerc)
+    if [ "$serviceFee" -lt "2000000" ]; then
+        serviceFee=2000000
+    fi
+else
+    payment_asset="${price} ${payment_pid}.${payment_tkn}"
+    echo $payment_asset
+    payment_min_utxo=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../tmp/protocol.json \
+    --tx-out="${seller_address} + 5000000 + ${payment_asset}" | tr -dc '0-9')
+
+    seller_address_out="${seller_address} + ${payment_min_utxo} + ${payment_asset}" # new flat payment
+
     serviceFee=2000000
 fi
 
-seller_address_out="${seller_address} + ${price}" # new flat payment
+
 service_address_out="${deleg_address} + ${serviceFee}"
-# 
-echo "Token OUTPUT: "${buyer_address_out}
+royalty_address_out=$(python3 -c "from royaltyPayout import get_royalty_payout;a='../data/swappable/seller-swappable-datum.json';s=get_royalty_payout(a);print(s)")
+
+#
+echo "Buyer OUTPUT: "${buyer_address_out}
 echo "Payment OUTPUT: "${seller_address_out}
 echo "Service OUTPUT: "${service_address_out}
-
+echo "Royalty OUTPUT: "${royalty_address_out}
 #
 # exit
 #
@@ -107,7 +128,7 @@ current_slot=$(($slot - 1))
 final_slot=$(($slot + 150))
 
 echo -e "\033[0;36m Building Tx \033[0m"
-FEE=$(${cli} transaction build \
+eval "FEE=\$(${cli} transaction build \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
@@ -122,12 +143,13 @@ FEE=$(${cli} transaction build \
     --spending-plutus-script-v2 \
     --spending-reference-tx-in-inline-datum-present \
     --spending-reference-tx-in-redeemer-file ../data/redeemers/flatrate-remove-redeemer.json \
-    --tx-out="${seller_address_out}" \
-    --tx-out="${service_address_out}" \
-    --tx-out="${buyer_address_out}" \
+    "${royalty_address_out}" \
+    --tx-out \"${seller_address_out}\" \
+    --tx-out \"${buyer_address_out}\" \
+    --tx-out \"${service_address_out}\" \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${buyer_pkh} \
-    --testnet-magic ${testnet_magic})
+    --testnet-magic ${testnet_magic})"
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
