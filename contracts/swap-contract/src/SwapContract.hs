@@ -256,7 +256,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Time" (td == td')                     -- time can't change
           && traceIfFalse "roya" (rd == rd')                     -- royalty known at sale creation
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1) -- single tx going in
-          && traceIfFalse "Outs" (nOutputs contTxOutputs 1)      --  single going out
+          && traceIfFalse "Outs" (nOutputs contTxOutputs 1)      -- single going out
 
         -- Update a swappable state into the auctioning state
         (Auctioning ptd' atd td') -> 
