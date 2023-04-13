@@ -205,4 +205,11 @@ jq \
 ' \
 compiled_code_info.json | sponge compiled_code_info.json
 # complete
+
+echo "# A Generalized Swap Contract" > ../README.md
+echo "A set of contracts to handle any and all types of token swapping for Token Riot.\n" >> ../README.md
+echo "\`\`\`json" >> ../README.md
+cat compiled_code_info.json >> ../README.md
+echo "\`\`\`" >> ../README.md
+
 echo "DONE"

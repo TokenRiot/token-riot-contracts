@@ -1,3 +1,10 @@
 # A Generalized Swap Contract
-
-A set of contracts to handle any and all types of token swapping for Token Riot.
+A set of contracts to handle any and all types of token swapping for Token Riot.\n
+```json
+{
+  "reference_addr": "addr_test1wp2qkfj0gqmtg5r2lgwyv369e7zwrmvyrzsqp0xau07hrpsj95zrj",
+  "swap_addr": "addr_test1xrnqdavy6kgs5qlv49fy8tzgngmaeszqskdc4x6x25euy9f86fe7myd5nys5hvvcpdeejhxg42j6se07x5ukqs4vefpqy60jsv",
+  "cip68_addr": "addr_test1xruqqhaduj80hhq4wh9rgmelyjvh8rrx9texu4qpwfmk89386fe7myd5nys5hvvcpdeejhxg42j6se07x5ukqs4vefpq8yj4q4",
+  "stake_addr": "stake_test17qnayuldjx6fjg2tkxvqkuuetny24fdgvhlr2wtqg2kv5ssfx6jpf"
+}
+```
