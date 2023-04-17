@@ -49,6 +49,7 @@ library
                         ReferenceContract
                         StakeContract
                         CIP68Contract
+                        MinterContract
                         SwappableDataType
                         ReferenceDataType
                         ReducedFunctions
@@ -119,6 +120,24 @@ executable cip68-contract
   import:               base, project-config
   hs-source-dirs:       app
   main-is:              cip68-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
+
+executable minter-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              minter-contract.hs
   
   ghc-options:          -threaded 
                         -rtsopts 
