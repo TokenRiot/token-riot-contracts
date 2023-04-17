@@ -50,9 +50,9 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${sender_address} \
     --tx-in ${HEXTXIN} \
-    --tx-out="${token_to_be_traded}" \
     --testnet-magic ${testnet_magic})
 
+    # --tx-out="${token_to_be_traded}" \
     # --tx-out="${token_to_be_changed}" \
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
