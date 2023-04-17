@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# network_flag="--mainnet"
 network_flag="--testnet-magic 1"
 
 # Complete Build

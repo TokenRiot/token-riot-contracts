@@ -70,21 +70,20 @@ PlutusTx.unstableMakeIsData ''MintTxInInfo
 
 data MintTxInfo = MintTxInfo
     { txInfoInputs          :: [MintTxInInfo] -- Transaction inputs
-    , txInfoReferenceInputs :: [V2.TxInInfo]
+    , txInfoReferenceInputs :: [V2.TxInInfo]  -- Transaction reference inputs
     , txInfoOutputs         :: BuiltinData
     , txInfoFee             :: BuiltinData
-    , txInfoMint            :: V2.Value -- The 'Value' minted by this transaction.
+    , txInfoMint            :: V2.Value       -- The 'Value' minted by this transaction.
     , txInfoDCert           :: BuiltinData
     , txInfoWdrl            :: BuiltinData
     , txInfoValidRange      :: BuiltinData
-    , txInfoSignatories     :: [V2.PubKeyHash]
+    , txInfoSignatories     :: [V2.PubKeyHash]-- Transaction signers
     , txInfoRedeemers       :: BuiltinData
     , txInfoData            :: BuiltinData
     , txInfoId              :: BuiltinData
     }
 PlutusTx.unstableMakeIsData ''MintTxInfo
 
--- | Purpose of the script that is currently running
 data MintScriptPurpose = Minting V2.CurrencySymbol
 PlutusTx.unstableMakeIsData ''MintScriptPurpose
 
@@ -120,13 +119,12 @@ mkPolicy ScriptParameters {..} _ context =
     && (traceIfFalse "idx" $ V2.txOutRefIdx firstTx < 256)                 -- prevent roll over collision
     && (traceIfFalse "sig" $ signedBy txSigners hotPkh)                    -- hot key must sign
   where
-    -- traceIfFalse (decodeUtf8 $ V2.unTokenName tkn')
     checkAllMints :: [(V2.CurrencySymbol, V2.TokenName, Integer)] -> V2.CurrencySymbol -> V2.TokenName -> Bool
-    checkAllMints []                  _   _      = False
+    checkAllMints []                  _   _    = traceError "Nothing Minted"
     checkAllMints ((cs, tkn, amt):xs) cs' tkn' = 
-      if cs == cs' && tkn == tkn' && amt == (1 :: Integer)
-        then True
-        else checkAllMints xs cs' tkn'
+      if cs == cs' && tkn == tkn' && amt == (1 :: Integer) -- the correct mint
+        then True                                          -- found the mint
+        else checkAllMints xs cs' tkn'                     -- keep searching
 
     getReferenceDatum :: V2.TxOut -> ReferenceDatum
     getReferenceDatum x = 
