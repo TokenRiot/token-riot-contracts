@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# network_flag="--mainnet"
 network_flag="--testnet-magic 1"
 
 # Complete Build
@@ -21,9 +20,9 @@ cabal build -w ghc-8.10.7 -O2
 
 echo -e "\033[1;35m Run Reference Contract \033[0m" 
 
-rm addrs/reference.addr
-rm hashes/reference.hash
-rm bytes/reference.bytes
+rm addrs/reference.addr || true
+rm hashes/reference.hash || true
+rm bytes/reference.bytes || true
 
 cabal run reference-contract
 
@@ -99,12 +98,12 @@ reference_info.json | sponge reference_info.json
 
 echo -e "\033[1;35m Run Stake Contract \033[0m"
 
-rm addrs/stake.addr
-rm hashes/stake.hash
-rm bytes/stake.bytes
-rm certs/stake.cert
-rm certs/destake.cert
-rm certs/deleg.cert
+rm addrs/stake.addr || true
+rm hashes/stake.hash || true
+rm bytes/stake.bytes || true
+rm certs/stake.cert || true
+rm certs/destake.cert || true
+rm certs/deleg.cert || true
 
 cabal run stake-contract
 
@@ -143,9 +142,9 @@ jq \
 
 echo -e "\033[1;35m Run Swap Contract \033[0m"
 
-rm addrs/validator.addr
-rm hashes/validator.hash
-rm bytes/validator.bytes
+rm addrs/validator.addr || true
+rm hashes/validator.hash || true
+rm bytes/validator.bytes || true
 
 cabal run swap-contract
 
@@ -166,9 +165,9 @@ echo -e "\nValidator Bytes:" $(cat bytes/validator.bytes)
 
 echo -e "\033[1;35m Run CIP68 Contract \033[0m"
 
-rm addrs/cip68.addr
-rm hashes/cip68.hash
-rm bytes/cip68.bytes
+rm addrs/cip68.addr || true
+rm hashes/cip68.hash || true
+rm bytes/cip68.bytes || true
 
 cabal run cip68-contract
 
@@ -187,10 +186,28 @@ echo -e "\nCIP 68 Bytes:" $(cat bytes/cip68.bytes)
 ###############################################################################
 ###############################################################################
 
+echo -e "\033[1;35m Run Minter Contract \033[0m"
+
+rm hashes/minter.hash || true
+rm bytes/minter.bytes || true
+
+cabal run minter-contract
+
+# Get plutus minter hash
+cardano-cli transaction policyid --script-file minter-contract.plutus > hashes/minter.hash
+echo -e "\nMinter Hash:" $(cat hashes/minter.hash)
+
+# Get plutus minter byte representation
+python3 -c "import binascii;a='$(cat hashes/minter.hash)';s=binascii.unhexlify(a);print([x for x in s])" > bytes/minter.bytes
+echo -e "\nMinter Bytes:" $(cat bytes/minter.bytes)
+
+###############################################################################
+###############################################################################
+
 echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
 
 # copy contracts into test-suite
-cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus ../test-suite/contracts
+cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus minter-contract.plutus ../test-suite/contracts
 
 # auto build the compiled code json
 jq \

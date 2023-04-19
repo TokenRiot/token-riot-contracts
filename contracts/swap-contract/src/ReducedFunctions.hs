@@ -37,6 +37,7 @@ module ReducedFunctions
   , getScriptOutputs
   , getReferenceInput
   , ownInput
+  , uniqueTokenName
   ) where
 import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api   as V2
@@ -184,3 +185,16 @@ nRedeemers redeemers number = nRedeemers' redeemers 0
     nRedeemers' :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
     nRedeemers' []          !counter = counter == number
     nRedeemers' ((_, _):xs) !counter = nRedeemers' xs ( counter + 1 )
+
+{-# INLINABLE uniqueTokenName #-}
+uniqueTokenName :: V2.BuiltinByteString -> V2.TxOutRef -> V2.TokenName
+uniqueTokenName prefix txRef = V2.TokenName { V2.unTokenName = prependTxHash txHash index }
+  where
+    prependTxHash :: V2.BuiltinByteString -> Integer -> V2.BuiltinByteString
+    prependTxHash string counter = sliceByteString 0 32 (appendByteString prefix (consByteString counter (sha3_256 string)))
+
+    txHash :: V2.BuiltinByteString
+    txHash = V2.getTxId $ V2.txOutRefId txRef
+
+    index :: Integer
+    index = V2.txOutRefIdx txRef
