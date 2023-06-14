@@ -111,8 +111,8 @@ mkPolicy ScriptParameters {..} _ context =
         !txSigners            = txInfoSignatories info
         !pid                  = ownCurrencySymbol context
         !mintedValues         = Value.flattenValue (txInfoMint info)
-        !refName              = uniqueTokenName "(100)Revolutionary" firstTx
-        !nftName              = uniqueTokenName "(222)Revolutionary" firstTx
+        !refName              = uniqueTokenName "(100)" firstTx
+        !nftName              = uniqueTokenName "(222)" firstTx
     in (traceIfFalse "val" $ Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
     && (traceIfFalse "ref" $ checkAllMints mintedValues pid refName)       -- must mint ref token
     && (traceIfFalse "nft" $ checkAllMints mintedValues pid nftName)       -- must mint nft
