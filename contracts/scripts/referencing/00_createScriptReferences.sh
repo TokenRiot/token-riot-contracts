@@ -17,8 +17,8 @@ minter_script_path="../../swap-contract/minter-contract.plutus"
 
 # Addresses
 reference_address=$(cat ../wallets/reference-wallet/payment.addr)
-# script_reference_address="addr_test1qq4m4tup6h0zv3xsgtz22yxmk86qrm9j7wt3aunhwpg7hjd5skxg5duh2s97g6pvq2wrqcpr76u8m8uhd4gh9uhzqnnq0eush3"
-script_reference_address=$(cat ../wallets/reference-wallet/payment.addr)
+script_reference_address="addr_test1qzc3y689jjd0ncjjcta3jehswhrk2ruv44axrnpazyx6avwv229xm5p4lvdx7m9550vycflmj8r664s3uwzcfhhlw8tssd7s8z"
+# script_reference_address=$(cat ../wallets/reference-wallet/payment.addr)
 
 swap_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -145,7 +145,7 @@ ${cli} transaction build-raw \
     --tx-out-reference-script-file ${stake_script_path} \
     --fee 900000
 
-FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft ${network} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft --testnet-magic ${testnet_magic} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
 echo $FEE
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 
@@ -184,7 +184,7 @@ ${cli} transaction build-raw \
     --tx-out-reference-script-file ${refer_script_path} \
     --fee 900000
 
-FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft ${network} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft --testnet-magic ${testnet_magic} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
 echo $FEE
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 
@@ -222,7 +222,7 @@ ${cli} transaction build-raw \
     --tx-out-reference-script-file ${cip68_script_path} \
     --fee 900000
 
-FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft ${network} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft --testnet-magic ${testnet_magic} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
 echo $FEE
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 
@@ -260,7 +260,7 @@ ${cli} transaction build-raw \
     --tx-out-reference-script-file ${minter_script_path} \
     --fee 900000
 
-FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft ${network} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
+FEE=$(${cli} transaction calculate-min-fee --tx-body-file ../tmp/tx.draft --testnet-magic ${testnet_magic} --protocol-params-file ../tmp/protocol.json --tx-in-count 0 --tx-out-count 0 --witness-count 1)
 echo $FEE
 fee=$(echo $FEE | rev | cut -c 9- | rev)
 

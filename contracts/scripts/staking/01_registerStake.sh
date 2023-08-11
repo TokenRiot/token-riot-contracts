@@ -43,11 +43,10 @@ payee_tx_in=${TXIN::-8}
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${payee_address} \
     --tx-in ${payee_tx_in} \
-    --certificate ../../swap-contract/stake.cert \
+    --certificate ../../swap-contract/certs/stake.cert \
     --testnet-magic ${testnet_magic})
 
 IFS=':' read -ra VALUE <<< "${FEE}"

@@ -14,7 +14,7 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 
 # service fee
-deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
+cash_register_address="addr_test1vqw9r7u88ud67gpyngp2gkuery77prlk60exs6cguga9cdqk3ygn2"
 
 # buyer
 buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
@@ -25,7 +25,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630363632"
+selling_asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
 
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -44,6 +44,7 @@ then
     seller_address_out="${seller_address} + ${price}" # new flat payment
 
     feePerc=$(jq -r '.fields[1].fields[0].int' ../data/referencing/reference-datum.json)
+    # 2.5% or 2 ADA for lovelace purchaces
     serviceFee=$(expr $price / $feePerc)
     if [ "$serviceFee" -lt "2000000" ]; then
         serviceFee=2000000
@@ -58,11 +59,12 @@ else
 
     seller_address_out="${seller_address} + ${payment_min_utxo} + ${payment_asset}" # new flat payment
 
+    # non ada purchases default to the 2 ada
     serviceFee=2000000
 fi
 
 
-service_address_out="${deleg_address} + ${serviceFee}"
+service_address_out="${cash_register_address} + ${serviceFee}"
 royalty_address_out=$(python3 -c "from royaltyPayout import get_royalty_payout;a='../data/swappable/seller-swappable-datum.json';s=get_royalty_payout(a);print(s)")
 
 #
@@ -88,6 +90,7 @@ fi
 alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/buyer_utxo.json)
 buyer_tx_in=${TXIN::-8}
+echo Buyer TxIn: $buyer_tx_in
 
 # script utxos
 echo -e "\033[0;36m Gathering Script UTxO Information  \033[0m"
@@ -103,6 +106,7 @@ fi
 alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/script_utxo.json)
 script_tx_in=${TXIN::-8}
+echo Script TxIn: $script_tx_in
 
 # collat info
 echo -e "\033[0;36m Gathering Collateral UTxO Information  \033[0m"
@@ -127,10 +131,10 @@ slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 150))
 
+# This is just a silly way to do this imho
 echo -e "\033[0;36m Building Tx \033[0m"
 eval "FEE=\$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --invalid-before ${current_slot} \
     --invalid-hereafter ${final_slot} \

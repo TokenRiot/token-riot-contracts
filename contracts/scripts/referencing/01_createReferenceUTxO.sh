@@ -13,7 +13,7 @@ script_path="../../swap-contract/reference-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
 
 # seller info
-deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
+starter_address=$(cat ../wallets/starter-wallet/payment.addr)
 
 # asset to trade
 pid=$(jq -r '.pid' ../../swap-contract/start_info.json)
@@ -35,26 +35,25 @@ echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 # get utxo
 ${cli} query utxo \
     --testnet-magic ${testnet_magic} \
-    --address ${deleg_address} \
-    --out-file ../tmp/deleg_utxo.json
+    --address ${starter_address} \
+    --out-file ../tmp/starter_utxo.json
 
 # transaction variables
-TXNS=$(jq length ../tmp/deleg_utxo.json)
+TXNS=$(jq length ../tmp/starter_utxo.json)
 if [ "${TXNS}" -eq "0" ]; then
-   echo -e "\n \033[0;31m NO UTxOs Found At ${deleg_address} \033[0m \n";
+   echo -e "\n \033[0;31m NO UTxOs Found At ${starter_address} \033[0m \n";
    exit;
 fi
 alltxin=""
-TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/deleg_utxo.json)
-deleg_tx_in=${TXIN::-8}
+TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/starter_utxo.json)
+starter_tx_in=${TXIN::-8}
 
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
-    --change-address ${deleg_address} \
-    --tx-in ${deleg_tx_in} \
+    --change-address ${starter_address} \
+    --tx-in ${starter_tx_in} \
     --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
     --testnet-magic ${testnet_magic})
@@ -68,7 +67,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/delegator-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/referenceable-tx.signed \
     --testnet-magic ${testnet_magic}

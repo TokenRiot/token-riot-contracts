@@ -17,6 +17,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 deleg_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/delegator-wallet/payment.vkey)
 
+cash_register_pkh="1c51fb873f1baf20249a02a45b99193de08ff6d3f2686b08e23a5c34"
+
 multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig1.vkey)
 multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
 
@@ -85,7 +87,7 @@ if [ "${TXNS}" -eq "0" ]; then
    exit;
 fi
 alltxin=""
-TXIN=$(jq -r --arg alltxin "" --arg delegPkh "${deleg_pkh}" 'to_entries[] | select(.value.inlineDatum.fields[0].fields[0].bytes == $delegPkh) | .key | . + $alltxin + " --tx-in"' ../tmp/script_utxo.json)
+TXIN=$(jq -r --arg alltxin "" --arg delegPkh "${cash_register_pkh}" 'to_entries[] | select(.value.inlineDatum.fields[0].fields[0].bytes == $delegPkh) | .key | . + $alltxin + " --tx-in"' ../tmp/script_utxo.json)
 script_tx_in=${TXIN::-8}
 
 # collat info
@@ -108,7 +110,6 @@ script_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/data-reference-utxo.s
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${deleg_address} \
     --tx-in-collateral ${collat_tx_in} \
