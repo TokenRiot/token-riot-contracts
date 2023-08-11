@@ -1,9 +1,9 @@
 {
     "__comment1__":"The starter token info for the data contract",
-    "pid": "df8e2ddd300b54a606611a8f20be1aef06dc38d560e00b73e57de5a1",
-    "tkn": "0123ac309a3705a0489a012d814e351aa5516c64732f3d76d3d6342cdbd6274f",
+    "pid": "6effa18e41008cd0b13f3959a5a4af40b92ca936bb7669f40d3b1f81",
+    "tkn": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6730",
     "__comment2__":"The cashier address that receives fees",
-    "caPkh":"7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
+    "caPkh":"1c51fb873f1baf20249a02a45b99193de08ff6d3f2686b08e23a5c34",
     "caSc":"",
     "__comment3__":"The service fee info for using the swap contract",
     "servicePerc":40,
@@ -19,6 +19,6 @@
     "hotPkh":"acf819192ae385cd0e9a4248b2b07af994b66b7dde75b7ee5e5a4174",
     "__comment7__":"The staking info",
     "poolId": "bd66ac291ac521deaf22141fb0e5e2f0ed3da63159b9f49e1f500acf",
-    "rewardPkh": "7c1fd41de14a3997825afa2d54a65edb7d253c95c83d400c6366dea4",
-    "rewardSc": ""
+    "rewardPkh": "4adeb55254bae954a509e53965d6e25fe49fb20664ac44137371c651",
+    "rewardSc": "eb5af0489b880db1509a5ed3116e16ab143effb48ad0598b5ac6bebe"
 }

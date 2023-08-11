@@ -1,10 +1,10 @@
 {
   "__comment1__": "The data refrence address",
-  "reference_addr": "addr_test1wp2qkfj0gqmtg5r2lgwyv369e7zwrmvyrzsqp0xau07hrpsj95zrj",
+  "reference_addr": "addr_test1wruv8jjrtsv4lexe87n39zq0n5vgwcjy9l2jn6p77vzfpmgaq0q7w",
   "__comment2__": "The swap refrence address",
-  "swap_addr": "addr_test1xrnqdavy6kgs5qlv49fy8tzgngmaeszqskdc4x6x25euy9f86fe7myd5nys5hvvcpdeejhxg42j6se07x5ukqs4vefpqy60jsv",
+  "swap_addr": "addr_test1xpelpq0hwc6mt73u4ezfm99cxf392uhjl8u9wzjdvttk7rsacr7ayty74g8m47pzky32mla4dcgcvlk5l9dyqf94stxqy2k6gl",
   "__comment3__": "The cip68 refrence address",
-  "cip68_addr": "addr_test1xruqqhaduj80hhq4wh9rgmelyjvh8rrx9texu4qpwfmk89386fe7myd5nys5hvvcpdeejhxg42j6se07x5ukqs4vefpq8yj4q4",
+  "cip68_addr": "addr_test1xzu2vka3p24estn5u90x7ss6prje6zk8450a8fnk895036cacr7ayty74g8m47pzky32mla4dcgcvlk5l9dyqf94stxqx2mg70",
   "__comment4__": "The stake address",
-  "stake_addr": "stake_test17qnayuldjx6fjg2tkxvqkuuetny24fdgvhlr2wtqg2kv5ssfx6jpf"
+  "stake_addr": "stake_test17qwuplwj9j025ra6lq3tzg4dl76kuyvx0m20jkjqyj6c9nqhlzgee"
 }

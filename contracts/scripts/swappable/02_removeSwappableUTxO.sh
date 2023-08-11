@@ -46,7 +46,11 @@ if [ "${TXNS}" -eq "0" ]; then
 fi
 alltxin=""
 TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../tmp/seller_utxo.json)
+# TXIN=$(jq -r --arg alltxin "" 'to_entries[] | select(.value.value | length < 2) | .key | . + $alltxin + " --tx-in"' ../tmp/seller_utxo.json)
 seller_tx_in=${TXIN::-8}
+
+echo Seller UTxO: $seller_tx_in
+
 
 # get script utxo
 echo -e "\033[0;36m Gathering Script UTxO Information  \033[0m"
@@ -85,12 +89,10 @@ slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 250))
 
-
     # --calculate-plutus-script-cost ../tmp/tx.cost \
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --invalid-before ${current_slot} \
     --invalid-hereafter ${final_slot} \
@@ -111,9 +113,7 @@ IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
-# echo TOTAL MEMORY
-# jq -r  '[.[].executionUnits] | add' ../tmp/tx.cost
-
+# jq -r '' ../tmp/tx.cost
 #
 # exit
 #
@@ -131,3 +131,6 @@ echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
     --tx-file ../tmp/tx.signed
+
+tx=$(cardano-cli transaction txid --tx-file ../tmp/tx.signed)
+echo "Tx Hash:" $tx

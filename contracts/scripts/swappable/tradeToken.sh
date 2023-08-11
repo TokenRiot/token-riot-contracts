@@ -16,7 +16,7 @@ asset=""
 return_asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 # asset to trade
-asset="1 8b42154611c712af08ff94e29839f84e84058e0fcab2e7a5c5c14643.28323232295265766f6c7574696f6e617279002fafcd539334feab176d7ccc8e"
+asset="5000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
 
 min_utxo=2000000
 
@@ -46,7 +46,6 @@ HEXTXIN=${TXIN::-8}
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${sender_address} \
     --tx-in ${HEXTXIN} \

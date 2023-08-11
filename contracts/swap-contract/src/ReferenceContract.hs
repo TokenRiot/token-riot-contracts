@@ -53,13 +53,11 @@ data CustomRedeemerType
   | UpdateMultisig IncreaseData
   | UpdateHotKey IncreaseData
   | UpdatePool IncreaseData
-  | Debug -- Remove at production
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ('UpdateCashier,  0)
                                                 , ('UpdateFee,      1)
                                                 , ('UpdateMultisig, 2)
                                                 , ('UpdateHotKey,   3)
                                                 , ('UpdatePool,     4)
-                                                , ('Debug,          5) -- remove at production
                                                 ]
 -------------------------------------------------------------------------------
 -- | mkValidator :: Datum -> Redeemer -> ScriptContext -> Bool
@@ -176,8 +174,6 @@ mkValidator datum redeemer context =
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
     
-    -- | Debug for testing; REMOVE AT PROD OR SET TO FALSE
-    (Reference _ _ _ _, Debug) -> True
   where
     -- | get the datum by searching the tx outputs by the validating value
     getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> ReferenceDatum
