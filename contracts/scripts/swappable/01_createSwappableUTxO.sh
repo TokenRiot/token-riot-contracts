@@ -14,10 +14,11 @@ stake_path="../../swap-contract/stake-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 # seller info
-seller_address=$(cat ../wallets/seller-wallet/payment.addr)
+seller="staked1"
+seller_address=$(cat ../wallets/${seller}-wallet/base.addr)
 
 # asset to trade
-asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
+asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313630"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -66,7 +67,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/seller-wallet/payment.skey \
+    --signing-key-file ../wallets/${seller}-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/swappable-tx.signed \
     --testnet-magic ${testnet_magic}

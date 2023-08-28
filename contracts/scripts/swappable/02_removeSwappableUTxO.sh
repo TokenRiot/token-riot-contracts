@@ -15,8 +15,9 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # seller
-seller_address=$(cat ../wallets/seller-wallet/payment.addr)
-seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/seller-wallet/payment.vkey)
+seller="seller"
+seller_address=$(cat ../wallets/${seller}-wallet/payment.addr)
+seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/${seller}-wallet/payment.vkey)
 
 # asset to trade
 asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
@@ -119,7 +120,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/seller-wallet/payment.skey \
+    --signing-key-file ../wallets/${seller}-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \

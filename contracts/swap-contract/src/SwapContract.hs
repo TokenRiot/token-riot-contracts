@@ -188,6 +188,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
     -}
     
     -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
+    -- This redeemer should be used for all non-timelocked UTxOs.
     (Swappable ptd _ td rd, Transform) ->
       let !walletPkh        = ptPkh ptd
           !info             = V2.scriptContextTxInfo context
@@ -208,6 +209,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "owns" (ptd == ptd')                                             -- seller cant change
           && traceIfFalse "time" (checkValidTimeLock td td')                               -- valid time lock
           && traceIfFalse "roya" (rd == rd')                                               -- royalty known at sale creation
+          -- ^ This line may be useless. If the value changes then the royalty may change.
           && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
         -- transform utxo into an offer
@@ -237,6 +239,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
     
     -- | A trader may update their UTxO, holding validating value constant, incrementing the min ada, and changing the payment datum.
+    -- The Update redeemer is designed for updates to UTxOs that are timelocked. All non-timelocked UTxOs should use Transform.
     (Swappable ptd _ td rd, Update aid) ->
       let !walletPkh       = ptPkh ptd
           !info            = V2.scriptContextTxInfo context

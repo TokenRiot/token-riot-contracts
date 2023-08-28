@@ -14,7 +14,7 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 seller_address=$(cat ../wallets/seller-wallet/payment.addr)
 
 # service fee
-deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
+cash_register_address="addr_test1vqw9r7u88ud67gpyngp2gkuery77prlk60exs6cguga9cdqk3ygn2"
 
 # buyer
 buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
@@ -25,7 +25,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630363632"
+selling_asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
 
 seller_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -81,7 +81,7 @@ else
 
     serviceFee=2000000
 fi
-service_address_out="${deleg_address} + ${serviceFee}"
+service_address_out="${cash_register_address} + ${serviceFee}"
 
 royalty_address_out=$(python3 -c "from royaltyPayout import get_royalty_payout;a='../data/swappable/seller-swappable-datum.json';s=get_royalty_payout(a);print(s)")
 
@@ -141,11 +141,9 @@ if [ "${TXNS}" -eq "0" ]; then
 fi
 collat_utxo=$(jq -r 'keys[0]' ../tmp/collat_utxo.json)
 
-
 echo -e "\033[0;36m Building Tx \033[0m"
 eval "FEE=\$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${buyer_address} \
     --tx-in ${buyer_tx_in} \
@@ -170,7 +168,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-exit
+# exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
@@ -186,3 +184,6 @@ echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
     --tx-file ../tmp/tx.signed
+
+tx=$(cardano-cli transaction txid --tx-file ../tmp/tx.signed)
+echo "Tx Hash:" $tx

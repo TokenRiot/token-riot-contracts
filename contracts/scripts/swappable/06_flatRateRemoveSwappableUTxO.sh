@@ -11,21 +11,23 @@ stake_path="../../swap-contract/stake-contract.plutus"
 script_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
 
 #
-seller_address=$(cat ../wallets/seller-wallet/payment.addr)
+seller="staked1"
+seller_address=$(cat ../wallets/${seller}-wallet/base.addr)
 
 # service fee
 cash_register_address="addr_test1vqw9r7u88ud67gpyngp2gkuery77prlk60exs6cguga9cdqk3ygn2"
 
 # buyer
-buyer_address=$(cat ../wallets/buyer-wallet/payment.addr)
-buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/buyer-wallet/payment.vkey)
+buyer="staked2"
+buyer_address=$(cat ../wallets/${buyer}-wallet/base.addr)
+buyer_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/${buyer}-wallet/payment.vkey)
 
 # collat
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
+selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313630"
 
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
@@ -164,7 +166,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/buyer-wallet/payment.skey \
+    --signing-key-file ../wallets/${buyer}-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
@@ -176,3 +178,6 @@ echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
     --testnet-magic ${testnet_magic} \
     --tx-file ../tmp/tx.signed
+
+tx=$(cardano-cli transaction txid --tx-file ../tmp/tx.signed)
+echo "Tx Hash:" $tx
