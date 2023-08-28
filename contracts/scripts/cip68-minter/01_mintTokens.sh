@@ -48,8 +48,8 @@ echo "Pay UTxO:" $payee_tx_in
 string=${payee_tx_in}
 IFS='#' read -ra array <<< "$string"
 
-prefix_100="28313030295265766f6c7574696f6e617279"
-prefix_222="28323232295265766f6c7574696f6e617279"
+prefix_100="000643b0"
+prefix_222="000de140"
 
 
 ref_name=$(python3 -c "from getTokenName import token_name; token_name('${array[0]}', ${array[1]}, '${prefix_100}')")
@@ -100,7 +100,6 @@ data_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/referenceable-tx.signed
 echo -e "\033[0;36m Building Tx \033[0m"
 FEE=$(${cli} transaction build \
     --babbage-era \
-    --protocol-params-file ../tmp/protocol.json \
     --out-file ../tmp/tx.draft \
     --change-address ${receiver_address} \
     --tx-in-collateral="${collat_utxo}" \
@@ -123,7 +122,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \

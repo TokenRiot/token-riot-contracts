@@ -258,6 +258,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "Datu" (ptd == ptd')                   -- seller cant change
           && traceIfFalse "Time" (td == td')                     -- time can't change
           && traceIfFalse "roya" (rd == rd')                     -- royalty known at sale creation
+          -- ^ This line may be useless. If the price changes then the royalty may change.
           && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 1) -- single tx going in
           && traceIfFalse "Outs" (nOutputs contTxOutputs 1)      -- single going out
 
@@ -342,6 +343,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "newo" (ptd' == ptd'')                                                     -- new owner must own it
           && traceIfFalse "time" (td == td')                                                         -- time data must remain
           && traceIfFalse "roya" (rd == rd')                                                         -- royalty known at sale creation
+          -- ^ This line may be useless. If the price changes then the royalty may change.
           && traceIfFalse "Empt" (pAmt pd /= 0)                                                      -- seller must define price
           && traceIfFalse "ins"  (nInputs txInputs scriptAddr 1)                                     -- single tx going in
           && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                          -- single going out
@@ -405,6 +407,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
               && traceIfFalse "time" (td == td')                     -- time data must remain
               && traceIfFalse "PayD" (pd' == pd'')                   -- payment data must be from offer
               && traceIfFalse "roya" (rd == rd')                     -- royalty known at sale creation
+              -- ^ This line may be useless. If the price changes then the royalty may change.
               && traceIfFalse "Flag" (oFlag ofd == 0)                -- Offer stays in contract
               && traceIfFalse "Ins"  (nInputs txInputs scriptAddr 2) -- single tx going in
               && traceIfFalse "Out"  (nOutputs contTxOutputs 1)      -- single going out

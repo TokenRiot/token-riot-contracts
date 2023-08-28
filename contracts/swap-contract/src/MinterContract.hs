@@ -43,6 +43,7 @@ import           OptimizerOptions       ( theOptimizerOptions )
 import           ReducedFunctions       ( uniqueTokenName, getReferenceInput, signedBy )
 import           ReferenceDataType
 import qualified Plutonomy
+import           UsefulFuncs            ( createBuiltinByteString )
 {-
   Author   : The Ancient Kraken
   Copyright: 2023
@@ -111,8 +112,10 @@ mkPolicy ScriptParameters {..} _ context =
         !txSigners            = txInfoSignatories info
         !pid                  = ownCurrencySymbol context
         !mintedValues         = Value.flattenValue (txInfoMint info)
-        !refName              = uniqueTokenName "(100)" firstTx
-        !nftName              = uniqueTokenName "(222)" firstTx
+        !prefix_100           = createBuiltinByteString [0,6,67,176]       -- (100) is "000643b0"
+        !prefix_222           = createBuiltinByteString [0,13,225,64]      -- (222) is "000de140"
+        !refName              = uniqueTokenName prefix_100 firstTx
+        !nftName              = uniqueTokenName prefix_222 firstTx
     in (traceIfFalse "val" $ Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
     && (traceIfFalse "ref" $ checkAllMints mintedValues pid refName)       -- must mint ref token
     && (traceIfFalse "nft" $ checkAllMints mintedValues pid nftName)       -- must mint nft

@@ -1,51 +1,25 @@
 {
-    "276d45056b12cd76930f7f92944ca17ba45e6d428ee096acef804e11bc02afb2#1": {
+    "68ecc367c7b1c176063828a66f15acc7bf731c3e77ffa3dd59425149cc78abae#2": {
         "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
         "datum": null,
         "datumhash": null,
         "inlineDatum": null,
         "referenceScript": null,
         "value": {
-            "8b42154611c712af08ff94e29839f84e84058e0fcab2e7a5c5c14643": {
-                "28323232295265766f6c7574696f6e61727902785b7ec892c894901a003f23cb": 1
+            "74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c": {
+                "4472697070793233303432303030303330": 1
             },
-            "lovelace": 1150770
+            "lovelace": 1081810
         }
     },
-    "8f68718a1ddcacf25c240417350de6873080e013d206bc040559b811d0066d8c#1": {
+    "b052cbd13fc3c50be8361075a901ce5b9eaacb1d59e403a4dbffc00578fc2266#1": {
         "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
         "datum": null,
         "datumhash": null,
         "inlineDatum": null,
         "referenceScript": null,
         "value": {
-            "8b42154611c712af08ff94e29839f84e84058e0fcab2e7a5c5c14643": {
-                "28323232295265766f6c7574696f6e61727902377b5ca650b32c320ffd2ad694": 1
-            },
-            "lovelace": 1150770
-        }
-    },
-    "8f68718a1ddcacf25c240417350de6873080e013d206bc040559b811d0066d8c#2": {
-        "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
-        "datum": null,
-        "datumhash": null,
-        "inlineDatum": null,
-        "referenceScript": null,
-        "value": {
-            "lovelace": 87838504
-        }
-    },
-    "a963d3001d7161c779ace6623d5d79846be7c2947dbd098268549c2910f064ee#1": {
-        "address": "addr_test1vz3ppzmmzuz0nlsjeyrqjm4pvdxl3cyfe8x06eg6htj2gwgv02qjt",
-        "datum": null,
-        "datumhash": null,
-        "inlineDatum": null,
-        "referenceScript": null,
-        "value": {
-            "8b42154611c712af08ff94e29839f84e84058e0fcab2e7a5c5c14643": {
-                "28323232295265766f6c7574696f6e61727901201607394ec37525de6fd693cf": 1
-            },
-            "lovelace": 1150770
+            "lovelace": 2373040517
         }
     }
 }
