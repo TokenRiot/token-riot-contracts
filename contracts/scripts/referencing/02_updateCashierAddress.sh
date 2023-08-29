@@ -17,10 +17,13 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 deleg_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/delegator-wallet/payment.vkey)
 
-cash_register_pkh="1c51fb873f1baf20249a02a45b99193de08ff6d3f2686b08e23a5c34"
+cash_register_pkh="41c5a3e9b01c41799d42d84fcda7b23abe5993dfd47f386513e07dfa"
 
 multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig1.vkey)
 multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
+
+# single keeper key
+keeper_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/keeper-wallet/payment.vkey)
 
 # asset to trade
 pid=$(jq -r '.pid' ../../swap-contract/start_info.json)
@@ -125,6 +128,7 @@ FEE=$(${cli} transaction build \
     --required-signer-hash ${collat_pkh} \
     --required-signer-hash ${multisig1_pkh} \
     --required-signer-hash ${multisig2_pkh} \
+    --required-signer-hash ${keeper_pkh} \
     --testnet-magic ${testnet_magic})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
@@ -132,7 +136,7 @@ IFS=' ' read -ra FEE <<< "${VALUE[1]}"
 FEE=${FEE[1]}
 echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
