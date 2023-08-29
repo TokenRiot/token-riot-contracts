@@ -125,7 +125,7 @@ ${cli} transaction build-raw \
 
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-1.signed \
     --testnet-magic ${testnet_magic}
@@ -164,7 +164,7 @@ ${cli} transaction build-raw \
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-2.signed \
     --testnet-magic ${testnet_magic}
@@ -202,7 +202,7 @@ ${cli} transaction build-raw \
 
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-3.signed \
     --testnet-magic ${testnet_magic}
@@ -240,7 +240,7 @@ ${cli} transaction build-raw \
 
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-4.signed \
     --testnet-magic ${testnet_magic}
@@ -278,7 +278,7 @@ ${cli} transaction build-raw \
 
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/reference-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx-5.signed \
     --testnet-magic ${testnet_magic}

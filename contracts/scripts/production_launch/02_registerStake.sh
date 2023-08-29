@@ -15,7 +15,7 @@ staker_address=$(${cli} address build --payment-script-file ${script_path} --sta
 
 
 # who will pay for the tx
-payee_address=$(cat ../wallets/delegator-wallet/payment.addr)
+payee_address=$(cat ../wallets/starter-wallet/payment.addr)
 
 stakeAddressDeposit=$(cat ../tmp/protocol.json | jq -r '.stakeAddressDeposit')
 
@@ -58,7 +58,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/delegator-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
     --testnet-magic ${testnet_magic}

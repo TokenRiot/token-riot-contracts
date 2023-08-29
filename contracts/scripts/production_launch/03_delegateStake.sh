@@ -13,7 +13,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # payee
-payee_address=$(cat ../wallets/delegator-wallet/payment.addr)
+payee_address=$(cat ../wallets/starter-wallet/payment.addr)
 #
 # exit
 #
@@ -73,7 +73,7 @@ echo -e "\033[1;32m Fee: \033[0m" $FEE
 #
 echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
-    --signing-key-file ../wallets/delegator-wallet/payment.skey \
+    --signing-key-file ../wallets/starter-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
