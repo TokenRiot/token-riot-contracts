@@ -178,6 +178,8 @@ data RoyaltyData = RoyaltyData
   -- ^ The address information for royalty payments
   , rdAmt  :: [Integer]
   -- ^ The lovelace amount to be sent to the rdAddr
+  -- , rdPerm :: Integer
+  -- ^ Perma lock the royalty data
   }
 PlutusTx.makeIsDataIndexed ''RoyaltyData [('RoyaltyData, 0)]
 

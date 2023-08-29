@@ -61,29 +61,30 @@ data ScriptParameters = ScriptParameters
   }
 PlutusTx.makeLift ''ScriptParameters
 -------------------------------------------------------------------------------
--- | Custom Data Objects
+-- | Custom Data Objects For Minting
 -------------------------------------------------------------------------------
 data MintTxInInfo = MintTxInInfo
-    { txInInfoOutRef   :: V2.TxOutRef
-    , txInInfoResolved :: BuiltinData
-    } 
+  { txInInfoOutRef   :: V2.TxOutRef
+  , txInInfoResolved :: BuiltinData
+  } 
 PlutusTx.unstableMakeIsData ''MintTxInInfo
 
 data MintTxInfo = MintTxInfo
-    { txInfoInputs          :: [MintTxInInfo] -- Transaction inputs
-    , txInfoReferenceInputs :: [V2.TxInInfo]  -- Transaction reference inputs
-    , txInfoOutputs         :: BuiltinData
-    , txInfoFee             :: BuiltinData
-    , txInfoMint            :: V2.Value       -- The 'Value' minted by this transaction.
-    , txInfoDCert           :: BuiltinData
-    , txInfoWdrl            :: BuiltinData
-    , txInfoValidRange      :: BuiltinData
-    , txInfoSignatories     :: [V2.PubKeyHash]-- Transaction signers
-    , txInfoRedeemers       :: BuiltinData
-    , txInfoData            :: BuiltinData
-    , txInfoId              :: BuiltinData
-    }
+  { txInfoInputs          :: [MintTxInInfo]  -- Transaction inputs
+  , txInfoReferenceInputs :: [V2.TxInInfo]   -- Transaction reference inputs
+  , txInfoOutputs         :: BuiltinData
+  , txInfoFee             :: BuiltinData
+  , txInfoMint            :: V2.Value        -- The 'Value' minted by this transaction.
+  , txInfoDCert           :: BuiltinData
+  , txInfoWdrl            :: BuiltinData
+  , txInfoValidRange      :: BuiltinData
+  , txInfoSignatories     :: [V2.PubKeyHash] -- Transaction signers
+  , txInfoRedeemers       :: BuiltinData
+  , txInfoData            :: BuiltinData
+  , txInfoId              :: BuiltinData
+  }
 PlutusTx.unstableMakeIsData ''MintTxInfo
+
 
 data MintScriptPurpose = Minting V2.CurrencySymbol
 PlutusTx.unstableMakeIsData ''MintScriptPurpose
@@ -122,12 +123,13 @@ mkPolicy ScriptParameters {..} _ context =
     && (traceIfFalse "idx" $ V2.txOutRefIdx firstTx < 256)                 -- prevent roll over collision
     && (traceIfFalse "sig" $ signedBy txSigners hotPkh)                    -- hot key must sign
   where
+    -- Must mint or burn both at the same time
     checkAllMints :: [(V2.CurrencySymbol, V2.TokenName, Integer)] -> V2.CurrencySymbol -> V2.TokenName -> Bool
     checkAllMints []                  _   _    = traceError "Nothing Minted"
     checkAllMints ((cs, tkn, amt):xs) cs' tkn' = 
-      if cs == cs' && tkn == tkn' && amt == (1 :: Integer) -- the correct mint
-        then True                                          -- found the mint
-        else checkAllMints xs cs' tkn'                     -- keep searching
+      if cs == cs' && tkn == tkn' && (amt == 1 || amt == -1) -- the correct mint
+        then True                                            -- found the mint
+        else checkAllMints xs cs' tkn'                       -- keep searching
 
     getReferenceDatum :: V2.TxOut -> ReferenceDatum
     getReferenceDatum x = 

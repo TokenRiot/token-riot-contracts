@@ -84,7 +84,7 @@ PlutusTx.makeIsDataIndexed ''CustomRedeemerType [('Remove, 0 ), ('Update, 1 )]
 mkValidator :: ScriptParameters -> CustomDatumType -> CustomRedeemerType -> V2.ScriptContext -> Bool
 mkValidator ScriptParameters {..} _ redeemer context =
   case redeemer of
-    -- Allows the reference data hot key to remove entries
+    -- Allows the reference data hot key to remove metadatum entries
     Remove ->
       let !info                 = V2.scriptContextTxInfo context
           !txInputs             = V2.txInfoInputs info
@@ -99,8 +99,8 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !refValue             = V2.txOutValue refTxOut
           !hotPkh               = mHot sd
       in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)                -- single tx going in
-      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "out" (nOutputs contTxOutputs 0)                     -- nothing going out
+      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
 
     -- Allows the reference data hot key to update entries
@@ -120,11 +120,11 @@ mkValidator ScriptParameters {..} _ redeemer context =
           !hotPkh               = mHot sd
           !incomingValue        = thisValue + UF.adaValue (adaInc aid)
       in traceIfFalse "ins" (nInputs txInputs scriptAddr 1)                -- single tx going in
-      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "out" (nOutputs contTxOutputs 1)                     -- single going out
+      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "dat" (isValueCont contTxOutputs incomingValue)      -- check if value is continue by datum
       && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
---Functions--------------------------------------------------------------------
+--Helper-Functions-------------------------------------------------------------
   where
     getReferenceDatum :: V2.TxOut -> ReferenceDatum
     getReferenceDatum x = 
@@ -136,6 +136,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
             Nothing     -> traceError "Bad Data"
             Just inline -> PlutusTx.unsafeFromBuiltinData @ReferenceDatum inline
 
+    -- doesn't do data validation but checks if its at least inline
     isValueCont :: [V2.TxOut] -> V2.Value -> Bool
     isValueCont txOuts val' = isValueCont' txOuts val'
       where
@@ -150,7 +151,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
                 (V2.OutputDatum (V2.Datum d)) -> 
                   case PlutusTx.fromBuiltinData @CustomDatumType d of
                     Nothing -> traceError "Bad Data"
-                    Just _  -> True
+                    Just _  -> True                                  -- if its inline datum then its good
             else isValueCont' xs val
     
 -------------------------------------------------------------------------------
