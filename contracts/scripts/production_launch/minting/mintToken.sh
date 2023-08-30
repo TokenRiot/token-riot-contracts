@@ -29,8 +29,8 @@ utxo_value=$(${cli} transaction calculate-min-required-utxo \
     --protocol-params-file ../../tmp/protocol.json \
     --tx-out="${out_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
 
-# starter_address_out="${starter_address} + ${utxo_value} + ${mint_asset}"
-starter_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
+starter_address_out="${starter_address} + ${utxo_value} + ${mint_asset}"
+# starter_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
 echo "Mint OUTPUT: "${starter_address_out}
 #
 # exit
@@ -55,7 +55,7 @@ echo Starter UTxO: $starter_tx_in
 # slot time info
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
-final_slot=$(($slot + 250))
+final_slot=$(($slot + 500))
 
 # exit
 echo -e "\033[0;36m Building Tx \033[0m"

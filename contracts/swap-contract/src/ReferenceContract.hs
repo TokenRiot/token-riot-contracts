@@ -81,8 +81,8 @@ mkValidator datum redeemer context =
           !threshold                 = mThres sd
           !(Reference _ sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
-      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
-      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
@@ -102,8 +102,8 @@ mkValidator datum redeemer context =
           !threshold                 = mThres sd
           !(Reference pd' _ sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
-      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
-      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
@@ -123,8 +123,8 @@ mkValidator datum redeemer context =
           !threshold                   = mThres sd
           !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
-      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
-      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
@@ -146,8 +146,8 @@ mkValidator datum redeemer context =
           !threshold                   = mThres sd
           !(Reference pd' sf' sd' sp') = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
-      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
-      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "ser" (sf == sf')                                   -- service fees cant change
       && traceIfFalse "sta" (sp == sp')                                   -- stake pool cant change
@@ -168,8 +168,8 @@ mkValidator datum redeemer context =
           !threshold                 = mThres sd
           !(Reference pd' sf' sd' _) = getOutboundDatumByValue txOutputs incomingValue
       in traceIfFalse "sig" (checkMultisig txSigners listOfPkh threshold) -- valid multisig 
-      && traceIfFalse "Ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
-      && traceIfFalse "Out" (nOutputs contTxOutputs 1)                    -- single going out
+      && traceIfFalse "ins" (nInputs txInputs scriptAddr 1)               -- single tx going in
+      && traceIfFalse "out" (nOutputs contTxOutputs 1)                    -- single going out
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
