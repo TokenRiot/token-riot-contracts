@@ -173,8 +173,14 @@ mkValidator datum redeemer context =
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
+      && traceIfFalse "ran" (rs == rs)
+      -- ^ change rs then we can compile a new contract w/o parameterization.
     
   where
+    -- | A random string to create a new contract.
+    rs :: [Integer]
+    rs = [0,0]
+
     -- | get the datum by searching the tx outputs by the validating value
     getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> ReferenceDatum
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
