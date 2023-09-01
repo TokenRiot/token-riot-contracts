@@ -288,7 +288,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !lockTimeInterval = UF.lockBetweenTimeInterval (tStart td) (tEnd td)
           !txValidityRange  = V2.txInfoValidRange info
       in traceIfFalse "sigs" (signedBy txSigners walletPkh)                            -- seller must sign it
-      && traceIfFalse "pays"  (findPayout txOutputs walletAddr thisValue)               -- seller must get the UTxO
+      && traceIfFalse "pays" (findPayout txOutputs walletAddr thisValue)               -- seller must get the UTxO
       && traceIfFalse "inps" (nInputs txInputs scriptAddr 1)                           -- single tx going in, no continue
       && traceIfFalse "lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
@@ -372,7 +372,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
           !refDatum         = getReferenceDatum refTxOut
           !refValue         = V2.txOutValue refTxOut
           !thisTkn          = getTokenName pd st
-      in traceIfFalse "sigs" (signedBy txSigners buyerPkh)                                       -- seller must sign it
+      in traceIfFalse "sigs" (signedBy txSigners buyerPkh)                                       -- buyer must sign it
       && traceIfFalse "tkns" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd))  -- seller must be paid
       && traceIfFalse "pays" (findPayout txOutputs buyerAddr thisValue)                          -- buyer must be paid
       && traceIfFalse "fees" (checkServiceFeePayout (Swappable ptd pd td rd) refDatum txOutputs) -- check if paying fee

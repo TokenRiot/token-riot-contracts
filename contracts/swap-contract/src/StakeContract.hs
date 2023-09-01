@@ -100,16 +100,19 @@ mkPolicy ScriptParameters {..} redeemer' context =
     
     -- | This handles the pool delegation.
     (Delegate sd) ->
-      let !stakingCred          = V2.StakingHash $ V2.ScriptCredential $ stakeCred sd
-          !info                 = V2.scriptContextTxInfo context
-          !dCerts               = V2.txInfoDCert info
-          !refTxIns             = V2.txInfoReferenceInputs info
-          !refTxOut             = getReferenceInput refTxIns refHash
-          !(Reference _ _ _ sp) = getReferenceDatum refTxOut
-          !refValue             = V2.txOutValue refTxOut
-          !pool                 = (poolId sp)
+      let !stakingCred           = V2.StakingHash $ V2.ScriptCredential $ stakeCred sd
+          !info                  = V2.scriptContextTxInfo context
+          !dCerts                = V2.txInfoDCert info
+          !refTxIns              = V2.txInfoReferenceInputs info
+          !refTxOut              = getReferenceInput refTxIns refHash
+          !(Reference _ _ sd sp) = getReferenceDatum refTxOut
+          !refValue              = V2.txOutValue refTxOut
+          !hotPkh                = mHot sd
+          !pool                  = poolId sp
       in traceIfFalse "del" (checkTheCerts dCerts stakingCred pool)        -- check if correct delegation
       && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
+      && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign to prevent trolls
+
   where
     redeemer :: CustomRedeemerType
     redeemer = PlutusTx.unsafeFromBuiltinData @CustomRedeemerType redeemer'

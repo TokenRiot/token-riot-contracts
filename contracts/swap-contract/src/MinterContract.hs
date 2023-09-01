@@ -127,9 +127,9 @@ mkPolicy ScriptParameters {..} _ context =
     checkAllMints :: [(V2.CurrencySymbol, V2.TokenName, Integer)] -> V2.CurrencySymbol -> V2.TokenName -> Bool
     checkAllMints []                  _   _    = traceError "Nothing Minted"
     checkAllMints ((cs, tkn, amt):xs) cs' tkn' = 
-      if cs == cs' && tkn == tkn' && (amt == 1 || amt == -1) -- the correct mint
-        then True                                            -- found the mint
-        else checkAllMints xs cs' tkn'                       -- keep searching
+      if cs == cs' && tkn == tkn' && (amt == 1 || amt == -1)                  -- the correct mint
+        then True                                                             -- found the mint
+        else checkAllMints xs cs' tkn'                                        -- keep searching
 
     getReferenceDatum :: V2.TxOut -> ReferenceDatum
     getReferenceDatum x = 

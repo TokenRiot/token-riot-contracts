@@ -143,15 +143,15 @@ mkValidator ScriptParameters {..} _ redeemer context =
         isValueCont' :: [V2.TxOut] -> V2.Value -> Bool
         isValueCont' []     _    = traceError "Nothing Found"
         isValueCont' (x:xs) !val =
-          if V2.txOutValue x == val                                  -- strict value continue
+          if V2.txOutValue x == val                                           -- strict value continue
             then
               case V2.txOutDatum x of
-                V2.NoOutputDatum              -> isValueCont' xs val -- skip datumless
+                V2.NoOutputDatum              -> isValueCont' xs val          -- skip datumless
                 (V2.OutputDatumHash _)        -> traceError "Embedded Datum"
                 (V2.OutputDatum (V2.Datum d)) -> 
                   case PlutusTx.fromBuiltinData @CustomDatumType d of
                     Nothing -> traceError "Bad Data"
-                    Just _  -> True                                  -- if its inline datum then its good
+                    Just _  -> True                                           -- if its inline datum then its good
             else isValueCont' xs val
     
 -------------------------------------------------------------------------------
