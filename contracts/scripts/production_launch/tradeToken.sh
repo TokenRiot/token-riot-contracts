@@ -3,10 +3,7 @@ set -e
 
 # SEND All Funds To Receiver Address
 
-# SET UP VARS HERE
-export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
-cli=$(cat path_to_cli.sh)
-testnet_magic=$(cat ../data/testnet.magic)
+source .env
 
 # Addresses
 sender_address=$(cat ../wallets/starter-wallet/payment.addr)
@@ -16,7 +13,7 @@ receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9
 #
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${sender_address} \
     --out-file ../tmp/sender_utxo.json
 
@@ -35,7 +32,7 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${receiver_address} \
     --tx-in ${HEXTXIN} \
-    --testnet-magic ${testnet_magic})
+    ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -49,11 +46,11 @@ ${cli} transaction sign \
     --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
-    --testnet-magic ${testnet_magic}
+    ${network}
 #
 # exit
 #
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --tx-file ../tmp/tx.signed

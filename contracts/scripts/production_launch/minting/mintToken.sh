@@ -9,9 +9,17 @@ mint_path="policy/policy.script"
 # collat, seller, reference
 starter_address=$(cat ../../wallets/starter-wallet/payment.addr)
 starter_pkh=$(${cli} address key-hash --payment-verification-key-file ../../wallets/starter-wallet/payment.vkey)
-minter_pkh=$(${cli} address key-hash --payment-verification-key-file ../../wallets/minter-wallet/minter.vkey)
 
-out_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
+# this key must be added to the policy script
+one_hour=$(${cli} query tip ${network} | jq '.slot + 300')
+jq -r \
+--arg pkh ${starter_pkh} \
+--argjson slot ${one_hour} \
+'.scripts[0].keyHash=$pkh |
+.scripts[1].slot=$slot
+' \
+${mint_path} | sponge ${mint_path}
+
 
 # pid and tkn
 policy_id=$(cardano-cli transaction policyid --script-file ${mint_path})
@@ -24,10 +32,9 @@ mint_asset="1 ${policy_id}.${token_name}"
 utxo_value=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../../tmp/protocol.json \
-    --tx-out="${out_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
+    --tx-out="${starter_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
 
 starter_address_out="${starter_address} + ${utxo_value} + ${mint_asset}"
-# starter_address_out="${out_address} + ${utxo_value} + ${mint_asset}"
 echo "Mint OUTPUT: "${starter_address_out}
 #
 # exit
@@ -52,7 +59,7 @@ echo Starter UTxO: $starter_tx_in
 # slot time info
 slot=$(${cli} query tip ${network} | jq .slot)
 current_slot=$(($slot - 1))
-final_slot=$(($slot + 500))
+final_slot=$(($slot + 250))
 
 # exit
 echo -e "\033[0;36m Building Tx \033[0m"
