@@ -10,6 +10,9 @@ ${cli} query protocol-parameters ${network} --out-file ../tmp/protocol.json
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
+# single keeper key
+keeper_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/keeper-wallet/payment.vkey)
+
 # payee
 payee_address=$(cat ../wallets/starter-wallet/payment.addr)
 #
@@ -60,6 +63,7 @@ FEE=$(${cli} transaction build \
     --certificate-plutus-script-v2 \
     --certificate-reference-tx-in-redeemer-file ../data/staking/register-redeemer.json \
     --required-signer-hash ${collat_pkh} \
+    --required-signer-hash ${keeper_pkh} \
     ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
@@ -73,6 +77,7 @@ echo -e "\033[0;36m Signing \033[0m"
 ${cli} transaction sign \
     --signing-key-file ../wallets/starter-wallet/payment.skey \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
+    --signing-key-file ../wallets/keeper-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
     ${network}

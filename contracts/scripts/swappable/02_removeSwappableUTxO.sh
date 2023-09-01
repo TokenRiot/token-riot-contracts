@@ -14,13 +14,13 @@ script_address=$(${cli} address build --payment-script-file ${script_path} --sta
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
-# seller
-seller="seller"
-seller_address=$(cat ../wallets/${seller}-wallet/payment.addr)
+# seller info
+seller="staked1"
+seller_address=$(cat ../wallets/${seller}-wallet/base.addr)
 seller_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/${seller}-wallet/payment.vkey)
 
 # asset to trade
-asset="20000000000 698a6ea0ca99f315034072af31eaac6ec11fe8558d3f48e9775aab9d.7444524950"
+asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \

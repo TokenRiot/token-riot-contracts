@@ -8,15 +8,15 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/staked2-wallet/base.addr)
-receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
-# receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
+# receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
+receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
 # Define Asset to be printed here
 asset=""
 return_asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 # asset to trade
-asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313630"
+asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
 
 min_utxo=2000000
 

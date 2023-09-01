@@ -179,7 +179,7 @@ mkValidator datum redeemer context =
   where
     -- | A random string to create a new contract.
     rs :: [Integer]
-    rs = [0,0]
+    rs = [0,1]
 
     -- | get the datum by searching the tx outputs by the validating value
     getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> ReferenceDatum

@@ -36,6 +36,7 @@ import PlutusTx.Prelude
   Copyright: 2023
 -}
 -- | custom optimizer options; change as needed
+-- Default is trace rewrite, use remove at prod
 theOptimizerOptions :: Plutonomy.OptimizerOptions
 theOptimizerOptions = Plutonomy.OptimizerOptions
   { ooOptimizerRounds = 2
@@ -51,9 +52,9 @@ theOptimizerOptions = Plutonomy.OptimizerOptions
   , ooIfLambda        = True
   , ooCombineBindings = True
   , ooKnownRewrites   = True
-  , ooTraceRewrite    = Just TraceRemove -- Just TraceRewrite
-  , ooIfeRewrite      = Just IfeRewriteMore
-  , ooAppError        = Just Options.AppErrorAll
+  , ooTraceRewrite    = Just TraceRewrite -- Just TraceRemove -- 
+  , ooIfeRewrite      = Just IfeRewrite
+  , ooAppError        = Just Options.AppErrorValue
   , ooCommuteEquals   = True
   , ooLetZero         = True
   , ooCSE             = True

@@ -15,7 +15,8 @@ seller="staked1"
 seller_address=$(cat ../wallets/${seller}-wallet/base.addr)
 
 # service fee
-cash_register_address="addr_test1vqw9r7u88ud67gpyngp2gkuery77prlk60exs6cguga9cdqk3ygn2"
+# UPDATE THIS TO THE CORRECT CASH REGISTER ADDRESS
+cash_register_address="addr_test1vpqutglfkqwyz7vagtvylnd8kgatukvnml287wr9z0s8m7sm54zsf"
 
 # buyer
 buyer="staked2"
@@ -27,15 +28,15 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313630"
+asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
 
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
     --protocol-params-file ../tmp/protocol.json \
     --tx-out-inline-datum-file ../data/swappable/seller-swappable-datum.json \
-    --tx-out="${script_address} + 5000000 + ${selling_asset}" | tr -dc '0-9')
+    --tx-out="${script_address} + 5000000 + ${asset}" | tr -dc '0-9')
 
-buyer_address_out="${buyer_address} + ${script_min_utxo} + ${selling_asset}"
+buyer_address_out="${buyer_address} + ${script_min_utxo} + ${asset}"
 
 payment_pid="$(jq -r '.fields[1].fields[0].bytes' ../data/swappable/seller-swappable-datum.json)"
 payment_tkn="$(jq -r '.fields[1].fields[1].bytes' ../data/swappable/seller-swappable-datum.json)"
@@ -131,7 +132,9 @@ data_ref_utxo=$(${cli} transaction txid --tx-file ../tmp/referenceable-tx.signed
 # slot time info
 slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
 current_slot=$(($slot - 1))
-final_slot=$(($slot + 150))
+final_slot=$(($slot + 500))
+
+# exit
 
 # This is just a silly way to do this imho
 echo -e "\033[0;36m Building Tx \033[0m"
