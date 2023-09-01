@@ -1,9 +1,7 @@
 #!/bin/bash
 set -e
 
-export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
-cli=$(cat path_to_cli.sh)
-testnet_magic=1
+source ../.env
 
 # minting policy
 mint_path="policy/policy.script"
@@ -16,10 +14,9 @@ minter_pkh=$(${cli} address key-hash --payment-verification-key-file ../../walle
 out_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
 # pid and tkn
-
 policy_id=$(cardano-cli transaction policyid --script-file ${mint_path})
-# token_name=$(echo -n "ThisIsOneStarterTokenForTesting9" | od -A n -t x1 | sed 's/ *//g' | tr -d '\n')
 token_name="546f6b656e52696f742e696f"
+
 # assets
 mint_asset="1 ${policy_id}.${token_name}"
 
@@ -37,7 +34,7 @@ echo "Mint OUTPUT: "${starter_address_out}
 #
 echo -e "\033[0;36m Gathering Seller UTxO Information  \033[0m"
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${starter_address} \
     --out-file ../../tmp/starter_utxo.json
 
@@ -53,7 +50,7 @@ starter_tx_in=${TXIN::-8}
 echo Starter UTxO: $starter_tx_in
 
 # slot time info
-slot=$(${cli} query tip --testnet-magic ${testnet_magic} | jq .slot)
+slot=$(${cli} query tip ${network} | jq .slot)
 current_slot=$(($slot - 1))
 final_slot=$(($slot + 500))
 
@@ -70,7 +67,7 @@ FEE=$(${cli} transaction build \
     --required-signer-hash ${starter_pkh} \
     --mint-script-file ${mint_path} \
     --mint="${mint_asset}" \
-    --testnet-magic ${testnet_magic})
+    ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -84,11 +81,11 @@ ${cli} transaction sign \
     --signing-key-file ../../wallets/starter-wallet/payment.skey \
     --tx-body-file ../../tmp/tx.draft \
     --out-file ../../tmp/tx.signed \
-    --testnet-magic ${testnet_magic}
+    ${network}
 #    
 # exit
 #
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --tx-file ../../tmp/tx.signed

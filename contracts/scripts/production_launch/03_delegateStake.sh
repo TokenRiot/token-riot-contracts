@@ -1,12 +1,10 @@
 #!/bin/bash
 set -e
 
-export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
-cli=$(cat path_to_cli.sh)
-testnet_magic=$(cat ../data/testnet.magic)
+source .env
 
 # get params
-${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
+${cli} query protocol-parameters ${network} --out-file ../tmp/protocol.json
 
 # collateral for stake contract
 collat_address=$(cat ../wallets/collat-wallet/payment.addr)
@@ -19,7 +17,7 @@ payee_address=$(cat ../wallets/starter-wallet/payment.addr)
 #
 echo -e "\033[0;36m Gathering Payee UTxO Information  \033[0m"
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${payee_address} \
     --out-file ../tmp/payee_utxo.json
 
@@ -35,7 +33,7 @@ payee_tx_in=${TXIN::-8}
 # collat info
 echo -e "\033[0;36m Gathering Collateral UTxO Information  \033[0m"
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${collat_address} \
     --out-file ../tmp/collat_utxo.json
 
@@ -62,7 +60,7 @@ FEE=$(${cli} transaction build \
     --certificate-plutus-script-v2 \
     --certificate-reference-tx-in-redeemer-file ../data/staking/register-redeemer.json \
     --required-signer-hash ${collat_pkh} \
-    --testnet-magic ${testnet_magic})
+    ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -77,11 +75,11 @@ ${cli} transaction sign \
     --signing-key-file ../wallets/collat-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
-    --testnet-magic ${testnet_magic}
+    ${network}
 #    
 # exit
 #
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --tx-file ../tmp/tx.signed

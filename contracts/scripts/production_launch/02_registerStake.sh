@@ -1,17 +1,15 @@
 #!/bin/bash
 set -e
 
-export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
-cli=$(cat path_to_cli.sh)
-testnet_magic=$(cat ../data/testnet.magic)
+source .env
 
 # get params
-${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
+${cli} query protocol-parameters ${network} --out-file ../tmp/protocol.json
 
 # scripts
 script_path="../../swap-contract/swap-contract.plutus"
 stake_path="../../swap-contract/stake-contract.plutus"
-staker_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} --testnet-magic ${testnet_magic})
+staker_address=$(${cli} address build --payment-script-file ${script_path} --stake-script-file ${stake_path} ${network})
 
 
 # who will pay for the tx
@@ -27,7 +25,7 @@ echo "Register OUTPUT: "${staker_address_out}
 #
 echo -e "\033[0;36m Gathering Payee UTxO Information  \033[0m"
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${payee_address} \
     --out-file ../tmp/payee_utxo.json
 
@@ -47,7 +45,7 @@ FEE=$(${cli} transaction build \
     --change-address ${payee_address} \
     --tx-in ${payee_tx_in} \
     --certificate ../../swap-contract/certs/stake.cert \
-    --testnet-magic ${testnet_magic})
+    ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -61,11 +59,11 @@ ${cli} transaction sign \
     --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/tx.signed \
-    --testnet-magic ${testnet_magic}
+    ${network}
 #    
 # exit
 #
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --tx-file ../tmp/tx.signed

@@ -1,16 +1,14 @@
 #!/bin/bash
 set -e
 
-export CARDANO_NODE_SOCKET_PATH=$(cat path_to_socket.sh)
-cli=$(cat path_to_cli.sh)
-testnet_magic=$(cat ../data/testnet.magic)
+source .env
 
 # get current params
-${cli} query protocol-parameters --testnet-magic ${testnet_magic} --out-file ../tmp/protocol.json
+${cli} query protocol-parameters ${network} --out-file ../tmp/protocol.json
 
 # staked smart contract address
 script_path="../../swap-contract/reference-contract.plutus"
-script_address=$(${cli} address build --payment-script-file ${script_path} --testnet-magic ${testnet_magic})
+script_address=$(${cli} address build --payment-script-file ${script_path} ${network})
 
 # seller info
 starter_address=$(cat ../wallets/starter-wallet/payment.addr)
@@ -29,12 +27,12 @@ min_utxo=$(${cli} transaction calculate-min-required-utxo \
 script_address_out="${script_address} + ${min_utxo} + ${asset}"
 echo "Script OUTPUT: "${script_address_out}
 #
-# exit
+exit
 #
 echo -e "\033[0;36m Gathering UTxO Information  \033[0m"
 # get utxo
 ${cli} query utxo \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --address ${starter_address} \
     --out-file ../tmp/starter_utxo.json
 
@@ -56,7 +54,7 @@ FEE=$(${cli} transaction build \
     --tx-in ${starter_tx_in} \
     --tx-out="${script_address_out}" \
     --tx-out-inline-datum-file ../data/referencing/reference-datum.json \
-    --testnet-magic ${testnet_magic})
+    ${network})
 
 IFS=':' read -ra VALUE <<< "${FEE}"
 IFS=' ' read -ra FEE <<< "${VALUE[1]}"
@@ -70,11 +68,11 @@ ${cli} transaction sign \
     --signing-key-file ../wallets/starter-wallet/payment.skey \
     --tx-body-file ../tmp/tx.draft \
     --out-file ../tmp/referenceable-tx.signed \
-    --testnet-magic ${testnet_magic}
+    ${network}
 #
 # exit
 #
 echo -e "\033[0;36m Submitting \033[0m"
 ${cli} transaction submit \
-    --testnet-magic ${testnet_magic} \
+    ${network} \
     --tx-file ../tmp/referenceable-tx.signed
