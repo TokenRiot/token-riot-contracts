@@ -17,6 +17,8 @@ collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/
 deleg_address=$(cat ../wallets/delegator-wallet/payment.addr)
 deleg_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/delegator-wallet/payment.vkey)
 
+deleg_pkh="1c51fb873f1baf20249a02a45b99193de08ff6d3f2686b08e23a5c34"
+
 multisig1_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig1.vkey)
 multisig2_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/multisig-wallet/multisig2.vkey)
 

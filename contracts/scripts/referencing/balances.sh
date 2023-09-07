@@ -25,6 +25,7 @@ ${cli} query tip --testnet-magic ${testnet_magic} | jq
 echo -e "\033[1;35m Script Address: \033[0m" 
 echo -e "\n \033[1;35m ${SCRIPT_ADDRESS} \033[0m \n";
 ${cli} query utxo --address ${SCRIPT_ADDRESS} --testnet-magic ${testnet_magic}
+${cli} query utxo --address ${SCRIPT_ADDRESS} --testnet-magic ${testnet_magic} --out-file ../tmp/current_reference_datum.json
 
 #
 echo -e "\033[1;36m Seller Address: \033[0m" 

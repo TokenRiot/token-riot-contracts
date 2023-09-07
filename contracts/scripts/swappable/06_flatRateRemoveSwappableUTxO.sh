@@ -27,7 +27,7 @@ collat_address=$(cat ../wallets/collat-wallet/payment.addr)
 collat_pkh=$(${cli} address key-hash --payment-verification-key-file ../wallets/collat-wallet/payment.vkey)
 
 # asset to trade
-selling_asset="1 7d878696b149b529807aa01b8e20785e0a0d470c32c13f53f08a55e3.44455630313630"
+selling_asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
 
 script_min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \
