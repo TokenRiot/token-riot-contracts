@@ -8,8 +8,8 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/staked2-wallet/base.addr)
-# receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
-receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
+receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
+# receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
 # Define Asset to be printed here
 asset=""

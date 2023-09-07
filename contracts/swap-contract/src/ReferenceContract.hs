@@ -48,11 +48,11 @@ import qualified UsefulFuncs           as UF
 -- | Create the redeemer parameters data object.
 -------------------------------------------------------------------------------
 data CustomRedeemerType
-  = UpdateCashier IncreaseData
-  | UpdateFee IncreaseData
+  = UpdateCashier  IncreaseData
+  | UpdateFee      IncreaseData
   | UpdateMultisig IncreaseData
-  | UpdateHotKey IncreaseData
-  | UpdatePool IncreaseData
+  | UpdateHotKey   IncreaseData
+  | UpdatePool     IncreaseData
 PlutusTx.makeIsDataIndexed ''CustomRedeemerType [ ('UpdateCashier,  0)
                                                 , ('UpdateFee,      1)
                                                 , ('UpdateMultisig, 2)
@@ -173,29 +173,22 @@ mkValidator datum redeemer context =
       && traceIfFalse "pay" (pd == pd')                                   -- payment data cant change
       && traceIfFalse "sta" (sf == sf')                                   -- stake pool cant change
       && traceIfFalse "dat" (sd == sd')                                   -- signers cant change
-      && traceIfFalse "ran" (rs == rs)
-      -- ^ change rs then we can compile a new contract w/o parameterization.
-    
   where
-    -- | A random string to create a new contract.
-    rs :: [Integer]
-    rs = [0,1]
-
     -- | get the datum by searching the tx outputs by the validating value
     getOutboundDatumByValue :: [V2.TxOut] -> V2.Value -> ReferenceDatum
     getOutboundDatumByValue txOuts val' = getOutboundDatumByValue' txOuts val'
       where
         getOutboundDatumByValue' :: [V2.TxOut] -> V2.Value -> ReferenceDatum
-        getOutboundDatumByValue' []     _    = traceError "No Datum"
+        getOutboundDatumByValue' []     _    = traceError "No Datum Found"
         getOutboundDatumByValue' (x:xs) !val =
           if V2.txOutValue x == val                                            -- strict value continue
           then
             case V2.txOutDatum x of
               V2.NoOutputDatum              -> getOutboundDatumByValue' xs val -- skip datumless
-              (V2.OutputDatumHash _)        -> traceError "Embedded Datum"
+              (V2.OutputDatumHash _)        -> traceError "Embedded Datum Found"
               (V2.OutputDatum (V2.Datum d)) ->                                 -- inline datum only
                 case PlutusTx.fromBuiltinData d of
-                  Nothing     -> traceError "Bad Datum"
+                  Nothing     -> traceError "Bad Datum Found"
                   Just inline -> PlutusTx.unsafeFromBuiltinData @ReferenceDatum inline
           else getOutboundDatumByValue' xs val
 -------------------------------------------------------------------------------

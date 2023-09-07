@@ -106,8 +106,8 @@ checkForRoyaltyPayout (RoyaltyData ptd amt) txOutputs =
 {-# INLINABLE loopRoyalyPayments #-}
 loopRoyalyPayments :: [PayToData] -> [Integer] -> [V2.TxOut] -> Bool
 loopRoyalyPayments []         []         _         = True
-loopRoyalyPayments []         _          _         = False -- uneven lists
-loopRoyalyPayments _          []         _         = False -- uneven lists
+loopRoyalyPayments []         _          _         = False -- uneven lists fail
+loopRoyalyPayments _          []         _         = False -- uneven lists fail
 loopRoyalyPayments (ptd:ptds) (amt:amts) txOutputs =
   if royaltyPaid == True
     then loopRoyalyPayments ptds amts txOutputs
@@ -185,6 +185,8 @@ mkValidator ScriptParameters {..} datum redeemer context =
       
       echo `expr $(echo $(date +%s%3N)) + $(echo 300000)`
       # 1659817771786
+
+      This will place a 5 min timelock on a UTxO.
     -}
     
     -- | A trader may transform their UTxO, holding the owner constant, changing the value and time.
@@ -208,8 +210,6 @@ mkValidator ScriptParameters {..} datum redeemer context =
           && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                -- single going out
           && traceIfFalse "owns" (ptd == ptd')                                             -- seller cant change
           && traceIfFalse "time" (checkValidTimeLock td td')                               -- valid time lock
-          -- && traceIfFalse "roya" (rd == rd')                                               -- royalty known at sale creation
-          -- ^ This line may be useless. If the value changes then the royalty may change.
           && traceIfFalse "lock" (UF.isTxOutsideInterval lockTimeInterval txValidityRange) -- seller can unlock it
 
         -- transform utxo into an offer
@@ -257,8 +257,6 @@ mkValidator ScriptParameters {..} datum redeemer context =
              traceIfFalse "sigs" (signedBy txSigners walletPkh)  -- seller must sign it
           && traceIfFalse "owns" (ptd == ptd')                   -- seller cant change
           && traceIfFalse "time" (td == td')                     -- time can't change
-          -- && traceIfFalse "roya" (rd == rd')                     -- royalty known at sale creation
-          -- ^ This line may be useless. If the price changes then the royalty may change.
           && traceIfFalse "inps" (nInputs txInputs scriptAddr 1) -- single tx going in
           && traceIfFalse "outs" (nOutputs contTxOutputs 1)      -- single going out
 
@@ -317,6 +315,7 @@ mkValidator ScriptParameters {..} datum redeemer context =
       && traceIfFalse "vals" (Value.valueOf refValue lockPid lockTkn == 1)                   -- check if correct reference
     
     -- | Flat rate swap of UTxO for an predefined amount of a single token.
+    -- This is the juicing endpoint as it remains inside the contract.
     (Swappable ptd pd td rd, FlatRate ptd' aid st) ->
       let !walletAddr      = UF.createAddress (ptPkh ptd) (ptSc ptd)
           !info            = V2.scriptContextTxInfo context
@@ -339,11 +338,9 @@ mkValidator ScriptParameters {..} datum redeemer context =
              traceIfFalse "pays" (findTokenHolder txOutputs walletAddr (pPid pd) thisTkn (pAmt pd))  -- seller must be paid
           && traceIfFalse "royp" (checkForRoyaltyPayout rd txOutputs)                                -- check for royalty payment 
           && traceIfFalse "fees" (checkServiceFeePayout (Swappable ptd pd td rd) refDatum txOutputs) -- check if paying fee
-          && traceIfFalse "oldo" (ptd /= ptd'')                                                      -- cant sell this
+          && traceIfFalse "oldo" (ptd /= ptd'')                                                      -- cant self sell this
           && traceIfFalse "newo" (ptd' == ptd'')                                                     -- new owner must own it
           && traceIfFalse "time" (td == td')                                                         -- time data must remain
-          -- && traceIfFalse "roya" (rd == rd')                                                         -- royalty known at sale creation
-          -- ^ This line may be useless. If the price changes then the royalty may change.
           && traceIfFalse "empt" (pAmt pd /= 0)                                                      -- seller must define price
           && traceIfFalse "inps" (nInputs txInputs scriptAddr 1)                                     -- single tx going in
           && traceIfFalse "outs" (nOutputs contTxOutputs 1)                                          -- single going out
@@ -406,8 +403,6 @@ mkValidator ScriptParameters {..} datum redeemer context =
               && traceIfFalse "newo" (ptd' == ptd'')                 -- new owner must own it
               && traceIfFalse "time" (td == td')                     -- time data must remain
               && traceIfFalse "payd" (pd' == pd'')                   -- payment data must be from offer
-              -- && traceIfFalse "roya" (rd == rd')                     -- royalty known at sale creation
-              -- ^ This line may be useless. If the price changes then the royalty may change.
               && traceIfFalse "flag" (oFlag ofd == 0)                -- Offer stays in contract
               && traceIfFalse "inps" (nInputs txInputs scriptAddr 2) -- single tx going in
               && traceIfFalse "outs" (nOutputs contTxOutputs 1)      -- single going out

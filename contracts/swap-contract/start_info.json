@@ -1,6 +1,6 @@
 {
     "__comment1__":"The starter token info for the data contract",
-    "pid": "dcfdd953ca794f9fc83c7501e4cb143d9045bf0ab08e842393a255ac",
+    "pid": "f0d2efc5f1432eb43d6078621a3a670d2a7542cbd80b4b128beaa1d5",
     "tkn": "546f6b656e52696f742e696f",
     "__comment2__":"The cashier address that receives fees",
     "caPkh":"41c5a3e9b01c41799d42d84fcda7b23abe5993dfd47f386513e07dfa",
@@ -18,7 +18,7 @@
     "__comment6__":"The hot key info",
     "hotPkh":"d3802ad24a74df692ba4206b7a72b3df3fa221f2c1416a776af1fc93",
     "__comment7__":"The staking info",
-    "poolId": "bd66ac291ac521deaf22141fb0e5e2f0ed3da63159b9f49e1f500acf",
+    "poolId": "1e3105f23f2ac91b3fb4c35fa4fe301421028e356e114944e902005b",
     "rewardPkh": "f423dc404d730fc008e6b9fa626d6a8f31a98d6cc6436b75e098b1c1",
     "rewardSc": "81d500d2cdcc15423f9c5b1a7238b2378b32f05075c543deb44003b2"
 }

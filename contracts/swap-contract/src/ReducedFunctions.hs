@@ -46,11 +46,12 @@ import qualified Plutus.V1.Ledger.Value as Value
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+{-# INLINABLE getReferenceInput #-}
 getReferenceInput :: [V2.TxInInfo] -> V2.ValidatorHash -> V2.TxOut
 getReferenceInput txRefs vHash = getReferenceInput' txRefs
   where
     getReferenceInput' :: [V2.TxInInfo] -> V2.TxOut
-    getReferenceInput' []     = traceError "no references"
+    getReferenceInput' []     = traceError "No Reference Found"
     getReferenceInput' (x:xs)
       | checkHash x == True   = V2.txInInfoResolved x
       | otherwise             = getReferenceInput' xs
@@ -59,7 +60,7 @@ getReferenceInput txRefs vHash = getReferenceInput' txRefs
     checkHash (V2.TxInInfo _ (V2.TxOut (V2.Address (V2.ScriptCredential vHash') _) _ _ _)) = vHash == vHash' 
     checkHash _                                                                            = False
 
-{-# inlinable getScriptOutputs #-}
+{-# INLINABLE getScriptOutputs #-}
 getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
 getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
   where
@@ -70,31 +71,31 @@ getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
       | otherwise                 = getScriptOutputs' xs addr contOuts
 
 -- rewrite findOwnInput without higher order functions
-{-# inlinable ownInput #-}
+{-# INLINABLE ownInput #-}
 ownInput :: V2.ScriptContext -> V2.TxOut
 ownInput (V2.ScriptContext t_info (V2.Spending o_ref)) = getScriptInput (V2.txInfoInputs t_info) o_ref
-ownInput _                                             = traceError "no script input"
+ownInput _                                             = traceError "No Script Input"
 
 -- get the validating script input
-{-# inlinable getScriptInput #-}
+{-# INLINABLE getScriptInput #-}
 getScriptInput :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxOut
-getScriptInput []                           _     = traceError "script input not found"
+getScriptInput []                           _     = traceError "Script Input Not Found"
 getScriptInput ((V2.TxInInfo tref ot) : xs) o_ref
   | tref == o_ref                                 = ot
   | otherwise                                     = getScriptInput xs o_ref
 
-{-# inlinable txInFromTxRef #-}
+{-# INLINABLE txInFromTxRef #-}
 txInFromTxRef :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxInInfo
 txInFromTxRef txIns outRef = txInFromTxRef' txIns
   where
     txInFromTxRef' :: [V2.TxInInfo] -> V2.TxInInfo
-    txInFromTxRef' []                 = traceError "Cant Find Tx In"
+    txInFromTxRef' []                 = traceError "No TxIn Found"
     txInFromTxRef' (x:xs)
       | V2.txInInfoOutRef x == outRef = x
       | otherwise                     = txInFromTxRef' xs
 
 -- | Check if a transaction was signed by the given public key.
-{-# inlinable signedBy #-}
+{-# INLINABLE signedBy #-}
 signedBy :: [V2.PubKeyHash] -> V2.PubKeyHash -> Bool
 signedBy list k = loop list
   where
@@ -131,6 +132,7 @@ findPayout list addr val = isPayoutExact list
         checkVal = Value.geq (V2.txOutValue x) val
 
 -- | Search a list of TxOut for a TxOut with a specific address that is hodling an exact amount of of a singular token.
+{-# INLINABLE findTokenHolder #-}
 findTokenHolder :: [V2.TxOut] -> V2.Address -> V2.CurrencySymbol -> V2.TokenName -> Integer -> Bool
 findTokenHolder list addr pid tkn val = isAddrHoldingExactlyToken' list
   where
