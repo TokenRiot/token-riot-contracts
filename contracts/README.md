@@ -3,12 +3,12 @@ A set of contracts to handle any and all types of token swapping for Token Riot.
 ```json
 {
   "__comment1__": "The data refrence address",
-  "reference_addr": "addr_test1wrkgt3nmt0v5a5vc27e5zhq28xvgymyq8hfdtw2twjm4mjctwcw9q",
+  "reference_addr": "addr_test1wpfm7crvpnmz45al9qfl58ez5vyy0n0xh89yg9q59w230vcdmpaf6",
   "__comment2__": "The swap refrence address",
-  "swap_addr": "addr_test1xptwaswhk2d7vmzm92vzjh3fxkh7sszzrxxz9g0uece6lls20lpkuug7urhu4ef845l9vd6azylgfgccmh9nx3yj32qs5s2kdl",
+  "swap_addr": "addr_test1xzr4qm4glaxhs29f0yl7j9e50xtrtpa0afx36tvuxqsgsdcf7qud5lrsms3uuzr8v4efzw7axvclhag3t2hr76xj065q3pw9pg",
   "__comment3__": "The cip68 refrence address",
-  "cip68_addr": "addr_test1xqw4vccyf64lhn37uslfzwut3y6nl8p3ntuf56y9a22825q20lpkuug7urhu4ef845l9vd6azylgfgccmh9nx3yj32qsqqjeqh",
+  "cip68_addr": "addr_test1xpr8tqzeq353yn6trqde65xwvgx8lp6lw2wmyanun4wk9fgf7qud5lrsms3uuzr8v4efzw7axvclhag3t2hr76xj065q85963t",
   "__comment4__": "The stake address",
-  "stake_addr": "stake_test17q98lsmwwy0wpm72u5n660jkxaw3z05y5vvdmjengjfg4qgrlmeu2"
+  "stake_addr": "stake_test17qylqwx603cdcg7wppnk2u5380wnxv0m75g44t3ldrf8a2qd0mld4"
 }
 ```
