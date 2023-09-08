@@ -46,6 +46,8 @@ import qualified Plutus.V1.Ledger.Value as Value
   Author   : The Ancient Kraken
   Copyright: 2023
 -}
+-- | Given a list of reference inputs find the reference input that has the
+-- correct validator hash.
 {-# INLINABLE getReferenceInput #-}
 getReferenceInput :: [V2.TxInInfo] -> V2.ValidatorHash -> V2.TxOut
 getReferenceInput txRefs vHash = getReferenceInput' txRefs
@@ -60,6 +62,7 @@ getReferenceInput txRefs vHash = getReferenceInput' txRefs
     checkHash (V2.TxInInfo _ (V2.TxOut (V2.Address (V2.ScriptCredential vHash') _) _ _ _)) = vHash == vHash' 
     checkHash _                                                                            = False
 
+-- | Return a list of outputs that contain a specific address.
 {-# INLINABLE getScriptOutputs #-}
 getScriptOutputs :: [V2.TxOut] -> V2.Address -> [V2.TxOut]
 getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
@@ -70,13 +73,13 @@ getScriptOutputs txOuts addr' = getScriptOutputs' txOuts addr' []
       | V2.txOutAddress x == addr = getScriptOutputs' xs addr (x:contOuts)
       | otherwise                 = getScriptOutputs' xs addr contOuts
 
--- rewrite findOwnInput without higher order functions
+-- | Rewrite findOwnInput without higher order functions.
 {-# INLINABLE ownInput #-}
 ownInput :: V2.ScriptContext -> V2.TxOut
 ownInput (V2.ScriptContext t_info (V2.Spending o_ref)) = getScriptInput (V2.txInfoInputs t_info) o_ref
 ownInput _                                             = traceError "No Script Input"
 
--- get the validating script input
+-- | Get the validating script input
 {-# INLINABLE getScriptInput #-}
 getScriptInput :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxOut
 getScriptInput []                           _     = traceError "Script Input Not Found"
@@ -84,6 +87,7 @@ getScriptInput ((V2.TxInInfo tref ot) : xs) o_ref
   | tref == o_ref                                 = ot
   | otherwise                                     = getScriptInput xs o_ref
 
+-- | Given a list of inputs find the input with a specific output reference.
 {-# INLINABLE txInFromTxRef #-}
 txInFromTxRef :: [V2.TxInInfo] -> V2.TxOutRef -> V2.TxInInfo
 txInFromTxRef txIns outRef = txInFromTxRef' txIns
@@ -104,6 +108,7 @@ signedBy list k = loop list
       | x == k    = True
       | otherwise = loop xs
 
+-- | Count the number of valid signatures inside the multsig.
 {-# INLINABLE checkMultisig #-}
 checkMultisig :: [V2.PubKeyHash] -> [V2.PubKeyHash] -> Integer -> Bool
 checkMultisig signers pkhs thres = loopSigs pkhs 0
@@ -112,9 +117,10 @@ checkMultisig signers pkhs thres = loopSigs pkhs 0
     loopSigs []     !counter = counter >= thres
     loopSigs (x:xs) !counter = 
       if signedBy signers x
-        then loopSigs xs (counter + 1) -- just add up the good sigs
+        then loopSigs xs (counter + 1) -- just count the good sigs
         else loopSigs xs counter       -- toss out the bad
 
+-- | Find at least the payout defined.
 {-# INLINABLE findPayout #-}
 findPayout :: [V2.TxOut] -> V2.Address -> V2.Value -> Bool
 findPayout list addr val = isPayoutExact list

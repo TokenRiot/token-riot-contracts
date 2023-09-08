@@ -56,6 +56,9 @@ data IncreaseData = IncreaseData
 PlutusTx.makeIsDataIndexed ''IncreaseData [('IncreaseData, 0)]
 -------------------------------------------------------------------------------
 -- | Cashier Payment Info
+--
+-- Holds the address information for the cash register. This address is designed
+-- to auto-roll up payments into the profit address.
 -------------------------------------------------------------------------------
 data CashierAddressData = CashierAddressData
   { caPkh :: V2.PubKeyHash
@@ -71,6 +74,11 @@ instance Eq CashierAddressData where
            ( caSc  a == caSc  b )
 -------------------------------------------------------------------------------
 -- | Fee Payout Info
+--
+-- The service fee information for the marketplace. The serviceFee is the flat
+-- rate fee defined in lovelace while the servicePerc is the percentage fee, 
+-- defined as 100/k = n%. This means a servicePerc of 40 is 2.5%. 
+-- The cancellationFee is the lovelace required to break a timelock.
 -------------------------------------------------------------------------------
 data ServiceFeeData = ServiceFeeData
   { servicePerc     :: Integer
@@ -88,7 +96,11 @@ instance Eq ServiceFeeData where
            ( serviceFee      a == serviceFee      b ) &&
            ( cancellationFee a == cancellationFee b )
 -------------------------------------------------------------------------------
--- | Multisig Information
+-- | Multisig and Hotkey Information
+--
+-- The majority of data changes require a valid multisig using the information
+-- inside the SigningData. It is a n-out-of-m style signature. The hot key is
+-- used for delegation control and cip68 minting.
 -------------------------------------------------------------------------------
 data SigningData = SigningData
   { mPkhs  :: [V2.PubKeyHash]
@@ -109,6 +121,7 @@ instance Eq SigningData where
 changeHotKeyOnly :: SigningData -> SigningData -> Bool
 changeHotKeyOnly a b = (mPkhs a == mPkhs b) && (mThres a == mThres b)
 
+-- make sure there are no illogical multisigs
 lengthCheck :: SigningData -> Bool
 lengthCheck msd = lengthCheck' pkhs 0
   where
@@ -126,6 +139,10 @@ lengthCheck msd = lengthCheck' pkhs 0
         else lengthCheck' xs (counter + 1) -- loop to the next one
 -------------------------------------------------------------------------------
 -- | Stake Pool Information
+--
+-- The poolId is the hash not the pool1 prefixed-key. This is the pool that the
+-- stake contract will be delegated too. The staking rewards can only be sent
+-- to the reward address.
 -------------------------------------------------------------------------------
 data StakePoolData = StakePoolData
   { poolId    :: V2.PubKeyHash
