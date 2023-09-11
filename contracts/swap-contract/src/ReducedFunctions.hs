@@ -186,6 +186,7 @@ nOutputs utxos number = loopInputs utxos 0
         (V2.OutputDatumHash _) -> loopInputs xs   counter
         (V2.OutputDatum _)     -> loopInputs xs ( counter + 1 ) -- inline
 
+-- | counts the number of redeemers, unused
 {-# INLINABLE nRedeemers #-}
 nRedeemers :: [(V2.ScriptPurpose, V2.Redeemer)] -> Integer -> Bool
 nRedeemers redeemers number = nRedeemers' redeemers 0

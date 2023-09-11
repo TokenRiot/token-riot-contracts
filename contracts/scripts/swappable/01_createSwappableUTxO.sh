@@ -18,7 +18,7 @@ seller="staked1"
 seller_address=$(cat ../wallets/${seller}-wallet/base.addr)
 
 # asset to trade
-asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
+asset="1 00dce2bf84dbf22dbd6fcd4b25db06863052588a20788c2c003ff9db.5ca1ab1e000affab1e000ca11ab1e0005e77ab1e"
 
 min_utxo=$(${cli} transaction calculate-min-required-utxo \
     --babbage-era \

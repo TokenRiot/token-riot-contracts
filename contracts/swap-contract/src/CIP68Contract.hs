@@ -124,7 +124,7 @@ mkValidator ScriptParameters {..} _ redeemer context =
       && traceIfFalse "sig" (signedBy txSigners hotPkh)                    -- hot key must sign
       && traceIfFalse "dat" (isValueCont contTxOutputs incomingValue)      -- check if value is continue by datum
       && traceIfFalse "val" (Value.valueOf refValue lockPid lockTkn == 1)  -- check if correct reference
---Helper-Functions-------------------------------------------------------------
+  --Helper-Functions-------------------------------------------------------------
   where
     getReferenceDatum :: V2.TxOut -> ReferenceDatum
     getReferenceDatum x = 
