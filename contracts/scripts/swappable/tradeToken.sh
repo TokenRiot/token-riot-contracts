@@ -8,15 +8,15 @@ testnet_magic=$(cat ../data/testnet.magic)
 
 # Addresses
 sender_address=$(cat ../wallets/staked1-wallet/base.addr)
-receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
-# receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
+# receiver_address=$(cat ../wallets/staked1-wallet/base.addr)
+receiver_address="addr_test1qrvnxkaylr4upwxfxctpxpcumj0fl6fdujdc72j8sgpraa9l4gu9er4t0w7udjvt2pqngddn6q4h8h3uv38p8p9cq82qav4lmp"
 
 # Define Asset to be printed here
 asset=""
 return_asset="24000 0ed672eef8d5d58a6fbce91327baa25636a8ff97af513e3481c97c52.5468697349734f6e6553746172746572546f6b656e466f7254657374696e6734"
 
 # asset to trade
-asset="1 74946c67d2a6afbdfd9450eb9818f202ba26143f821990d7a45b515c.4472697070793233303431393230303531"
+asset="1 43f43dd9db42399642f170cc410c73dd0d4e094f4b317c3ce9279069.007e08f756ee74d9d925df9c9881c717cf3c5fd510aedec0bf992c7a5a4a397a + 1 4515744a5e564610479c541247676bdec242e957c7c4fee7c91dcf12.6cd82d1bcb08786b9bbd2e7a04409301ae08d85e99e78055d1f3cd4b4700e8be"
 
 min_utxo=2000000
 
@@ -49,9 +49,9 @@ FEE=$(${cli} transaction build \
     --out-file ../tmp/tx.draft \
     --change-address ${sender_address} \
     --tx-in ${HEXTXIN} \
+    --tx-out="${token_to_be_changed}" \
     --testnet-magic ${testnet_magic})
 
-#    --tx-out="${token_to_be_changed}" \
 
     # --tx-out="${token_to_be_traded}" \
 IFS=':' read -ra VALUE <<< "${FEE}"
