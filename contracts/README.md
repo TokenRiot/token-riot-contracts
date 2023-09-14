@@ -1,3 +1,14 @@
-# A Generalized Swap Contract For Token Riot
-
-The contracts are in the swap-contract folder. The happy path can be followed with the scripts folder. The scripts are compiled with complete_build.sh script. It uses the information in the start_info.json file. Each sub-folder inside the scripts folder holds a sequential happy path to interact with the contracts.
+# A Generalized Swap Contract
+A set of contracts to handle any and all types of token swapping for Token Riot.\n
+```json
+{
+  "__comment1__": "The data refrence address",
+  "reference_addr": "addr_test1wq2mvf5hywypkk448lave0g59klvzfwdua4t7l7qhfc02dqdjr4sy",
+  "__comment2__": "The swap refrence address",
+  "swap_addr": "addr_test1xq0pg5k3gc47qe8ntj25548dprlnmdyd44h7u653ply9pkw8yq3wjqnaym5vvm2sewd4m2xpwdhv69gqj62c5dxw5xwqm3j3fa",
+  "__comment3__": "The cip68 refrence address",
+  "cip68_addr": "addr_test1xrl6v5uk89lm8x98jkfelyrwujg9dz0jkxcr06s9y5fm8rw8yq3wjqnaym5vvm2sewd4m2xpwdhv69gqj62c5dxw5xwq2xr7mm",
+  "__comment4__": "The stake address",
+  "stake_addr": "stake_test17rrjqghfqf7jd6xxd4gvhx6a4rqhxmkdz5qfd9v2xn82r8qzs6dvv"
+}
+```

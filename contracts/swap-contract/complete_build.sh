@@ -205,10 +205,10 @@ echo -e "\nMinter Bytes:" $(cat bytes/minter.bytes)
 ###############################################################################
 ###############################################################################
 
-echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
+# echo -e "\033[1;35m Updating TestSuite Contracts \033[0m"
 
 # copy contracts into test-suite
-cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus minter-contract.plutus ../test-suite/contracts
+# cp swap-contract.plutus reference-contract.plutus stake-contract.plutus cip68-contract.plutus minter-contract.plutus ../test-suite/contracts
 
 # auto build the compiled code json
 jq \
