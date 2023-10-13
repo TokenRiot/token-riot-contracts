@@ -1,6 +1,6 @@
 {
     "__comment1__":"The starter token info for the data contract",
-    "pid": "320370d931630fa4d20c3fffcee35fff86e7cf692530fd00ecf113ad",
+    "pid": "c1ed161e1c4259b24231e972a84a93a73c44009e5088af3b3f1d8c28",
     "tkn": "546f6b656e52696f742e696f",
     "__comment2__":"The cashier address that receives fees",
     "caPkh":"a8b03b2c08a1dc7f5b59f398bc5d5b386f212af2c53525a55a787f35",
@@ -22,5 +22,3 @@
     "rewardPkh": "9dc2220e94130a73a4fda76e52bdef30823094c01d451ba1fb80f62d",
     "rewardSc": "c18d0cb3f08ecee8601658525089e43d93a8561a6a66ae9d65829a66"
 }
-
-
