@@ -3,22 +3,24 @@
     "pid": "320370d931630fa4d20c3fffcee35fff86e7cf692530fd00ecf113ad",
     "tkn": "546f6b656e52696f742e696f",
     "__comment2__":"The cashier address that receives fees",
-    "caPkh":"41c5a3e9b01c41799d42d84fcda7b23abe5993dfd47f386513e07dfa",
+    "caPkh":"a8b03b2c08a1dc7f5b59f398bc5d5b386f212af2c53525a55a787f35",
     "caSc":"",
     "__comment3__":"The service fee info for using the swap contract",
     "servicePerc":57,
     "serviceFee":1000000,
     "cancellationFee":5000000,
     "__comment4__":"The multisig Info for data reference contract",
-    "pkh1":"2544e2b4d1bb6e6c77f9ac2ce4d77c2a80c84e9778eb7662f0b6de2d",
+    "pkh1":"27bb3bf2d3d6d0b922f7864c358e76cd042a978c8a7155faf4d4ac8a",
     "pkh2":"",
     "pkh3":"",
     "__comment5__":"The multisig threshold info",
     "thres": 1,
     "__comment6__":"The hot key info",
-    "hotPkh":"2544e2b4d1bb6e6c77f9ac2ce4d77c2a80c84e9778eb7662f0b6de2d",
+    "hotPkh":"27bb3bf2d3d6d0b922f7864c358e76cd042a978c8a7155faf4d4ac8a",
     "__comment7__":"The staking info",
-    "poolId": "1e3105f23f2ac91b3fb4c35fa4fe301421028e356e114944e902005b",
-    "rewardPkh": "f423dc404d730fc008e6b9fa626d6a8f31a98d6cc6436b75e098b1c1",
-    "rewardSc": "81d500d2cdcc15423f9c5b1a7238b2378b32f05075c543deb44003b2"
+    "poolId": "07ac7dee6c82177096b70ccf21cfb8965c1fb08e079f9ca4af4b2b3e",
+    "rewardPkh": "9dc2220e94130a73a4fda76e52bdef30823094c01d451ba1fb80f62d",
+    "rewardSc": "c18d0cb3f08ecee8601658525089e43d93a8561a6a66ae9d65829a66"
 }
+
+
