@@ -153,6 +153,7 @@ findTokenHolder list addr pid tkn val = isAddrHoldingExactlyToken' list
 
         checkVal :: Bool
         checkVal = Value.valueOf (V2.txOutValue x) pid tkn == val -- must be exact
+        -- checkVal = Value.valueOf (V2.txOutValue x) pid tkn >= val -- must be greater than
 
 -- | Count the number of inputs that have inline datums.
 {-# INLINABLE nInputs #-}

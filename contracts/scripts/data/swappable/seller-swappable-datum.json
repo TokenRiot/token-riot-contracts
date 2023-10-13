@@ -22,7 +22,7 @@
           "bytes": ""
         },
         {
-          "int": 10000000
+          "int": 69420
         },
         {
           "int": 0
@@ -44,152 +44,10 @@
       "constructor": 0,
       "fields": [
         {
-          "list": [
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "cdb78039cda276a7e8e306109fd7be5cbbb5fb6f6b55cdb5a0e46035"
-                },
-                {
-                  "bytes": ""
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "d9335ba4f8ebc0b8c9361613071cdc9e9fe92de49b8f2a4782023ef4"
-                },
-                {
-                  "bytes": "bfaa385c8eab7bbdc6c98b50413435b3d02b73de3c644e1384b801d4"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "f83c942aa3efbce97274b4536a3d171802cd14b6b6ec6b657bd4e825"
-                },
-                {
-                  "bytes": "9830cc622d6a7ebc1480444193ead74435d63918a92b01713fa27be2"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "2bbaaf81d5de2644d042c4a510dbb1f401ecb2f3971ef2777051ebc9"
-                },
-                {
-                  "bytes": "b4858c8a3797540be4682c029c306023f6b87d9f976d5172f2e204e6"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "1c51fb873f1baf20249a02a45b99193de08ff6d3f2686b08e23a5c34"
-                },
-                {
-                  "bytes": "938885708f93e12f50ce16403c7eb4eae87556c6ceda7fcf81126b1b"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "4adeb55254bae954a509e53965d6e25fe49fb20664ac44137371c651"
-                },
-                {
-                  "bytes": "eb5af0489b880db1509a5ed3116e16ab143effb48ad0598b5ac6bebe"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "b11268e5949af9e252c2fb1966f075c7650f8cad7a61cc3d110daeb1"
-                },
-                {
-                  "bytes": "cc528a6dd035fb1a6f6cb4a3d84c27fb91c7ad5611e38584deff71d7"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "f423dc404d730fc008e6b9fa626d6a8f31a98d6cc6436b75e098b1c1"
-                },
-                {
-                  "bytes": "81d500d2cdcc15423f9c5b1a7238b2378b32f05075c543deb44003b2"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "e1209623e962f119c0f15b2203c7ff30e1f128282cdebe1a3b00b3b5"
-                },
-                {
-                  "bytes": "6be19365b7eae6b727f1752b39bc272aef08028809d297816378b6d9"
-                }
-              ]
-            },
-            {
-              "constructor": 0,
-              "fields": [
-                {
-                  "bytes": "4c2023eed634aff17f9102e1fe6abc964350d638b20bc0cc25d7f140"
-                },
-                {
-                  "bytes": "afa703d0967940b93e5711c519873339de1a2f45532510cf9e70daa7"
-                }
-              ]
-            }
-          ]
+          "list": []
         },
         {
-          "list": [
-            {
-              "int": 1100000
-            },
-            {
-              "int": 1200000
-            },
-            {
-              "int": 1350000
-            },
-            {
-              "int": 1425000
-            },
-            {
-              "int": 1525000
-            },
-            {
-              "int": 1625000
-            },
-            {
-              "int": 1725000
-            },
-            {
-              "int": 1825000
-            },
-            {
-              "int": 1925000
-            },
-            {
-              "int": 2025000
-            }
-          ]
+          "list": []
         }
       ]
     }
