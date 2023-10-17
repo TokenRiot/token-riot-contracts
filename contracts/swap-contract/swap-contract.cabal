@@ -46,9 +46,14 @@ library
   hs-source-dirs:       src
 
   exposed-modules:      SwapContract
+                        ReferenceContract
+                        StakeContract
+                        CIP68Contract
+                        MinterContract
                         SwappableDataType
-                        AuctionDataType
-                        HelperFunctions
+                        ReferenceDataType
+                        ReducedFunctions
+                        OptimizerOptions
 
   build-depends:        bytestring
                       , cardano-api
@@ -58,6 +63,7 @@ library
                       , plutus-script-utils
                       , serialise
                       , useful-funcs
+                      , plutonomy
 
   ghc-options: -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas
 
@@ -73,4 +79,75 @@ executable swap-contract
 
   build-depends:        cardano-api
                       , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
 
+executable reference-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              reference-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+
+executable stake-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              stake-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
+
+executable cip68-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              cip68-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory
+
+executable minter-contract
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              minter-contract.hs
+  
+  ghc-options:          -threaded 
+                        -rtsopts 
+                        "-with-rtsopts=-T"
+                        -O2
+
+  build-depends:        cardano-api
+                      , swap-contract
+                      , bytestring
+                      , aeson
+                      , plutus-ledger-api
+                      , useful-funcs
+                      , directory

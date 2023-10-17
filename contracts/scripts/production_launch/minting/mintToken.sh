@@ -1,0 +1,98 @@
+#!/bin/bash
+set -e
+
+source ../.env
+
+# minting policy
+mint_path="policy/policy.script"
+
+# collat, seller, reference
+starter_address=$(cat ../../wallets/starter-wallet/payment.addr)
+starter_pkh=$(${cli} address key-hash --payment-verification-key-file ../../wallets/starter-wallet/payment.vkey)
+
+# this key must be added to the policy script
+one_hour=$(${cli} query tip ${network} | jq '.slot + 300')
+jq -r \
+--arg pkh ${starter_pkh} \
+--argjson slot ${one_hour} \
+'.scripts[0].keyHash=$pkh |
+.scripts[1].slot=$slot
+' \
+${mint_path} | sponge ${mint_path}
+
+
+# pid and tkn
+policy_id=$(cardano-cli transaction policyid --script-file ${mint_path})
+token_name="546f6b656e52696f742e696f"
+
+# assets
+mint_asset="1 ${policy_id}.${token_name}"
+
+# mint utxo
+utxo_value=$(${cli} transaction calculate-min-required-utxo \
+    --babbage-era \
+    --protocol-params-file ../../tmp/protocol.json \
+    --tx-out="${starter_address} + 2000000 + ${mint_asset}" | tr -dc '0-9')
+
+starter_address_out="${starter_address} + ${utxo_value} + ${mint_asset}"
+echo "Mint OUTPUT: "${starter_address_out}
+#
+# exit
+#
+echo -e "\033[0;36m Gathering Seller UTxO Information  \033[0m"
+${cli} query utxo \
+    ${network} \
+    --address ${starter_address} \
+    --out-file ../../tmp/starter_utxo.json
+
+TXNS=$(jq length ../../tmp/starter_utxo.json)
+if [ "${TXNS}" -eq "0" ]; then
+   echo -e "\n \033[0;31m NO UTxOs Found At ${starter_address} \033[0m \n";
+   exit;
+fi
+alltxin=""
+TXIN=$(jq -r --arg alltxin "" 'keys[] | . + $alltxin + " --tx-in"' ../../tmp/starter_utxo.json)
+starter_tx_in=${TXIN::-8}
+
+echo Starter UTxO: $starter_tx_in
+
+# slot time info
+slot=$(${cli} query tip ${network} | jq .slot)
+current_slot=$(($slot - 1))
+final_slot=$(($slot + 250))
+
+# exit
+echo -e "\033[0;36m Building Tx \033[0m"
+FEE=$(${cli} transaction build \
+    --babbage-era \
+    --out-file ../../tmp/tx.draft \
+    --invalid-before ${current_slot} \
+    --invalid-hereafter ${final_slot} \
+    --change-address ${starter_address} \
+    --tx-in ${starter_tx_in} \
+    --tx-out="${starter_address_out}" \
+    --required-signer-hash ${starter_pkh} \
+    --mint-script-file ${mint_path} \
+    --mint="${mint_asset}" \
+    ${network})
+
+IFS=':' read -ra VALUE <<< "${FEE}"
+IFS=' ' read -ra FEE <<< "${VALUE[1]}"
+FEE=${FEE[1]}
+echo -e "\033[1;32m Fee: \033[0m" $FEE
+#
+# exit
+#
+echo -e "\033[0;36m Signing \033[0m"
+${cli} transaction sign \
+    --signing-key-file ../../wallets/starter-wallet/payment.skey \
+    --tx-body-file ../../tmp/tx.draft \
+    --out-file ../../tmp/tx.signed \
+    ${network}
+#    
+# exit
+#
+echo -e "\033[0;36m Submitting \033[0m"
+${cli} transaction submit \
+    ${network} \
+    --tx-file ../../tmp/tx.signed

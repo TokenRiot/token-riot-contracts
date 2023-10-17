@@ -26,116 +26,165 @@
 {-# OPTIONS_GHC -fno-specialise               #-}
 {-# OPTIONS_GHC -fexpose-all-unfoldings       #-}
 module SwappableDataType
-  ( ownershipSwapCheck
-  , priceUpdateCheck
-  , priceUpdateWithTimeCheck
-  , switchStates
-  , successfulAuction
-  , proveOwnership
-  , SwappableData (..)
-  , OfferData (..)
-  , PayToData (..)
+  ( PayToData (..)
+  , PaymentData (..)
+  , TimeData (..)
+  , RoyaltyData (..)
+  , checkValidTimeLock
+  , checkValidTimeData
+  , ADAIncData (..)
+  , MakeOfferData (..)
+  , SpecificToken (..)
+  , getTokenName
+  , OfferFlagData (..)
   ) where
 import qualified PlutusTx
 import           PlutusTx.Prelude
 import qualified Plutus.V2.Ledger.Api as PlutusV2
-import           AuctionDataType      ( AuctionData, aSellerPkh, aSellerSc, aLockStart, aLockEnd )
 {- |
   Author   : The Ancient Kraken
-  Copyright: 2022
+  Copyright: 2023
 -}
 -------------------------------------------------------------------------------
--- | Swappable Data Object
--------------------------------------------------------------------------------
-data SwappableData = SwappableData
-  { sPkh   :: PlutusV2.PubKeyHash
-  -- ^ A payment public key hash.
-  , sSc    :: PlutusV2.PubKeyHash
-  -- ^ A staking credential.
-  , sPid   :: PlutusV2.CurrencySymbol
-  -- ^ flatrate payment policy id
-  , sTkn   :: PlutusV2.TokenName
-  -- ^ flatrate payment token name
-  , sAmt   :: Integer
-  -- ^ flaterate payment token amount
-  , sStart :: Integer
-  -- ^ starting time
-  , sEnd   :: Integer
-  -- ^ ending time
-  , sSlip  :: Integer
-  -- ^ slippage for order book swaps
-  }
-PlutusTx.unstableMakeIsData ''SwappableData
-
-instance Eq SwappableData where
-  {-# INLINABLE (==) #-}
-  a == b = ( sPkh   a == sPkh   b ) &&
-           ( sSc    a == sSc    b ) &&
-           ( sPid   a == sPid   b ) &&
-           ( sTkn   a == sTkn   b ) &&
-           ( sAmt   a == sAmt   b ) &&
-           ( sStart a == sStart b ) &&
-           ( sEnd   a == sEnd   b ) &&
-           ( sSlip  a == sSlip  b )
-
--- a is old; b is new
-ownershipSwapCheck :: SwappableData -> SwappableData -> Bool
-ownershipSwapCheck a b = ( sPkh   a /= sPkh   b ) &&
-                         ( sStart a == sStart b ) &&
-                         ( sEnd   a == sEnd   b )
-
--- update price and update lock fully
-priceUpdateWithTimeCheck :: SwappableData -> SwappableData -> Bool
-priceUpdateWithTimeCheck a b =  ( sPkh   a == sPkh   b ) &&
-                                ( sSc    a == sSc    b ) &&
-                                ( sStart a <= sStart b ) && -- can only increase or remain constant
-                                ( sStart b <= sEnd   b ) && -- must be less than or equal to end
-                                ( sEnd   a <= sEnd   b )    -- can only increase or remain constant
-
--- update price or lengthen the lock time only
-priceUpdateCheck :: SwappableData -> SwappableData -> Bool
-priceUpdateCheck a b = ( sPkh   a == sPkh   b ) &&
-                       ( sSc    a == sSc    b ) &&
-                       ( sStart a == sStart b ) && -- can only remain constant
-                       ( sEnd   a <= sEnd   b )    -- can only remain constant or increase
-
-switchStates :: AuctionData -> SwappableData -> Bool
-switchStates a b = ( aSellerPkh a == sPkh   b ) &&
-                   ( aSellerSc  a == sSc    b ) &&
-                   ( aLockStart a == sStart b ) &&
-                   ( aLockEnd   a == sEnd   b )
-
-successfulAuction :: AuctionData -> SwappableData -> Bool
-successfulAuction a b = ( aSellerPkh a /= sPkh   b ) &&
-                        ( aLockStart a == sStart b ) &&
-                        ( aLockEnd   a == sEnd   b )
-
--------------------------------------------------------------------------------
--- | Offer Data Object
--------------------------------------------------------------------------------
-data OfferData = OfferData
-  { oPid :: PlutusV2.CurrencySymbol
-  -- ^ payment policy id
-  , oTkn :: PlutusV2.TokenName
-  -- ^ payment token
-  , oAmt :: Integer
-  -- ^ payment amount
-  }
-PlutusTx.unstableMakeIsData ''OfferData
-
--------------------------------------------------------------------------------
--- | Pay To Data Offer
+-- | Pay To Data
+-- 
+-- Holds the data for the owner of some utxo. The ptPkh is the signing key and
+-- the combination of ptPkh and ptSc is the address.
+--
+-- @see: UsefulFuncs.createAddress
 -------------------------------------------------------------------------------
 data PayToData = PayToData
   { ptPkh :: PlutusV2.PubKeyHash
-  -- ^ pay to this public key hash
+  -- ^ Pay to this public key hash.
   , ptSc  :: PlutusV2.PubKeyHash
-  -- ^ pay to this stake key
-  , pInc  :: Integer
-  -- ^ the potential lovelace 
+  -- ^ Pay to this stake key.
   }
-PlutusTx.unstableMakeIsData ''PayToData
+PlutusTx.makeIsDataIndexed ''PayToData [('PayToData, 0)]
 
-proveOwnership :: PayToData -> SwappableData -> Bool
-proveOwnership a b = ( ptPkh a == sPkh b ) && 
-                     ( ptSc  a == sSc  b )
+instance Eq PayToData where
+  {-# INLINABLE (==) #-}
+  a == b = ( ptPkh a == ptPkh b ) &&
+           ( ptSc  a == ptSc  b )
+-------------------------------------------------------------------------------
+-- | Payment Data
+--
+-- Holds the data for the payment to be accepted for some UTxO. If the pAny flag
+-- is zero then the token name to be used inside the tx is pTkn else the token
+-- name is supplied in the SpecificToken Data object.
+-------------------------------------------------------------------------------
+data PaymentData = PaymentData
+  { pPid :: PlutusV2.CurrencySymbol
+  -- ^ The flat rate payment policy id.
+  , pTkn :: PlutusV2.TokenName
+  -- ^ The flat rate payment token name.
+  , pAmt :: Integer
+  -- ^ The flat rate payment token amount.
+  , pAny :: Integer
+  -- ^ A flag that allows any token to from a pid to be used.
+  }
+PlutusTx.makeIsDataIndexed ''PaymentData [('PaymentData, 0)]
+
+instance Eq PaymentData where
+  {-# INLINABLE (==) #-}
+  a == b = ( pPid a == pPid b ) &&
+           ( pTkn a == pTkn b ) &&
+           ( pAmt a == pAmt b ) &&
+           ( pAny a == pAny b )
+
+-------------------------------------------------------------------------------
+-- | Time Data Object
+--
+-- Holds the time information for a UTxO. It is meant to defined some range in
+-- time between some point A and B.
+--
+-- @see: UsefulFuncs.lockBetweenTimeInterval
+-------------------------------------------------------------------------------
+data TimeData = TimeData
+  { tStart :: Integer
+  -- ^ The starting unix time.
+  , tEnd   :: Integer
+  -- ^ The ending unix time.
+  }
+PlutusTx.makeIsDataIndexed ''TimeData [('TimeData, 0)]
+
+instance Eq TimeData where
+  {-# INLINABLE (==) #-}
+  a == b = ( tStart a == tStart b ) &&
+           ( tEnd   a == tEnd   b )
+
+-- Check if a time data is logically being updated.
+checkValidTimeLock :: TimeData -> TimeData -> Bool
+checkValidTimeLock a b =  ( tStart a <= tStart b ) && -- can only increase or remain constant
+                          ( tStart b <= tEnd   b ) && -- must be less than or equal to end
+                          ( tEnd   a <= tEnd   b )    -- can only increase or remain constant
+
+-- Check if a time data has a logical format.
+checkValidTimeData :: TimeData -> Bool
+checkValidTimeData a = ( tStart a <= tEnd a )
+-------------------------------------------------------------------------------
+-- | ADA Increase Data Object
+--
+-- Holds the integer amount of lovelace that will be added to some UTxO. This is
+-- useful for transactions where the datum requires more minimum ada. It is supposed
+-- to be created by the spender and placed into a redeemer.
+-------------------------------------------------------------------------------
+data ADAIncData = ADAIncData 
+  { adaInc :: Integer
+  -- ^ An increase to the ADA on a UTxO.
+  }
+PlutusTx.makeIsDataIndexed ''ADAIncData [('ADAIncData, 0)]
+-------------------------------------------------------------------------------
+-- | Make Offer Data Object
+--
+-- The TxId of the UTxO that an offer belongs too.
+--
+-- @see: createTxOutRef
+-------------------------------------------------------------------------------
+data MakeOfferData = MakeOfferData
+  { moTx  :: PlutusV2.BuiltinByteString
+  -- ^ The tx hash of the other utxo being swapped.
+  , moIdx :: Integer
+  -- ^ The index of the tx hash.
+  }
+PlutusTx.makeIsDataIndexed ''MakeOfferData [('MakeOfferData, 0)]
+-------------------------------------------------------------------------------
+-- | Specific Token Data Object
+-------------------------------------------------------------------------------
+data SpecificToken = SpecificToken
+  { sTkn :: PlutusV2.TokenName
+  -- ^^ The specific token name being used in the flatrate swap.
+  }
+PlutusTx.makeIsDataIndexed ''SpecificToken [('SpecificToken, 0)]
+
+-- Given a payment data and a specific token return the correct token name.
+getTokenName :: PaymentData -> SpecificToken -> PlutusV2.TokenName
+getTokenName pay tkn =
+  if pAny pay == 0
+    then pTkn pay
+    else sTkn tkn
+-------------------------------------------------------------------------------
+-- | Offer Flag Data Object
+-------------------------------------------------------------------------------
+data OfferFlagData = OfferFlagData
+  { oFlag :: Integer
+  -- ^ The flag to indicate if the trade should remain in the contract.
+  }
+PlutusTx.makeIsDataIndexed ''OfferFlagData [('OfferFlagData, 0)]
+-------------------------------------------------------------------------------
+-- | The Royalty Data Object for the datum
+-------------------------------------------------------------------------------
+data RoyaltyData = RoyaltyData
+  { rdAddr :: [PayToData]
+  -- ^ The address information for royalty payments
+  , rdAmt  :: [Integer]
+  -- ^ The lovelace amount to be sent to the rdAddr
+  -- , rdPerm :: Integer
+  -- ^ Perma lock the royalty data
+  }
+PlutusTx.makeIsDataIndexed ''RoyaltyData [('RoyaltyData, 0)]
+
+instance Eq RoyaltyData where
+  {-# INLINABLE (==) #-}
+  a == b = ( rdAddr a == rdAddr b ) &&
+           ( rdAmt  a == rdAmt  b )
+

@@ -1,0 +1,52 @@
+{
+  "constructor": 2,
+  "fields": [
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": "db7bffc41a43c4d9c31342e3fd457409aeb40302aa52058df374913b"
+        },
+        {
+          "bytes": ""
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": "3722f1a3409cc4972aea8195d01e5ad4adc9dfcbbe720b0ad2a5d3db4af14452"
+        },
+        {
+          "int": 0
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "int": 0
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": ""
+        },
+        {
+          "bytes": ""
+        },
+        {
+          "int": 0
+        },
+        {
+          "int": 0
+        }
+      ]
+    }
+  ]
+}

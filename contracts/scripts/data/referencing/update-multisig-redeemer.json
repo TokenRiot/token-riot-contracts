@@ -1,0 +1,13 @@
+{
+    "constructor": 2,
+    "fields": [
+      {
+        "constructor": 0,
+        "fields": [
+          {
+            "int": 0
+          }
+        ]
+      }
+    ]
+  }

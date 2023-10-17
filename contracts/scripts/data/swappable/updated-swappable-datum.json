@@ -1,0 +1,71 @@
+{
+  "constructor": 0,
+  "fields": [
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": "a2108b7b1704f9fe12c906096ea1634df8e089c9ccfd651abae4a439"
+        },
+        {
+          "bytes": ""
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "bytes": "f61e1c1d38fc4e5b0734329a4b7b820b76bb8e0729458c153c4248ea"
+        },
+        {
+          "bytes": "5468697349734f6e6553746172746572546f6b656e466f7254657374696e6739"
+        },
+        {
+          "int": 18446744073709551615
+        },
+        {
+          "int": 0
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "int": 0
+        },
+        {
+          "int": 0
+        }
+      ]
+    },
+    {
+      "constructor": 0,
+      "fields": [
+        {
+          "list": [
+            {
+              "constructor": 0,
+              "fields": [
+                {
+                  "bytes": "cdb78039cda276a7e8e306109fd7be5cbbb5fb6f6b55cdb5a0e46035"
+                },
+                {
+                  "bytes": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "list": [
+            {
+              "int": 1000000
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
